@@ -206,4 +206,4 @@ Unless required by applicable law or agreed to in writing, Licensor provides the
 Dies ist ein Forschungsprototyp. Die Haftung für entgangenen Gewinn, Produktionsausfall, Betriebsunterbrechung, entgangene Nutzungen, Verlust von Daten und Informationen, Finanzierungsaufwendungen sowie sonstige Vermögens- und Folgeschäden ist, außer in Fällen von grober Fahrlässigkeit, Vorsatz und Personenschäden, ausgeschlossen.
 
 ## Acknowledgements
-The initial code contribution has been supported by the  BMWK project [SeQuenC](https://www.iaas.uni-stuttgart.de/forschung/projekte/sequenc/).
+The initial code contribution has been supported by the project [SeQuenC](https://www.iaas.uni-stuttgart.de/forschung/projekte/sequenc/).
