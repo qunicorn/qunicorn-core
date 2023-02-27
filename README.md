@@ -68,10 +68,6 @@ This template uses the following libraries to build a rest app with a database o
  *  Flask-Cors ([documentation](https://flask-cors.readthedocs.io/en/latest/))\
     Used to provide cors headers.\
     Can be configured or removed in `qunicorn_core/__init__.py`.
- *  flask-babel ([documentation](https://flask-babel.tkte.ch), [babel documentation](http://babel.pocoo.org/en/latest/))\
-    Used to provide translations.\
-    Can be configured in `qunicorn_core/babel.py` and `babel.cfg`.\
-    Translation files and Folders: `translations` (and `messages.pot` currently in .gitignore)
  *  Flask-SQLAlchemy ([documentation](https://flask-sqlalchemy.palletsprojects.com/en/2.x/), [SQLAlchemy documentation](https://docs.sqlalchemy.org/en/14/))\
     ORM Mapper for many SQL databases.\
     Models: `qunicorn_core/db/models`\
@@ -82,7 +78,7 @@ This template uses the following libraries to build a rest app with a database o
  *  flask-smorest ([documentation](https://flask-smorest.readthedocs.io/en/latest/), [marshmallow documentation](https://marshmallow.readthedocs.io/en/stable/), [apispec documentation](https://apispec.readthedocs.io/en/latest/), [OpenAPI spec](http://spec.openapis.org/oas/v3.0.2))\
     Provides the API code and generates documentation in form of a OpenAPI specification.\
     API: `qunicorn_core/api`\
-    API Models: `qunicorn_core/api/v1_api/models`\
+    API Models: `qunicorn_core/api/models`\
     Config: `qunicorn_core/util/config/smorest_config.py` and `qunicorn_core/api/__init__.py`
  *  Flask-JWT-Extended ([documentation](https://flask-jwt-extended.readthedocs.io/en/stable/))\
     Provides authentication with JWT tokens.\
@@ -165,20 +161,6 @@ poetry run invoke doc
 
 # Open the documentation in the default browser
 poetry run invoke browse-doc
-```
-
-
-## Babel
-
-```bash
-# initial
-poetry run pybabel extract -F babel.cfg -o messages.pot .
-# create language
-poetry run pybabel init -i messages.pot -d translations -l en
-# compile translations to be used
-poetry run pybabel compile -d translations
-# extract updated strings
-poetry run pybabel update -i messages.pot -d translations
 ```
 
 ## SQLAlchemy
