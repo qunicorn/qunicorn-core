@@ -1,4 +1,4 @@
-# A template project for flask apps
+# The Qunicorn Core - Unification Middleware for a sovereign Quantum Cloud
 
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![GitHub license](https://img.shields.io/github/license/buehlefs/flask-template)](https://github.com/buehlefs/flask-template/blob/main/LICENSE)
