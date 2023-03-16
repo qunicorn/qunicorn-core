@@ -8,8 +8,14 @@ from ..util import SecurityBlueprint as SmorestBlueprint
 from ..models import RootSchema
 
 
+# TASKMANAGER_API = SmorestBlueprint(
+#    "taskmanager-api", "TASKMANAGER API", description="Taskmanager API for the control plane.", url_prefix="/taskmanager"
+# )
+
 TASKMANAGER_API = SmorestBlueprint(
-    "taskmanager-api", "TASKMANAGER API", description="Taskmanager API for the control plane.", url_prefix="/taskmanager"
+    "taskmanager-api",
+    "TASKMANAGER API",
+    description="Taskmanager API for the control plane.",
 )
 
 

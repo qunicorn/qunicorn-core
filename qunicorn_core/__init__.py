@@ -122,7 +122,6 @@ def create_app(test_config: Optional[Dict[str, Any]] = None):
 
     # Begin loading extensions and routes
 
-
     licenses.register_licenses(app)
 
     db.register_db(app)
