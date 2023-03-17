@@ -37,6 +37,7 @@ class RootView(MethodView):
         return {
             "title": API.spec.title,
             "v1": url_for("taskmanager-api.TaskIDView", _external=True),
+            #"v1": url_for("devices-api.DeviceView", _external=True),
         }
 
 

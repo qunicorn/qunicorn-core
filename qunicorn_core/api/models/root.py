@@ -9,4 +9,4 @@ __all__ = [
 
 
 class RootSchema(MaBaseSchema):
-    auth = ma.fields.Url(required=True, allow_none=False, dump_only=True)
+    root = ma.fields.Url(required=True, allow_none=False, dump_only=True)
