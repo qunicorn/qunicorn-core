@@ -9,6 +9,7 @@ from flask_smorest import Api, Blueprint as SmorestBlueprint
 from http import HTTPStatus
 from .util import MaBaseSchema
 from .taskmanager import TASKMANAGER_API
+from .devices import DEVICES_API
 from .jwt import SECURITY_SCHEMES
 
 """A single API instance. All api versions should be blueprints."""
@@ -50,3 +51,5 @@ def register_root_api(app: Flask):
     # register API blueprints (only do this after the API is registered with flask!)
     API.register_blueprint(ROOT_ENDPOINT)
     API.register_blueprint(TASKMANAGER_API)
+    API.register_blueprint(DEVICES_API)
+    
