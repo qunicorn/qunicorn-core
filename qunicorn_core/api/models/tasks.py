@@ -17,7 +17,7 @@ class CircuitField(fields.Field):
 
 class TaskRegisterSchema(MaBaseSchema):
     circuit = CircuitField(required=True)
-    provider = ma.fields.Str(required=True)
+    provider = ma.fields.Str(required=True, example="IBMQ")
     qpu = ma.fields.Str(required=True)
     credentials = ma.fields.Dict(
         keys=ma.fields.Str(), values=ma.fields.Str(), required=True
