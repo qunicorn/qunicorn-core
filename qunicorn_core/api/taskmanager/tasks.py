@@ -42,7 +42,7 @@ class TaskIDView(MethodView):
         )
 
 
-@TASKMANAGER_API.route("/tasks/register/")
+@TASKMANAGER_API.route("/task/register/")
 class TaskRegisterView(MethodView):
     """Tasks endpoint for register tasks."""
 

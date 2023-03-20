@@ -37,25 +37,25 @@ poetry run flask run
 
 ### Trying out the Template
 
-For a list of all dependencies with their license open <http://localhost:5000/licenses/>.
+For a list of all dependencies with their license open <http://localhost:5005/licenses/>.
 
 #### The API:
 
-<http://localhost:5000/api/>
+<http://localhost:5005/>
 
 #### OpenAPI Documentation:
 
 Configured in `qunicorn_core/util/config/smorest_config.py`.
 
-   * Redoc (view only): <http://localhost:5000/api/redoc>
-   * Rapidoc: <http://localhost:5000/api/rapidoc>
-   * Swagger-UI: <http://localhost:5000/api/swagger-ui>
-   * OpenAPI Spec (JSON): <http://localhost:5000/api/api-spec.json>
+   * Redoc (view only): <http://localhost:5000/redoc>
+   * Rapidoc: <http://localhost:5000/rapidoc>
+   * Swagger-UI: <http://localhost:5000/swagger-ui>
+   * OpenAPI Spec (JSON): <http://localhost:5005/api-spec.json>
 
 #### Debug pages:
 
-  * Index: <http://localhost:5000/debug/>
-  * Registered Routes: <http://localhost:5000/debug/routes>\
+  * Index: <http://localhost:5005/debug/>
+  * Registered Routes: <http://localhost:5005/debug/routes>\
     Useful for looking up which endpoint is served under a route or what routes are available.
 
 

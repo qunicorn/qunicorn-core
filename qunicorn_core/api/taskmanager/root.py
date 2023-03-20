@@ -24,7 +24,7 @@ class RootData:
     root: str
 
 
-@TASKMANAGER_API.route("/task")
+@TASKMANAGER_API.route("/task/")
 class RootView(MethodView):
     """Root endpoint of the taskmanager api."""
 
