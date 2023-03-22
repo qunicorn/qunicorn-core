@@ -1,10 +1,10 @@
-"""Module containing all API schemas for tasks in the Taskmanager API."""
+"""Module containing all API schemas for tasks in the Jobmanager API."""
 
 import marshmallow as ma
 from marshmallow import fields, ValidationError
 from ..util import MaBaseSchema
 
-__all__ = ["TaskIDSchema", "TaskRegisterSchema"]
+__all__ = ["JobIDSchema", "JobRegisterSchema"]
 
 
 class CircuitField(fields.Field):
@@ -15,7 +15,7 @@ class CircuitField(fields.Field):
             raise ValidationError("Field should be str or list")
 
 
-class TaskRegisterSchema(MaBaseSchema):
+class JobRegisterSchema(MaBaseSchema):
     circuit = CircuitField(required=True)
     provider = ma.fields.Str(required=True, example="IBMQ")
     qpu = ma.fields.Str(required=True)
@@ -29,7 +29,7 @@ class TaskRegisterSchema(MaBaseSchema):
     parameters = ma.fields.List(ma.fields.Float(), required=False)
 
 
-class TaskIDSchema(MaBaseSchema):
+class JobIDSchema(MaBaseSchema):
     uid = ma.fields.Url(required=True, allow_none=False, dump_only=True)
     description = ma.fields.String(required=True, allow_none=False, dump_only=True)
     taskmode = ma.fields.Int(required=True, allow_none=False, dump_only=True)

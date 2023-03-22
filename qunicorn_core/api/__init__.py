@@ -8,8 +8,10 @@ import marshmallow as ma
 from flask_smorest import Api, Blueprint as SmorestBlueprint
 from http import HTTPStatus
 from .util import MaBaseSchema
-from .taskmanager import TASKMANAGER_API
+from .jobmanager import JOBMANAGER_API
 from .devices import DEVICES_API
+from .deployment import DEPLOYMENT_API
+from .services import SERVICES_API
 from .jwt import SECURITY_SCHEMES
 
 """A single API instance. All api versions should be blueprints."""
@@ -18,7 +20,7 @@ API = Api(spec_kwargs={"title": "QUNICORN_API", "version": "v1"})
 
 class VersionsRootSchema(MaBaseSchema):
     title = ma.fields.String(required=True, allow_none=False, dump_only=True)
-    v1 = ma.fields.Url(required=True, allow_none=False, dump_only=True)
+    v1 = ma.fields.Url(required=False, allow_none=False, dump_only=True)
 
 
 ROOT_ENDPOINT = SmorestBlueprint(
@@ -36,7 +38,7 @@ class RootView(MethodView):
         """Get the Root API information containing the links to all versions of this api."""
         return {
             "title": API.spec.title,
-            "v1": url_for("taskmanager-api.TaskIDView", _external=True),
+            "v1": url_for("jobmanager-api.JobIDView", _external=True),
             #"v1": url_for("devices-api.DeviceView", _external=True),
         }
 
@@ -51,6 +53,8 @@ def register_root_api(app: Flask):
 
     # register API blueprints (only do this after the API is registered with flask!)
     API.register_blueprint(ROOT_ENDPOINT)
-    API.register_blueprint(TASKMANAGER_API)
+    API.register_blueprint(JOBMANAGER_API)
     API.register_blueprint(DEVICES_API)
+    API.register_blueprint(DEPLOYMENT_API)
+    API.register_blueprint(SERVICES_API)
     

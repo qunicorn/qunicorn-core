@@ -21,8 +21,7 @@ class DEVICES:
     simulator: bool
 
 
-#@DEVICES_API.route("/<string:service_name>/")
-@DEVICES_API.route("/test")
+@DEVICES_API.route("/<string:device_name>/")
 class DevicesView(MethodView):
     """Devices Endpoint to get properties of a specific device/service."""
 
@@ -38,3 +37,30 @@ class DevicesView(MethodView):
             url="",
             simulator=True,
         )
+
+@DEVICES_API.route("/<string:device_name>/status")
+class DevicesView(MethodView):
+    """Devices Endpoint to get properties of a specific device/service."""
+
+    @DEVICES_API.response(HTTPStatus.OK, DevicesSchema())
+    def get(self):
+        """Test for devices/service list."""
+        pass
+
+@DEVICES_API.route("/<string:device_name>/calibration")
+class DevicesView(MethodView):
+    """Devices Endpoint to get properties of a specific device/service."""
+
+    @DEVICES_API.response(HTTPStatus.OK, DevicesSchema())
+    def get(self):
+        """Test for devices/service list."""
+        pass
+
+@DEVICES_API.route("/<string:device_name>/jobs")
+class DevicesView(MethodView):
+    """Devices Endpoint to get properties of a specific device/service."""
+
+    @DEVICES_API.response(HTTPStatus.OK, DevicesSchema())
+    def get(self):
+        """Test for devices/service list."""
+        pass
