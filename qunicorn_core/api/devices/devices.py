@@ -1,6 +1,6 @@
 """Module containing the routes of the Taskmanager API."""
 
-from ..models.devices import DevicesSchema
+from ..models.devices import DevicesSchema, DeviceIDSchema
 from typing import Dict, List
 from flask.helpers import url_for
 from flask.views import MethodView
@@ -21,46 +21,50 @@ class DEVICES:
     simulator: bool
 
 
-@DEVICES_API.route("/<string:device_name>/")
+
+@DEVICES_API.route("/<string:device_id>/")
 class DevicesView(MethodView):
     """Devices Endpoint to get properties of a specific device/service."""
 
+    @DEVICES_API.arguments(DeviceIDSchema(), location="path")
     @DEVICES_API.response(HTTPStatus.OK, DevicesSchema())
     def get(self):
         """Test for devices/service list."""
-        return DEVICES(
-            services_type="all",
-            name = "name",
-            description="",
-            address="",
-            status="",
-            url="",
-            simulator=True,
-        )
-
-@DEVICES_API.route("/<string:device_name>/status")
-class DevicesView(MethodView):
-    """Devices Endpoint to get properties of a specific device/service."""
-
-    @DEVICES_API.response(HTTPStatus.OK, DevicesSchema())
-    def get(self):
-        """Test for devices/service list."""
+        
         pass
 
-@DEVICES_API.route("/<string:device_name>/calibration")
+
+@DEVICES_API.route("/<string:device_id>/status")
+class DevicesView(MethodView):
+    """Devices Endpoint to get properties of a specific device/service."""
+
+    @DEVICES_API.arguments(DeviceIDSchema(), location="path")
+    @DEVICES_API.response(HTTPStatus.OK, DevicesSchema())
+    def get(self):
+        """Get detailed information about a specific device."""
+    
+        pass
+
+
+@DEVICES_API.route("/<string:device_id>/calibration")
+class DevicesView(MethodView):
+    """Devices Endpoint to get properties of a specific device/service."""
+
+    @DEVICES_API.arguments(DeviceIDSchema(), location="path")
+    @DEVICES_API.response(HTTPStatus.OK, DevicesSchema())
+    def get(self):
+        """Get calibration data for a specific device in a uniform way."""
+
+        pass
+
+
+@DEVICES_API.route("/<string:device_id>/jobs")
 class DevicesView(MethodView):
     """Devices Endpoint to get properties of a specific device/service."""
 
     @DEVICES_API.response(HTTPStatus.OK, DevicesSchema())
     def get(self):
         """Test for devices/service list."""
+        
         pass
 
-@DEVICES_API.route("/<string:device_name>/jobs")
-class DevicesView(MethodView):
-    """Devices Endpoint to get properties of a specific device/service."""
-
-    @DEVICES_API.response(HTTPStatus.OK, DevicesSchema())
-    def get(self):
-        """Test for devices/service list."""
-        pass

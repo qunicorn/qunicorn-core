@@ -1,6 +1,6 @@
 """Module containing the routes of the Taskmanager API."""
 
-from ..models.services import ServicesSchema
+from ..models.services import ServicesSchema, ServiceIDSchema
 from typing import Dict, List
 from flask.helpers import url_for
 from flask.views import MethodView
@@ -21,19 +21,14 @@ class SERVICES:
     simulator: bool
 
 
-@SERVICES_API.route("/<string:service_name>/")
+@SERVICES_API.route("/<string:service_id>/")
 class ServicesView(MethodView):
-    """Devices Endpoint to get properties of a specific device/service."""
+    """Services Endpoint to get properties of a specific service."""
 
+    @SERVICES_API.arguments(HTTPStatus.OK, ServiceIDSchema())
     @SERVICES_API.response(HTTPStatus.OK, ServicesSchema())
     def get(self):
         """Test for devices/service list."""
-        return SERVICES(
-            services_type="all",
-            name = "name",
-            description="",
-            address="",
-            status="",
-            url="",
-            simulator=True,
-        )
+        
+        pass
+

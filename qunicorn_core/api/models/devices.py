@@ -3,7 +3,7 @@
 import marshmallow as ma
 from ..util import MaBaseSchema
 
-__all__ = ["DevicesSchema",]
+__all__ = ["DevicesSchema", "DeviceIDSchema"]
 
 class DevicesSchema(MaBaseSchema):
     service_type = ma.fields.String(required=True, allow_none=False)
@@ -13,3 +13,7 @@ class DevicesSchema(MaBaseSchema):
     description = ma.fields.String(required=True, allow_none=False)
     simulator = ma.fields.Boolean(required=True, allow_none=False)
     url = ma.fields.String(required=True, allow_none=False)
+
+class DeviceIDSchema(MaBaseSchema):
+    device_type = ma.fields.String(required=True, allow_none=False)
+    device_id = ma.fields.String(required=True, allow_none=False)

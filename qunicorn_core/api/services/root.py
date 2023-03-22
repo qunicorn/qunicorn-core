@@ -23,7 +23,7 @@ class RootData:
 
 @SERVICES_API.route("/")
 class RootView(MethodView):
-    """Root endpoint of the devices api, to list all available devices/services."""
+    """Root endpoint of the services api, to list all available services."""
 
     @SERVICES_API.response(HTTPStatus.OK, RootSchema())
     def get(self):
