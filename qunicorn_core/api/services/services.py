@@ -25,7 +25,7 @@ class SERVICES:
 class ServicesView(MethodView):
     """Services Endpoint to get properties of a specific service."""
 
-    @SERVICES_API.arguments(HTTPStatus.OK, ServiceIDSchema())
+    @SERVICES_API.arguments(ServiceIDSchema(), location="path")
     @SERVICES_API.response(HTTPStatus.OK, ServicesSchema())
     def get(self):
         """Test for devices/service list."""
