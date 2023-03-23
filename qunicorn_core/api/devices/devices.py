@@ -24,31 +24,31 @@ class DEVICES:
 
 @DEVICES_API.route("/<string:device_id>/")
 class DevicesView(MethodView):
-    """Devices Endpoint to get properties of a specific device/service."""
+    """Devices Endpoint to get properties of a specific device."""
 
     @DEVICES_API.arguments(DeviceIDSchema(), location="path")
     @DEVICES_API.response(HTTPStatus.OK, DevicesSchema())
     def get(self):
-        """Test for devices/service list."""
+        """Get information about a specific device."""
         
         pass
 
 
 @DEVICES_API.route("/<string:device_id>/status")
 class DevicesView(MethodView):
-    """Devices Endpoint to get properties of a specific device/service."""
+    """Devices Endpoint to get properties of a specific device."""
 
     @DEVICES_API.arguments(DeviceIDSchema(), location="path")
     @DEVICES_API.response(HTTPStatus.OK, DevicesSchema())
     def get(self):
-        """Get detailed information about a specific device."""
+        """Get the status of a specific device."""
     
         pass
 
 
 @DEVICES_API.route("/<string:device_id>/calibration")
 class DevicesView(MethodView):
-    """Devices Endpoint to get properties of a specific device/service."""
+    """Devices Endpoint to get properties of a specific device."""
 
     @DEVICES_API.arguments(DeviceIDSchema(), location="path")
     @DEVICES_API.response(HTTPStatus.OK, DevicesSchema())
@@ -64,7 +64,7 @@ class DevicesView(MethodView):
 
     @DEVICES_API.response(HTTPStatus.OK, DevicesSchema())
     def get(self):
-        """Test for devices/service list."""
+        """Get the active jobs of a device."""
         
         pass
 

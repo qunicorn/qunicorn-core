@@ -30,22 +30,22 @@ class JobRegister:
 
 @JOBMANAGER_API.route("/")
 class JobIDView(MethodView):
-    """Tasks endpoint for collection of all tasks."""
+    """Jobs endpoint for collection of all jobs."""
 
     @JOBMANAGER_API.response(HTTPStatus.OK, JobIDSchema())
     def get(self):
-        """Get registered task list."""
+        """Get registered job list."""
         return [
             JobID(
                 id=url_for("jobmanager-api.JobIDView", _external=True),
-                description="Placeholder for Tasks",
+                description="Placeholder for Jobs",
                 taskmode=0,
             )
         ]
 
     @JOBMANAGER_API.arguments(JobRegisterSchema(), location="json")
     @JOBMANAGER_API.response(HTTPStatus.OK, JobIDSchema())
-    def post(self, new_task_data: dict):
+    def post(self, new_job_data: dict):
         """Create/Register new job."""
         
         pass
@@ -53,11 +53,11 @@ class JobIDView(MethodView):
 
 @JOBMANAGER_API.route("/<string:job_id>/")
 class JobDetailView(MethodView):
-    """Tasks endpoint for a single task."""
+    """Jobs endpoint for a single job."""
 
     @JOBMANAGER_API.response(HTTPStatus.OK, JobIDSchema())
     def get(self, job_id: str):
-        """Get the urls for the taskmanager api for tasks control."""
+        """Get the urls for the jobmanager api for job control."""
         
         pass
 
@@ -68,3 +68,18 @@ class JobDetailView(MethodView):
        
         pass
 
+    
+    @JOBMANAGER_API.arguments(JobRegisterSchema(), location="json")
+    @JOBMANAGER_API.response(HTTPStatus.OK, JobIDSchema())
+    def delete(self, job_id: str):
+        """Delete job data via id."""
+       
+        pass
+
+        
+    @JOBMANAGER_API.arguments(JobRegisterSchema(), location="json")
+    @JOBMANAGER_API.response(HTTPStatus.OK, JobIDSchema())
+    def put(self, job_id: str):
+        """Pause a job via id."""
+       
+        pass
