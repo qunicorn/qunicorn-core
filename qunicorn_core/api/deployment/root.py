@@ -12,7 +12,7 @@ DEPLOYMENT_API = SmorestBlueprint(
     "deployment-api",
     "DEPLOYMENT API",
     description="Deployment API for the control plane.",
-    url_prefix="/deployment/",
+    url_prefix="/deployments/",
 )
 
 
