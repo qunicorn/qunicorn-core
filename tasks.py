@@ -750,7 +750,7 @@ def list_licenses(
 def update_licenses(c, include_installed=False):
     """Update the licenses template to include all licenses.
 
-    By default only the direct (and transitive) dependencies of the plugin runner are included.
+    By default only the direct (and transitive) dependencies of the qunicorn are included.
 
     Args:
         c (Context): task context

@@ -12,7 +12,9 @@ from .jobmanager import JOBMANAGER_API
 from .devices import DEVICES_API
 from .deployment import DEPLOYMENT_API
 from .services import SERVICES_API
+from .usermanager import USERS_API
 from .jwt import SECURITY_SCHEMES
+
 
 """A single API instance. All api versions should be blueprints."""
 API = Api(spec_kwargs={"title": "QUNICORN_API", "version": "v1"})
@@ -57,4 +59,5 @@ def register_root_api(app: Flask):
     API.register_blueprint(DEVICES_API)
     API.register_blueprint(DEPLOYMENT_API)
     API.register_blueprint(SERVICES_API)
+    API.register_blueprint(USERS_API)
     

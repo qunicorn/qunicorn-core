@@ -5,3 +5,4 @@ from .jobs import *
 from .devices import *
 from .deployment import *
 from .services import *
+from .users import *
