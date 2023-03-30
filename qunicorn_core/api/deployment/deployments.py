@@ -72,6 +72,12 @@ class DeploymentDetailView(MethodView):
         
         pass
 
+    @DEPLOYMENT_API.response(HTTPStatus.OK, PreDeploymentSchema)
+    def patch(self):
+        """Update parts of a single pre-deployment."""
+        
+        pass
+
 @DEPLOYMENT_API.route("/<string:deployment_id>/jobs")
 class DeploymentDetailView(MethodView):
     """API endpoint for running jobs of a single pre-deployment."""

@@ -19,7 +19,7 @@ class USERS:
 
 @USERS_API.route("/<string:users_id>/")
 class UsersView(MethodView):
-    """Services Endpoint to get properties of a specific service."""
+    """Users Endpoint to get properties of a specific user via ID."""
 
     @USERS_API.arguments(UserIDSchema(), location="path")
     @USERS_API.response(HTTPStatus.OK, UsersSchema())
