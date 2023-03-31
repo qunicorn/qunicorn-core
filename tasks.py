@@ -29,7 +29,7 @@ from invoke.runners import Result
 load_dotenv(".flaskenv")
 load_dotenv(".env")
 
-MODULE_NAME = "qhana_plugin_runner"
+MODULE_NAME = "qunicorn_core"
 CELERY_WORKER = f"{MODULE_NAME}.celery_worker:CELERY"
 
 
@@ -560,23 +560,12 @@ def ensure_paths(c):
 def start_docker(c):
     """Docker entry point task. Do not call!"""
 
-    def execute_pre_tasks(do_upgrade_db=False):
-        for task in (load_git_plugins, install_plugin_dependencies, await_db):
-            task(c)
-        if do_upgrade_db:
-            upgrade_db(c)
-
-    if not environ.get("QHANA_SECRET_KEY"):
-        environ["QHANA_SECRET_KEY"] = urandom(32).hex()
-
     log_level = environ.get("DEFAULT_LOG_LEVEL", "INFO")
     concurrency_env = environ.get("CONCURRENCY", "1")
     concurrency = int(concurrency_env) if concurrency_env.isdigit() else 1
     if environ.get("CONTAINER_MODE", "").lower() == "server":
-        execute_pre_tasks(do_upgrade_db=True)
         start_gunicorn(c, workers=concurrency, log_level=log_level, docker=True)
     elif environ.get("CONTAINER_MODE", "").lower() == "worker":
-        execute_pre_tasks()
         worker_pool = environ.get("CELERY_WORKER_POOL", "threads")
         periodic_scheduler = bool(environ.get("PERIODIC_SCHEDULER", False))
         worker(
