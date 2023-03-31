@@ -38,6 +38,8 @@ poetry run flask run
 ### Trying out the Template
 
 For a list of all dependencies with their license open <http://localhost:5005/licenses/>.
+The Port for qunicorn_core is set to 5005 to not interfere with other flask default apps.
+Settings can be changed in the .flaskenv.
 
 #### The API:
 
@@ -47,9 +49,9 @@ For a list of all dependencies with their license open <http://localhost:5005/li
 
 Configured in `qunicorn_core/util/config/smorest_config.py`.
 
-   * Redoc (view only): <http://localhost:5000/redoc>
-   * Rapidoc: <http://localhost:5000/rapidoc>
-   * Swagger-UI: <http://localhost:5000/swagger-ui>
+   * Redoc (view only): <http://localhost:5005/redoc>
+   * Rapidoc: <http://localhost:5005/rapidoc>
+   * Swagger-UI: <http://localhost:5005/swagger-ui>
    * OpenAPI Spec (JSON): <http://localhost:5005/api-spec.json>
 
 #### Debug pages:
