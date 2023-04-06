@@ -77,6 +77,14 @@ def create_app(test_config: Optional[Dict[str, Any]] = None):
         # load config from file specified in env var
         config.from_envvar(f"{CONFIG_ENV_VAR_PREFIX}_SETTINGS", silent=True)
         # TODO load some config keys directly from env vars
+
+        # load Redis URLs from env vars
+        if "BROKER_URL" in environ:
+            celery_conf = config.get("CELERY", {})
+            celery_conf["broker_url"] = environ["BROKER_URL"]
+            config["CELERY"] = celery_conf
+
+
     else:
         # load the test config if passed in
         config.from_mapping(test_config)

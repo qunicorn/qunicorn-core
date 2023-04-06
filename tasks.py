@@ -780,11 +780,12 @@ def update_licenses(c, include_installed=False):
         warn=True,
     )
 
-
+# Does not work correctly under windows
 @task(update_licenses)
 def update_dependencies(c):
     """Update dependencies that are derived from the pyproject.toml dependencies (e.g. doc dependencies and licenses).
 
+    
     Args:
         c (Context): task context
     """
@@ -799,9 +800,10 @@ def update_dependencies(c):
                 "--without-hashes",  # with hashes fails because pip is to strict with transitive dependencies
                 "--output",
                 str(Path("./docs/requirements.txt")),
+                
             ]
         ),
         echo=True,
-        hide="err",
+        #hide="err",
         warn=True,
     )

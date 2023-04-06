@@ -4,7 +4,7 @@ from logging import WARNING, INFO
 
 from .sqlalchemy_config import SQLAchemyProductionConfig, SQLAchemyDebugConfig
 from .smorest_config import SmorestProductionConfig, SmorestDebugConfig
-
+from .celery_config import CELERY_DEBUG_CONFIG
 
 class ProductionConfig(SQLAchemyProductionConfig, SmorestProductionConfig):
     ENV = "production"
@@ -25,10 +25,13 @@ class ProductionConfig(SQLAchemyProductionConfig, SmorestProductionConfig):
     DEFAULT_LOG_FORMAT = "{asctime} [{levelname:^7}] [{module:<30}] {message}    <{funcName}, {lineno}; {pathname}>"
     DEFAULT_LOG_DATE_FORMAT = None
 
+    CELERY = CELERY_DEBUG_CONFIG
 
 class DebugConfig(ProductionConfig, SQLAchemyDebugConfig, SmorestDebugConfig):
     ENV = "development"
     DEBUG = True
     SECRET_KEY = "debug_secret"  # FIXME make sure this NEVER! gets used in production!!!
+
+    CELERY = CELERY_DEBUG_CONFIG
 
     DEFAULT_LOG_SEVERITY = INFO

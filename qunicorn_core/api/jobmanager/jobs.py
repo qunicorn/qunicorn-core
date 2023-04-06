@@ -1,5 +1,6 @@
 """Module containing the routes of the Taskmanager API."""
 
+from qunicorn_core.celery import CELERY
 from ..models.jobs import JobIDSchema
 from ..models.jobs import JobRegisterSchema
 from typing import Dict
@@ -7,6 +8,8 @@ from flask.helpers import url_for
 from flask.views import MethodView
 from dataclasses import dataclass
 from http import HTTPStatus
+from . import register_job
+import time
 
 from .root import JOBMANAGER_API
 
@@ -28,6 +31,14 @@ class JobRegister:
     circuit_format: str
 
 
+@CELERY.task()
+def createJob():
+    print("Job Registered")
+    time.sleep(5)
+    print("Job complete")
+    return 0
+
+
 @JOBMANAGER_API.route("/")
 class JobIDView(MethodView):
     """Jobs endpoint for collection of all jobs."""
@@ -47,6 +58,7 @@ class JobIDView(MethodView):
     @JOBMANAGER_API.response(HTTPStatus.OK, JobIDSchema())
     def post(self, new_job_data: dict):
         """Create/Register new job."""
+        createJob.delay()
         
         pass
 
@@ -65,7 +77,7 @@ class JobDetailView(MethodView):
     @JOBMANAGER_API.response(HTTPStatus.OK, JobIDSchema())
     def post(self, job_id: str):
         """Cancel a job execution via id."""
-       
+  
         pass
 
     
@@ -83,3 +95,6 @@ class JobDetailView(MethodView):
         """Pause a job via id."""
        
         pass
+
+
+  
