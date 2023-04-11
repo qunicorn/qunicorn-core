@@ -1,4 +1,4 @@
-"""Module containing all API schemas for tasks in the Services API."""
+"""Module containing all API schemas for tasks in the Users API."""
 
 import marshmallow as ma
 from ..util import MaBaseSchema

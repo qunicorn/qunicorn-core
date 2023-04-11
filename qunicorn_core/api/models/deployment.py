@@ -8,13 +8,39 @@ __all__ = ["PreDeploymentSchema",]
 
 
 class PreDeploymentSchema(MaBaseSchema):
-    name = ma.fields.Str(required=True)
-    description = ma.fields.Str(required=True)
-    #credentials = ma.fields.Dict(
-    #   keys=ma.fields.Str(), values=ma.fields.Str(), required=True
-    #)
-    #shots = ma.fields.Int(required=False)
-    # Circuit, Program, Container
-    deploymentType = ma.fields.Str(required=True)
+    uid = ma.fields.Integer(required=False)
+    name = ma.fields.Str(required=True, metadata={
+        "description": "An optional Name for the deployment."
+    })
+    mode = ma.fields.Str(required=True, metadata={
+        "description": "Describes whether a Job should be pre-deployed or executed ad-hoc."
+    })
+    description = ma.fields.Str(required=False, metadata={
+        "description" :  "Description for the Pre-deployment."
+    })
+    credentials = ma.fields.Dict(
+       keys=ma.fields.Str(), values=ma.fields.Str(), required=False, 
+    )
+    parameters = ma.fields.List(
+        ma.fields.Integer(), metadata={
+        "description" :  "List of Parameters for Quantum Circuits."
+    })
+    shots = ma.fields.Int(required=False, metadata={
+        "description" :  "Specifying shots for ad-hoc execution."
+    })
+    deploymentType = ma.fields.Str(required=True, metadata={
+        "description": "Decide between [Circuit], [CodeFile] ,[Container]."
+    })
     resourceURI = ma.fields.Str(required=True)
+    tags = ma.fields.List(fields.Str(), required=False, metadata={
+      "description": "A list of Tags, for grouping and searching deployments"        
+    })
+    source = ma.fields.Str(required=False, metadata={
+        "description": "The source format of a quantum circuit."
+    })
+    target = ma.fields.Str(required=False, metadata={
+        "description": "The Target Service, needed for translation between formats. Decides which Pilot needs to be used"
+    })
     
+class DeploymentResponseSchema(MaBaseSchema):
+    pass

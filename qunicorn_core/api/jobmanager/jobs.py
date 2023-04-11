@@ -9,7 +9,6 @@ from flask.views import MethodView
 from dataclasses import dataclass
 from http import HTTPStatus
 from . import register_job
-import time
 
 from .root import JOBMANAGER_API
 
@@ -31,13 +30,6 @@ class JobRegister:
     circuit_format: str
 
 
-@CELERY.task()
-def createJob():
-    print("Job Registered")
-    time.sleep(5)
-    print("Job complete")
-    return 0
-
 
 @JOBMANAGER_API.route("/")
 class JobIDView(MethodView):
@@ -58,7 +50,7 @@ class JobIDView(MethodView):
     @JOBMANAGER_API.response(HTTPStatus.OK, JobIDSchema())
     def post(self, new_job_data: dict):
         """Create/Register new job."""
-        createJob.delay()
+        register_job.createJob.delay()
         
         pass
 

@@ -33,3 +33,6 @@ class JobIDSchema(MaBaseSchema):
     uid = ma.fields.Int(required=True, allow_none=False, dump_only=True, example=123)
     description = ma.fields.String(required=True, allow_none=False, dump_only=True)
     taskmode = ma.fields.Int(required=True, allow_none=False, dump_only=True)
+
+class JobResponseSchema(MaBaseSchema):
+    pass

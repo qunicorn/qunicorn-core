@@ -88,5 +88,3 @@ class DeploymentDetailView(MethodView):
         """Get job definitions of a single pre-deployment."""
         
         pass
-    
-    

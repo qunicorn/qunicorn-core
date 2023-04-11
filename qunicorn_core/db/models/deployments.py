@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Sequence, List, Union
 
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import sqltypes as sql
@@ -6,7 +6,7 @@ from sqlalchemy.sql import sqltypes as sql
 from ..db import MODEL, REGISTRY
 
 @REGISTRY.mapped_as_dataclass
-class TestDataclass:
+class DeploymentDataclass:
     __tablename__ = "Deployments"
 
     deployment_id: Mapped[int] = mapped_column(primary_key=True)
