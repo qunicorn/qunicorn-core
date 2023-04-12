@@ -1,4 +1,4 @@
-# Copyright 2022 University of Stuttgart
+# Copyright 2023 University of Stuttgart
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
