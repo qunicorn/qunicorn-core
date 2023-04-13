@@ -32,7 +32,7 @@ class JobDataclass:
     
     Attributes:
         job_id (int): automatically generated database id. Use the id to fetch this information from the database.
-        job_name (str, optional): 
+        job_name (str, optional): Optional name for a job
         user_id (str): A user_id associated to the job
         deployment_id (int): A deployment_id associated with the job
         started_at (datetime, optional): the moment the job was scheduled. (default :py:func:`~datetime.datetime.utcnow`)

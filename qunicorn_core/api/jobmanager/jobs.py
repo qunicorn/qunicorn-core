@@ -21,9 +21,11 @@ from ..models.jobs import JobRegisterSchema
 from typing import Dict
 from flask.helpers import url_for
 from flask.views import MethodView
+from flask import request, jsonify
 from dataclasses import dataclass
 from http import HTTPStatus
-from . import register_job
+from .job_pilots import QiskitPilot, AWSPilot
+import time
 
 from .root import JOBMANAGER_API
 
@@ -44,6 +46,21 @@ class JobRegister:
     shots: int
     circuit_format: str
 
+qiskitpilot = QiskitPilot
+awspilot = AWSPilot
+
+@CELERY.task()
+def createJob(request):
+    """Create a job and assign to the target pilot"""
+    if(request == 'IBMQ'):
+        pilot = qiskitpilot("QP")
+        pilot.execute('123456')
+        print(f"Job Registered at {request}")
+        time.sleep(5)
+        print("Job complete")
+    else:
+        print("No valid target specified")
+    return 0
 
 
 @JOBMANAGER_API.route("/")
@@ -65,9 +82,12 @@ class JobIDView(MethodView):
     @JOBMANAGER_API.response(HTTPStatus.OK, JobIDSchema())
     def post(self, new_job_data: dict):
         """Create/Register new job."""
-        register_job.createJob.delay()
-        
-        pass
+
+        request_data = request.get_json()
+        target = request_data['target']
+        print(target)
+        createJob.delay(target)
+        return jsonify({'taskmode': f'Job type {target}'}), 200
 
 
 @JOBMANAGER_API.route("/<string:job_id>/")

@@ -15,6 +15,7 @@
 from celery import Celery, Task
 from flask.app import Flask
 
+
 class FlaskTask(Task):
     def __call__(self, *args, **kwargs):
         with self.app.flask_app.app_context():

@@ -32,22 +32,26 @@ class CircuitField(fields.Field):
 
 class JobRegisterSchema(MaBaseSchema):
     circuit = CircuitField(required=True)
-    provider = ma.fields.Str(required=True, example="IBMQ")
-    qpu = ma.fields.Str(required=True)
+    target = ma.fields.String(required=True, example="IBMQ")
+    qpu = ma.fields.String(required=True)
     credentials = ma.fields.Dict(
         keys=ma.fields.Str(), values=ma.fields.Str(), required=True
     )
-    shots = ma.fields.Int(required=False)
-    noise_model = ma.fields.Str(required=False)
+    shots = ma.fields.Int(required=False, allow_none = True, metada={
+        "label" : "Shots",
+        "description" : "Number of shots",
+        "input_type" : "number"
+    })
+    noise_model = ma.fields.String(required=False)
     only_measurement_errors = ma.fields.Boolean(required=False)
-    circuit_format = ma.fields.Str(required=False)
+    circuit_format = ma.fields.String(required=False)
     parameters = ma.fields.List(ma.fields.Float(), required=False)
 
 
 class JobIDSchema(MaBaseSchema):
-    uid = ma.fields.Int(required=True, allow_none=False, dump_only=True, example=123)
-    description = ma.fields.String(required=True, allow_none=False, dump_only=True)
-    taskmode = ma.fields.Int(required=True, allow_none=False, dump_only=True)
+    uid = ma.fields.Integer(required=True, allow_none=False, dump_only=True, example=123)
+    description = ma.fields.String(required=False, allow_none=False, dump_only=True)
+    taskmode = ma.fields.Integer(required=False, allow_none=False, dump_only=True)
 
 class JobResponseSchema(MaBaseSchema):
     pass

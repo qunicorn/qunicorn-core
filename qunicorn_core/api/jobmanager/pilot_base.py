@@ -13,12 +13,10 @@
 # limitations under the License.
 
 
-from qunicorn_core.celery import CELERY
-import time
+class Pilot:
+    """Base class for Pilots"""
+    def __init__(self, name):
+        self.name = name
 
-@CELERY.task()
-def createJob():
-    print("Job Registered")
-    time.sleep(5)
-    print("Job complete")
-    return 0
+    def execute(self, job):
+        raise NotImplementedError()

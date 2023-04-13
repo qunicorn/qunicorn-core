@@ -21,6 +21,18 @@ from ..db import MODEL, REGISTRY
 
 @REGISTRY.mapped_as_dataclass
 class DeploymentDataclass:
+    """Dataclass for storing deployment data
+
+    Attributes:
+        deployment_id (int): automatically generated database id. Use the id to fetch this information from the database.
+        deployment_name (str, optional): optional name for a deployment
+        user_id (str): a user_id associated to the deployment
+        created (Date): Date of the creation of a deployment
+        parameters (str): the parameters for the Job. Job parameters should already be prepared and error checked before starting the task.
+        data (Union[dict, list, str, float, int, bool, None]): mutable JSON-like store for additional lightweight task data. Default value is empty dict.
+    """
+
+
     __tablename__ = "Deployments"
 
     deployment_id: Mapped[int] = mapped_column(primary_key=True)
