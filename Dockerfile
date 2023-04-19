@@ -36,7 +36,7 @@ RUN python -m poetry export --without-hashes --format=requirements.txt -o requir
 
 VOLUME ["/app/instance"]
 
-EXPOSE 8080
+EXPOSE 5005
 
 USER gunicorn
 

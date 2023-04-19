@@ -12,19 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from os import environ
-from os import execvpe as replace_process
-from os import urandom
 from pathlib import Path
-from re import match
-from shlex import join
-from shutil import copytree
-from typing import List, Optional, cast
+from typing import List
+from platform import system
 
-from dotenv import load_dotenv, set_key, unset_key
-from invoke import UnexpectedExit, call, task
-from invoke.context import Context
+from dotenv import load_dotenv
+from invoke import task
 from invoke.runners import Result
+
+if system() == "Windows":
+    from subprocess import list2cmdline as join
+else:
+    from shlex import join
 
 load_dotenv(".flaskenv")
 load_dotenv(".env")

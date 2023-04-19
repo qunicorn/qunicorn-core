@@ -17,6 +17,8 @@ Submodules
 .. toctree::
    :maxdepth: 4
 
+   qunicorn_core.celery
+   qunicorn_core.celery_worker
    qunicorn_core.licenses
 
 Module contents

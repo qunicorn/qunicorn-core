@@ -12,6 +12,7 @@ Subpackages
    qunicorn_core.api.jobmanager
    qunicorn_core.api.models
    qunicorn_core.api.services
+   qunicorn_core.api.usermanager
 
 Submodules
 ----------

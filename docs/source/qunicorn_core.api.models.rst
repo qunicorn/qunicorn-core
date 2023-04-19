@@ -12,6 +12,7 @@ Submodules
    qunicorn_core.api.models.jobs
    qunicorn_core.api.models.root
    qunicorn_core.api.models.services
+   qunicorn_core.api.models.users
 
 Module contents
 ---------------
