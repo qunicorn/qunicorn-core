@@ -1,7 +1,7 @@
 # The Qunicorn Core - Unification Middleware for a sovereign Quantum Cloud
 
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![GitHub license](https://img.shields.io/github/license/buehlefs/flask-template)](https://github.com/buehlefs/flask-template/blob/main/LICENSE)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 ![Python: >= 3.8](https://img.shields.io/badge/python-^3.8-blue)
 
 This package uses Poetry ([documentation](https://python-poetry.org/docs/)).
