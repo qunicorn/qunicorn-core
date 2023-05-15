@@ -43,7 +43,6 @@ class JobDataclass:
         results (List[Job], optional): the output data (files) of the job
     """
 
-    __tablename__ = "Jobs"
 
     job_id: Mapped[int] = mapped_column(sql.INTEGER(), primary_key=True, init=False)
     job_name: Mapped[Optional[str]] = mapped_column(sql.String(50), default=None)
@@ -55,3 +54,5 @@ class JobDataclass:
     )
     user_id: Mapped[str] = mapped_column(sql.String(50))
     deployment_id: Mapped[int] = mapped_column(ForeignKey("DeploymentDataclass.deployment_id"))
+
+    __tablename__ = "Jobs"
