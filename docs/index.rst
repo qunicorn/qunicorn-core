@@ -16,6 +16,7 @@ Welcome to Qunicorn_Core's documentation!
    models/dbmodels
    models/domainmodel
    apidocumentation
+   architecture
   
 
 Indices and tables
