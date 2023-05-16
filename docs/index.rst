@@ -15,9 +15,8 @@ Welcome to Qunicorn_Core's documentation!
    changelog
    models/dbmodels
    models/domainmodel
+   apidocumentation
   
-
-* `Api documentation <api.html>`_
 
 Indices and tables
 ==================

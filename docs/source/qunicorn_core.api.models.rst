@@ -4,15 +4,53 @@ qunicorn\_core.api.models package
 Submodules
 ----------
 
-.. toctree::
-   :maxdepth: 4
+qunicorn\_core.api.models.deployment module
+-------------------------------------------
 
-   qunicorn_core.api.models.deployment
-   qunicorn_core.api.models.devices
-   qunicorn_core.api.models.jobs
-   qunicorn_core.api.models.root
-   qunicorn_core.api.models.services
-   qunicorn_core.api.models.users
+.. automodule:: qunicorn_core.api.models.deployment
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+qunicorn\_core.api.models.devices module
+----------------------------------------
+
+.. automodule:: qunicorn_core.api.models.devices
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+qunicorn\_core.api.models.jobs module
+-------------------------------------
+
+.. automodule:: qunicorn_core.api.models.jobs
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+qunicorn\_core.api.models.root module
+-------------------------------------
+
+.. automodule:: qunicorn_core.api.models.root
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+qunicorn\_core.api.models.services module
+-----------------------------------------
+
+.. automodule:: qunicorn_core.api.models.services
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+qunicorn\_core.api.models.users module
+--------------------------------------
+
+.. automodule:: qunicorn_core.api.models.users
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 Module contents
 ---------------
