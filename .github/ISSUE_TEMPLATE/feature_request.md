@@ -2,10 +2,8 @@
 name: Feature request
 about: Suggest an idea for this project
 title: ''
-labels: ''
+labels: qunicorn
 assignees: ''
-
----
 
 ---
 
@@ -34,5 +32,3 @@ assignees: ''
 ## Notes
 
 [Any additional notes or context that may be helpful in understanding the issue]
-
----
