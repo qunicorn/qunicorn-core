@@ -17,3 +17,4 @@
 
 from .root import JOBMANAGER_API
 from . import jobs
+from . import jobmanager
