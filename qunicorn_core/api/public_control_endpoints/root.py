@@ -13,8 +13,24 @@
 # limitations under the License.
 
 
-"""Module containing the JobManager API."""
+"""Module containing the root endpoint of the public control API."""
 
-from .root import JOBMANAGER_API
-from . import jobs
-from . import jobmanager
+from dataclasses import dataclass
+from flask.helpers import url_for
+from flask.views import MethodView
+from http import HTTPStatus
+from ..util import SecurityBlueprint as SmorestBlueprint
+from ..models import RootSchema
+
+
+PUBLIC_CONTROL_API = SmorestBlueprint(
+    "public-control-api",
+    "PUBLIC CONTROL API",
+    description="Control API for the user of qunicorn.",
+    url_prefix="/control/",
+)
+
+
+@dataclass()
+class RootData:
+    root: str

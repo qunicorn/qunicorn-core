@@ -13,8 +13,24 @@
 # limitations under the License.
 
 
-"""Module containing the JobManager API."""
+"""Module containing the root endpoint of the public control API."""
 
-from .root import JOBMANAGER_API
-from . import jobs
-from . import jobmanager
+from dataclasses import dataclass
+from flask.helpers import url_for
+from flask.views import MethodView
+from http import HTTPStatus
+from ..util import SecurityBlueprint as SmorestBlueprint
+from ..models import RootSchema
+
+
+PILOT_MANAGER_API = SmorestBlueprint(
+    "pilot-manager-api",
+    "PILOT MANAGER API",
+    description="Pilot manager API.",
+    url_prefix="/pilotmanager/",
+)
+
+
+@dataclass()
+class RootData:
+    root: str

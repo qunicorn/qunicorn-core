@@ -13,8 +13,7 @@
 # limitations under the License.
 
 
-"""Module containing the JobManager API."""
+"""Module containing the Pilot Manager API."""
 
-from .root import JOBMANAGER_API
-from . import jobs
-from . import jobmanager
+from .root import PILOT_MANAGER_API
+from . import pilot_manager

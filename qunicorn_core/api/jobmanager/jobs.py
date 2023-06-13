@@ -15,6 +15,7 @@
 
 """Module containing the routes of the Taskmanager API."""
 
+from qunicorn_core.api.jobmanager.jobmanager import jobmanager
 from qunicorn_core.celery import CELERY
 from ..models.jobs import JobIDSchema
 from ..models.jobs import JobRegisterSchema
@@ -89,6 +90,7 @@ class JobIDView(MethodView):
         target = request_data["target"]
         print(target)
         createJob.delay(target)
+        jobmanager.create_job()
         return jsonify({"taskmode": f"Job type {target}"}), 200
 
 
@@ -105,8 +107,8 @@ class JobDetailView(MethodView):
     @JOBMANAGER_API.arguments(JobRegisterSchema(), location="json")
     @JOBMANAGER_API.response(HTTPStatus.OK, JobIDSchema())
     def post(self, job_id: str):
-        """Cancel a job execution via id."""
-
+        """Run a job execution via id."""
+        jobmanager.run_job()
         pass
 
     @JOBMANAGER_API.arguments(JobRegisterSchema(), location="json")

@@ -13,8 +13,7 @@
 # limitations under the License.
 
 
-"""Module containing the JobManager API."""
+"""Module containing the Public Control API."""
 
-from .root import JOBMANAGER_API
-from . import jobs
-from . import jobmanager
+from .root import PUBLIC_CONTROL_API
+from . import public_control_endpoints
