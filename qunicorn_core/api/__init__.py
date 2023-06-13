@@ -29,6 +29,8 @@ from .deployment import DEPLOYMENT_API
 from .services import SERVICES_API
 from .usermanager import USERS_API
 from .jwt import SECURITY_SCHEMES
+from .public_control_endpoints import PUBLIC_CONTROL_API
+from .pilot_manager import PILOT_MANAGER_API
 
 
 """A single API instance. All api versions should be blueprints."""
@@ -75,3 +77,5 @@ def register_root_api(app: Flask):
     API.register_blueprint(DEPLOYMENT_API)
     API.register_blueprint(SERVICES_API)
     API.register_blueprint(USERS_API)
+    API.register_blueprint(PUBLIC_CONTROL_API)
+    API.register_blueprint(PILOT_MANAGER_API)
