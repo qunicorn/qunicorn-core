@@ -17,9 +17,11 @@
 
 import marshmallow as ma
 from marshmallow import fields, ValidationError
+from qiskit import QuantumCircuit
+
 from ..util import MaBaseSchema
 
-__all__ = ["JobIDSchema", "JobRegisterSchema"]
+__all__ = ["JobIDSchema", "JobDtoSchema"]
 
 
 class CircuitField(fields.Field):
@@ -30,24 +32,32 @@ class CircuitField(fields.Field):
             raise ValidationError("Field should be str or list")
 
 
-class JobRegisterSchema(MaBaseSchema):
-    circuit = CircuitField(required=True)
-    target = ma.fields.String(required=True, example="IBMQ")
+def get_quasm_string() -> str:
+    qc = QuantumCircuit(2)
+    qc.h(0)
+    qc.cx(0, 1)
+    qc.measure_all()
+    return qc.qasm()
+
+
+class JobDtoSchema(MaBaseSchema):
+    circuit = CircuitField(required=True, example=get_quasm_string())
+    provider = ma.fields.String(required=True, example="IBMQ")
+    token = ma.fields.String(required=True, example="")
     qpu = ma.fields.String(required=True)
-    credentials = ma.fields.Dict(keys=ma.fields.Str(), values=ma.fields.Str(), required=True)
-    shots = ma.fields.Int(
-        required=False,
-        allow_none=True,
-        metada={
-            "label": "Shots",
-            "description": "Number of shots",
-            "input_type": "number",
-        },
+    credentials = ma.fields.Dict(
+        keys=ma.fields.Str(), values=ma.fields.Str(), required=True
     )
+    shots = ma.fields.Int(required=False, allow_none=True, metada={
+        "label": "Shots",
+        "description": "Number of shots",
+        "input_type": "number"
+    }, example=4000)
+    circuit_format = ma.fields.String(required=False)
     noise_model = ma.fields.String(required=False)
     only_measurement_errors = ma.fields.Boolean(required=False)
-    circuit_format = ma.fields.String(required=False)
     parameters = ma.fields.List(ma.fields.Float(), required=False)
+    id = ma.fields.Integer(required=False, example=0)
 
 
 class JobIDSchema(MaBaseSchema):

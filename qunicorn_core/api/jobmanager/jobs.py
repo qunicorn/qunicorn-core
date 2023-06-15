@@ -15,20 +15,20 @@
 
 """Module containing the routes of the Taskmanager API."""
 
-from qunicorn_core.api.jobmanager.jobmanager import jobmanager
-from qunicorn_core.celery import CELERY
-from ..models.jobs import JobIDSchema
-from ..models.jobs import JobRegisterSchema
-from typing import Dict
-from flask.helpers import url_for
-from flask.views import MethodView
-from flask import request, jsonify
 from dataclasses import dataclass
 from http import HTTPStatus
-from .job_pilots import QiskitPilot, AWSPilot
-import time
 
+from flask import jsonify
+from flask.helpers import url_for
+from flask.views import MethodView
+
+from . import jobmanager
 from .root import JOBMANAGER_API
+from ..models.jobs import JobDtoSchema
+from ..models.jobs import JobIDSchema
+from ...core.jobmanager import jobmanager_service
+from ...db.database_services import database_service, job_service
+from ...db.models.job import Job
 
 
 @dataclass
@@ -39,31 +39,18 @@ class JobID:
 
 
 @dataclass
-class JobRegister:
+class JobDto:
     circuit: str
     provider: str
+    token: str
     qpu: str
     credentials: dict
     shots: int
     circuit_format: str
-
-
-qiskitpilot = QiskitPilot
-awspilot = AWSPilot
-
-
-@CELERY.task()
-def createJob(request):
-    """Create a job and assign to the target pilot"""
-    if request == "IBMQ":
-        pilot = qiskitpilot("QP")
-        pilot.execute("123456")
-        print(f"Job Registered at {request}")
-        time.sleep(5)
-        print("Job complete")
-    else:
-        print("No valid target specified")
-    return 0
+    noise_model: str
+    only_measurement_errors: bool
+    parameters: float
+    id: int
 
 
 @JOBMANAGER_API.route("/")
@@ -81,44 +68,50 @@ class JobIDView(MethodView):
             )
         ]
 
-    @JOBMANAGER_API.arguments(JobRegisterSchema(), location="json")
+    @JOBMANAGER_API.arguments(JobDtoSchema(), location="json")
     @JOBMANAGER_API.response(HTTPStatus.OK, JobIDSchema())
-    def post(self, new_job_data: dict):
-        """Create/Register new job."""
-
-        request_data = request.get_json()
-        target = request_data["target"]
-        print(target)
-        createJob.delay(target)
-        jobmanager.create_job()
-        return jsonify({"taskmode": f"Job type {target}"}), 200
+    def post(self, new_job_data):
+        """Create/Register and run new job."""
+        job_dto: JobDto = JobDto(**new_job_data)
+        job = job_service.create_database_job(job_dto)
+        job_dto.id = job.id
+        # TODO: execute asynchronous (has been that way before)
+        jobmanager_service.create_and_run_job(job_dto)
+        return jsonify({'job_id': job.id}), 200
 
 
 @JOBMANAGER_API.route("/<string:job_id>/")
 class JobDetailView(MethodView):
     """Jobs endpoint for a single job."""
 
-    @JOBMANAGER_API.response(HTTPStatus.OK, JobIDSchema())
+    @JOBMANAGER_API.response(HTTPStatus.OK, JobDtoSchema())
     def get(self, job_id: str):
         """Get the urls for the jobmanager api for job control."""
+        results = database_service.get_database_object(int(job_id), Job)
+        return jsonify({'results': results}), 200
 
-        pass
-
-    @JOBMANAGER_API.arguments(JobRegisterSchema(), location="json")
+    @JOBMANAGER_API.arguments(JobDtoSchema(), location="json")
     @JOBMANAGER_API.response(HTTPStatus.OK, JobIDSchema())
     def post(self, job_id: str):
         """Run a job execution via id."""
         jobmanager.run_job()
         pass
 
-    @JOBMANAGER_API.arguments(JobRegisterSchema(), location="json")
+    @JOBMANAGER_API.arguments(JobDtoSchema(), location="json")
+    @JOBMANAGER_API.response(HTTPStatus.OK, JobIDSchema())
+    def post(self, job_id: str):
+        """Cancel a job execution via id."""
+
+        pass
+
+    @JOBMANAGER_API.arguments(JobDtoSchema(), location="json")
     @JOBMANAGER_API.response(HTTPStatus.OK, JobIDSchema())
     def delete(self, job_id: str):
         """Delete job data via id."""
 
         pass
 
-    @JOBMANAGER_API.arguments(JobRegisterSchema(), location="json")
+    @JOBMANAGER_API.arguments(JobDtoSchema(), location="json")
     @JOBMANAGER_API.response(HTTPStatus.OK, JobIDSchema())
     def put(self, job_id: str):
         """Pause a job via id."""
