@@ -4,11 +4,21 @@ qunicorn\_core.api.deployment package
 Submodules
 ----------
 
-.. toctree::
-   :maxdepth: 4
+qunicorn\_core.api.deployment.deployments module
+------------------------------------------------
 
-   qunicorn_core.api.deployment.deployments
-   qunicorn_core.api.deployment.root
+.. automodule:: qunicorn_core.api.deployment.deployments
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+qunicorn\_core.api.deployment.root module
+-----------------------------------------
+
+.. automodule:: qunicorn_core.api.deployment.root
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 Module contents
 ---------------

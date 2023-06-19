@@ -13,8 +13,11 @@ Welcome to Qunicorn_Core's documentation!
    readme
    cli
    changelog
-
-`Api documentation <api.html>`_
+   models/dbmodels
+   models/domainmodel
+   apidocumentation
+   architecture
+  
 
 Indices and tables
 ==================

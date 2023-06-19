@@ -17,11 +17,21 @@ Subpackages
 Submodules
 ----------
 
-.. toctree::
-   :maxdepth: 4
+qunicorn\_core.api.jwt module
+-----------------------------
 
-   qunicorn_core.api.jwt
-   qunicorn_core.api.util
+.. automodule:: qunicorn_core.api.jwt
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+qunicorn\_core.api.util module
+------------------------------
+
+.. automodule:: qunicorn_core.api.util
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 Module contents
 ---------------
