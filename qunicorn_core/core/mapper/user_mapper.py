@@ -1,4 +1,4 @@
-# Copyright 2023 University of Stuttgart.
+# Copyright 2023 University of Stuttgart
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,16 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from enum import StrEnum
+from qunicorn_core.api.api_models import UserDto
+from qunicorn_core.db.models.user import UserDataclass
 
 
-class ProviderName(StrEnum):
-    """Enum to save the different provider names
+def user_dto_to_user(user_dto: UserDto) -> UserDataclass:
+    return UserDataclass(id=user_dto.id, name=user_dto.name)
 
-    Values:
-        IBM: International Business Machines Corporation
-        AWS: Amazon Web Services
-    """
 
-    IBM = "IBM"
-    AWS = "AWS"
+def user_dto_to_user_without_id(user_dto: UserDto) -> UserDataclass:
+    return UserDataclass(name=user_dto.name)
+
+
+def user_to_user_dto(user: UserDataclass) -> UserDto:
+    return UserDto(id=user.id, name=user.name)

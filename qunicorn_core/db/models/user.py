@@ -17,19 +17,16 @@ from typing import Optional
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import sqltypes as sql
 
+from .db_model import DbModel
 from ..db import REGISTRY
 
 
 @REGISTRY.mapped_as_dataclass
-class UserDataclass:
+class UserDataclass(DbModel):
     """Dataclass for storing Users
 
     Attributes:
-        id (int): Automatically generated database id. Use the id to fetch this information from the database.
         name (str): Name of the user.
     """
 
-    __tablename__ = "User"
-
-    id: Mapped[int] = mapped_column(sql.INTEGER(), primary_key=True, init=False)
     name: Mapped[Optional[str]] = mapped_column(sql.String(50), default=None)

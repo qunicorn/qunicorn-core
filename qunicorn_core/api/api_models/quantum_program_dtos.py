@@ -18,8 +18,11 @@ from dataclasses import dataclass
 
 __all__ = ["QuantumProgramDto"]
 
+from qunicorn_core.static.enums.assembler_languages import AssemblerLanguage
+
 
 @dataclass
 class QuantumProgramDto:
     id: int
     quantum_circuit: str
+    assembler_language: AssemblerLanguage

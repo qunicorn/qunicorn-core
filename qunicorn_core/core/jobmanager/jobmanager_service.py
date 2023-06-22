@@ -16,15 +16,15 @@
 from qunicorn_core.api.api_models.job_dtos import (
     JobRequestDto,
     JobCoreDto,
-    JobID,
+    SimpleJobDto,
     JobResponseDto,
 )
 from qunicorn_core.celery import CELERY
-from qunicorn_core.core.jobmanager import job_mapper
+from qunicorn_core.core.mapper import job_mapper
 from qunicorn_core.core.pilotmanager.aws_pilot import AWSPilot
 from qunicorn_core.core.pilotmanager.qiskit_pilot import QiskitPilot
 from qunicorn_core.db.database_services import job_db_service
-from qunicorn_core.db.models.job import Job
+from qunicorn_core.db.models.job import JobDataclass
 from qunicorn_core.static.enums.job_state import JobState
 from qunicorn_core.static.enums.provider_name import ProviderName
 
@@ -38,7 +38,6 @@ def run_job(job_core_dto_dict: dict):
 
     job_core_dto: JobCoreDto = JobCoreDto(**job_core_dto_dict)
     device = job_core_dto.executed_on
-    print(device)
     if device.provider.name == ProviderName.IBM:
         pilot: QiskitPilot = qiskitpilot("QP")
         pilot.execute(job_core_dto)
@@ -47,32 +46,28 @@ def run_job(job_core_dto_dict: dict):
     return 0
 
 
-def create_and_run_job(job_request_dto: JobRequestDto) -> JobID:
+def create_and_run_job(job_request_dto: JobRequestDto) -> SimpleJobDto:
     """First creates a job to let it run afterwards on a pilot"""
-    job: Job = job_db_service.create_database_job(job_request_dto)
     job_core_dto: JobCoreDto = job_mapper.request_to_core(job_request_dto)
+    job: JobDataclass = job_db_service.create_database_job(job_core_dto)
     job_core_dto.id = job.id
     run_job(vars(job_core_dto))
-    return JobID(
-        id=str(job_core_dto.id), name=job_core_dto.name, job_state=JobState.RUNNING
-    )
+    return SimpleJobDto(id=str(job_core_dto.id), name=job_core_dto.name, job_state=JobState.RUNNING)
 
 
-def run_job_by_id(job_id: int) -> JobID:
+def run_job_by_id(job_id: int) -> SimpleJobDto:
     """Get job from DB, Save it as new job and run it with the new id"""
-    job: Job = job_db_service.get_job(job_id)
+    job: JobDataclass = job_db_service.get_job(job_id)
     job.id = None
-    new_job: Job = job_db_service.create_database_job(job)
+    new_job: JobDataclass = job_db_service.create_database_job(job)
     job_core_dto: JobCoreDto = job_mapper.job_to_job_core_dto(new_job)
     # TODO run job
-    return JobID(
-        id=str(job_core_dto.id), name=job_core_dto.name, job_state=JobState.RUNNING
-    )
+    return SimpleJobDto(id=str(job_core_dto.id), name=job_core_dto.name, job_state=JobState.RUNNING)
 
 
 def get_job(job_id: int) -> JobResponseDto:
     """Gets the job from the database service with its id"""
-    db_job: Job = job_db_service.get_job(job_id)
+    db_job: JobDataclass = job_db_service.get_job(job_id)
     return job_mapper.job_to_response(db_job)
 
 

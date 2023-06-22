@@ -15,13 +15,13 @@
 from enum import StrEnum
 
 
-class ProviderName(StrEnum):
-    """Enum to save the different provider names
+class AssemblerLanguage(StrEnum):
+    """Enum to save the different assembler languages
 
     Values:
-        IBM: International Business Machines Corporation
-        AWS: Amazon Web Services
+        QASM: Standard assembler format from IBM
+        BRAKET: Assembler format from AWS
     """
 
-    IBM = "IBM"
-    AWS = "AWS"
+    QASM = "QASM"
+    BRAKET = "BRAKET"

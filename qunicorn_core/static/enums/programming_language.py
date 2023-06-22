@@ -12,18 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from enum import Enum
+from enum import StrEnum
 
 
-class ProgrammingLanguage(str, Enum):
+class ProgrammingLanguage(StrEnum):
     """Enum to save the different programming languages for quantum circuits
 
     Values:
         QISKIT: The programming language is QISKIT
         PYQUIL: The programming language is PYQUIL
         QMWARE: The programming language is QMWARE
+        QRISP: Assembler format from Frauenhofer
+        BASIQ: Assembler format from QMWARE
     """
 
     QISKIT = "QISKIT"
     PYQUIL = "PYQUIL"
     QMWARE = "QMWARE"
+    QRISP = "QRISP"
+    BASIQ = "BASIQ"

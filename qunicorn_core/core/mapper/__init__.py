@@ -1,4 +1,4 @@
-# Copyright 2023 University of Stuttgart.
+# Copyright 2023 University of Stuttgart
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,16 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from enum import StrEnum
-
-
-class ProviderName(StrEnum):
-    """Enum to save the different provider names
-
-    Values:
-        IBM: International Business Machines Corporation
-        AWS: Amazon Web Services
-    """
-
-    IBM = "IBM"
-    AWS = "AWS"
+from . import deployment_mapper, device_mapper, job_mapper, provider_mapper, quantum_program_mapper, user_mapper

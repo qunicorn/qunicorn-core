@@ -18,10 +18,10 @@ from dataclasses import dataclass
 
 import marshmallow as ma
 
-from .provider_dtos import ProviderDto
+from .provider_dtos import ProviderDto, ProviderDtoSchema
 from ..util import MaBaseSchema
 
-__all__ = ["DevicesDtoSchema", "DeviceIDSchema", "DeviceDto"]
+__all__ = ["DeviceDtoSchema", "DeviceIDSchema", "DeviceDto"]
 
 
 @dataclass
@@ -31,18 +31,10 @@ class DeviceDto:
     url: str | None = None
 
 
-class DevicesDtoSchema(MaBaseSchema):
-    device_id = ma.fields.Integer(
-        required=True, allow_none=False, metadata={"description": "The unique deviceID."}
-    )
-    address_url = ma.fields.String(
-        required=True, allow_none=False, metadata={"description": "URL of a device."}
-    )
-    provider_id = ma.fields.Integer(
-        required=True,
-        allow_none=False,
-        metadata={"description": "The unique providerId."},
-    )
+class DeviceDtoSchema(MaBaseSchema):
+    device_id = ma.fields.Integer(required=True, allow_none=False, metadata={"description": "The unique deviceID."})
+    address_url = ma.fields.String(required=True, allow_none=False, metadata={"description": "URL of a device."})
+    provider = ProviderDtoSchema()
 
 
 class DeviceIDSchema(MaBaseSchema):

@@ -14,38 +14,42 @@
 
 # originally from <https://github.com/buehlefs/flask-template/>
 
-from datetime import datetime
-
-from qunicorn_core.api.api_models.job_dtos import JobRequestDto
+from qunicorn_core.api.api_models.job_dtos import JobCoreDto
+from qunicorn_core.core.mapper import job_mapper
 from qunicorn_core.db.database_services import db_service
-from qunicorn_core.db.models.job import Job
+from qunicorn_core.db.models.device import DeviceDataclass
+from qunicorn_core.db.models.job import JobDataclass
+from qunicorn_core.db.models.user import UserDataclass
 from qunicorn_core.static.enums.job_state import JobState
 
 
-def create_database_job(job: JobRequestDto):
+def create_database_job(job_core: JobCoreDto):
     """Creates a database job with the given circuit and saves it in the database"""
-    db_job: Job = Job(
-        data=job.circuit, state=JobState.READY, progress=0, started_at=datetime.now()
-    )
+    default_user: UserDataclass = db_service.get_database_object(1, UserDataclass)
+
+    db_job: JobDataclass = job_mapper.job_core_dto_to_job_without_id(job_core)
+    db_job.state = JobState.RUNNING
+    db_job.progress = 0
+    db_job.executed_by = default_user
+    db_job.executed_on = db_service.get_database_object(1, DeviceDataclass)
+    db_job.deployment.deployed_by = default_user
     return db_service.save_database_object(db_job)
 
 
 def update_attribute(job_id: int, job_state: JobState, attribute_name):
     """Updates one attribute (attribute_name) of the job with the id job_id"""
-    db_service.get_session().query(Job).filter(Job.id == job_id).update(
-        {attribute_name: job_state}
-    )
+    db_service.get_session().query(JobDataclass).filter(JobDataclass.id == job_id).update({attribute_name: job_state})
     db_service.get_session().commit()
 
 
 def update_result_and_state(job_id: int, job_state: JobState, results: str):
     """Updates the attributes state and results of the job with the id job_id"""
-    db_service.get_session().query(Job).filter(Job.id == job_id).update(
-        {Job.state: job_state, Job.results: results}
+    db_service.get_session().query(JobDataclass).filter(JobDataclass.id == job_id).update(
+        {JobDataclass.state: job_state, JobDataclass.results: results}
     )
     db_service.get_session().commit()
 
 
-def get_job(job_id: int) -> Job:
+def get_job(job_id: int) -> JobDataclass:
     """Gets the job with the job_id from the database"""
-    return db_service.get_database_object(job_id, Job)
+    return db_service.get_database_object(job_id, JobDataclass)

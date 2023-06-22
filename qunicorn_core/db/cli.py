@@ -16,16 +16,23 @@
 
 
 """CLI functions for the db module."""
+import datetime
 
 import click
 from flask import Flask, Blueprint, current_app
+from qiskit import QuantumCircuit
 
 # make sure all api_models are imported for CLI to work properly
 from . import models  # noqa
 from .db import DB
+from .models.deployment import DeploymentDataclass
 from .models.device import DeviceDataclass
+from .models.job import JobDataclass
 from .models.provider import ProviderDataclass
+from .models.quantum_program import QuantumProgramDataclass
 from .models.user import UserDataclass
+from ..static.enums.assembler_languages import AssemblerLanguage
+from ..static.enums.job_state import JobState
 from ..static.enums.programming_language import ProgrammingLanguage
 from ..static.enums.provider_name import ProviderName
 from ..util.logging import get_logger
@@ -39,6 +46,7 @@ DB_COMMAND_LOGGER = "db"
 @DB_CLI.command("create-and-load-db")
 def create_load_db():
     """Create all db tables."""
+    drop_db_function(current_app)
     create_db_function(current_app)
     load_db_function(current_app)
     click.echo("Database created and loaded.")
@@ -63,20 +71,35 @@ def load_test_data():
     click.echo("Test Data Loaded.")
 
 
+def get_quasm_string() -> str:
+    qc = QuantumCircuit(2)
+    qc.h(0)
+    qc.cx(0, 1)
+    qc.measure_all()
+    return qc.qasm()
+
+
 def load_db_function(app: Flask):
+    user = UserDataclass(name="DefaultUser")
+    qc = QuantumProgramDataclass(quantum_circuit=get_quasm_string(), assembler_language=AssemblerLanguage.QASM)
+    deployment = DeploymentDataclass(deployed_by=user, quantum_program=qc, deployed_at=datetime.datetime.now(), name="DeploymentName")
     provider = ProviderDataclass(
         with_token=True,
         supported_language=ProgrammingLanguage.QISKIT,
         name=ProviderName.IBM,
     )
-    DB.session.add(provider)
-    DB.session.commit()
-    DB.session.refresh(provider)
-    device = DeviceDataclass(provider=provider.id, rest_endpoint="")
-    DB.session.add(device)
-    DB.session.commit()
-    user = UserDataclass(name="Default User")
-    DB.session.add(user)
+    device = DeviceDataclass(provider=provider, url="")
+    job = JobDataclass(
+        executed_by=user,
+        executed_on=device,
+        deployment=deployment,
+        progress=0,
+        state=JobState.READY,
+        shots=4000,
+        started_at=datetime.datetime.now(),
+        name="JobName",
+    )
+    DB.session.add(job)
     DB.session.commit()
     get_logger(app, DB_COMMAND_LOGGER).info("Test Data loaded.")
 

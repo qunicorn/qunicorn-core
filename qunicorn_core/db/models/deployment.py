@@ -15,29 +15,32 @@ from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import sqltypes as sql
 
+from .db_model import DbModel
+from .quantum_program import QuantumProgramDataclass
+from .user import UserDataclass
 from ..db import REGISTRY
 
 
 @REGISTRY.mapped_as_dataclass
-class DeploymentDataclass:
+class DeploymentDataclass(DbModel):
     """Dataclass for storing deployments
 
     Attributes:
-        id (int): Automatically generated database id. Use the id to fetch this information from the database.
         name (str, optional): Optional name for a deployment_api
         deployed_by (str): The  user_id that deployed this Deployment
         deployed_at (Date): Date of the creation of a deployment_api
     """
 
-    __tablename__ = "Deployment"
+    deployed_by_id: Mapped[int] = mapped_column(ForeignKey(UserDataclass.__tablename__ + ".id"), default=None, nullable=True)
+    deployed_by: Mapped[UserDataclass.__name__] = relationship(UserDataclass.__name__, default=None)
 
-    id: Mapped[int] = mapped_column(primary_key=True)
-    deployed_by: Mapped[int] = mapped_column(ForeignKey("User.id"))
-    quantum_program_id: Mapped[int] = mapped_column(ForeignKey("QuantumProgram.id"))
-    deployed_at: Mapped[datetime] = mapped_column(
-        sql.TIMESTAMP(timezone=True), default=datetime.utcnow()
+    quantum_program_id: Mapped[int] = mapped_column(ForeignKey(QuantumProgramDataclass.__tablename__ + ".id"), default=None)
+    quantum_program: Mapped[QuantumProgramDataclass.__name__] = relationship(
+        QuantumProgramDataclass.__name__,
+        default=None,
     )
+    deployed_at: Mapped[datetime] = mapped_column(sql.TIMESTAMP(timezone=True), default=datetime.utcnow())
     name: Mapped[Optional[str]] = mapped_column(sql.String(50), default=None)

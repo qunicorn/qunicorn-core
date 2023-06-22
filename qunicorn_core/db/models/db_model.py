@@ -11,17 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from sqlalchemy.orm import Mapped, mapped_column, declared_attr
+from sqlalchemy.sql import sqltypes as sql
 
-from enum import StrEnum
 
+class DbModel:
+    """Dataclass for database model to create a table name and the id column
 
-class ProviderName(StrEnum):
-    """Enum to save the different provider names
-
-    Values:
-        IBM: International Business Machines Corporation
-        AWS: Amazon Web Services
+    Attributes:
+        id (int): Automatically generated id of the database entity
     """
 
-    IBM = "IBM"
-    AWS = "AWS"
+    @declared_attr
+    def __tablename__(self):
+        return self.__name__.replace("Dataclass", "")
+
+    id: Mapped[int] = mapped_column(sql.INTEGER(), primary_key=True, init=False)

@@ -28,9 +28,7 @@ from flask.logging import default_handler
 from flask_cors import CORS
 from tomli import load as load_toml
 
-from . import api
-from . import db
-from . import licenses
+from . import api, celery, db, licenses
 from .api import jwt
 from .util.config import ProductionConfig, DebugConfig
 
@@ -53,10 +51,7 @@ def create_app(test_config: Optional[Dict[str, Any]] = None):
 
     # load defaults
     config = app.config
-    flask_debug: bool = (
-        config.get("DEBUG", False)
-        or environ.get("FLASK_ENV", "production").lower() == "development"  # noqa
-    )
+    flask_debug: bool = config.get("DEBUG", False) or environ.get("FLASK_ENV", "production").lower() == "development"  # noqa
     if flask_debug:
         config.from_object(DebugConfig)
     elif test_config is None:
@@ -113,9 +108,7 @@ def create_app(test_config: Optional[Dict[str, Any]] = None):
     )
 
     if config.get("SECRET_KEY") == "debug_secret":
-        logger.error(
-            'The configured SECRET_KEY="debug_secret" is unsafe and must not be used in production!'
-        )
+        logger.error('The configured SECRET_KEY="debug_secret" is unsafe and must not be used in production!')
 
     # ensure the instance folder exists
     try:
@@ -126,6 +119,8 @@ def create_app(test_config: Optional[Dict[str, Any]] = None):
     # Begin loading extensions and routes
 
     licenses.register_licenses(app)
+
+    celery.register_celery(app)
 
     db.register_db(app)
 
