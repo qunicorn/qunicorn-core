@@ -25,7 +25,7 @@ from ...static.enums.programming_language import ProgrammingLanguage
 @REGISTRY.mapped_as_dataclass
 class PilotDataclass:
     """Dataclass for storing Pilots
-    
+
     Attributes:
         id (int): Automatically generated database id. Use the id to fetch this information from the database.
         programming_language (ProgrammingLanguage): Programming language that the code should have after translation
@@ -37,5 +37,7 @@ class PilotDataclass:
 
     id: Mapped[int] = mapped_column(sql.INTEGER(), primary_key=True, init=False)
     job: Mapped[int] = mapped_column(ForeignKey("Job.id"))
-    programming_language: Mapped[ProgrammingLanguage] = mapped_column(sql.String(50), default=None)
+    programming_language: Mapped[ProgrammingLanguage] = mapped_column(
+        sql.String(50), default=None
+    )
     state: Mapped[PilotState] = mapped_column(sql.String(50), default=None)

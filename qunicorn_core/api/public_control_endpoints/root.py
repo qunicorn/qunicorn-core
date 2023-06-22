@@ -16,12 +16,8 @@
 """Module containing the root endpoint of the public control API."""
 
 from dataclasses import dataclass
-from flask.helpers import url_for
-from flask.views import MethodView
-from http import HTTPStatus
-from ..util import SecurityBlueprint as SmorestBlueprint
-from ..models import RootSchema
 
+from ..util import SecurityBlueprint as SmorestBlueprint
 
 PUBLIC_CONTROL_API = SmorestBlueprint(
     "public-control-api",

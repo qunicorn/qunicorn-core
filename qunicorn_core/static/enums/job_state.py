@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from enum import IntEnum
+from enum import Enum
 
 
-class JobState(IntEnum):
+class JobState(str, Enum):
     """Enum to save the different states of the jobs
 
     Values:
@@ -26,8 +26,8 @@ class JobState(IntEnum):
         ERROR: When an error occurred while executing a quantum circuit
     """
 
-    READY = 1
-    RUNNING = 2
-    FINISHED = 3
-    BLOCKED = 4
-    ERROR = 5
+    READY = "READY"
+    RUNNING = "RUNNING"
+    FINISHED = "FINISHED"
+    BLOCKED = "BLOCKED"
+    ERROR = "ERROR"

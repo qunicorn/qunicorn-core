@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""""Test class to test the functionality of the jobmanager"""
+""""Test class to test the functionality of the job_api"""
 
 
 # Will be implemented with #47
 def test_create_and_run_job():
-    """" Tests the create job method """
+    """Tests the create job method"""
     """root_dir = os.path.dirname(os.path.abspath(__file__))
     file_name = 'job_test_data.json'
     path_dir = "{}{}{}".format(root_dir, os.sep, file_name)
