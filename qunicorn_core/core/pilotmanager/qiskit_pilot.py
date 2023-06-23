@@ -81,7 +81,7 @@ class QiskitPilot(Pilot):
 
         # Save account credentials.
         # You can get you token in your account settings of the front page
-        if token == "":
+        if token == "" and os.getenv("IBM_TOKEN") is not None:
             token = os.getenv("IBM_TOKEN")
         IBMProvider.save_account(token=token, overwrite=True)
 
