@@ -11,22 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from qiskit import QuantumCircuit
 
 
-"""Module containing the root endpoint of the JobMANAGER API."""
-
-from dataclasses import dataclass
-
-from ..flask_api_utils import SecurityBlueprint as SmorestBlueprint
-
-JOBMANAGER_API = SmorestBlueprint(
-    "job-api",
-    "JOB API",
-    description="Jobmanager API for the control plane.",
-    url_prefix="/jobs/",
-)
-
-
-@dataclass()
-class RootData:
-    root: str
+def get_default_qasm_string(hadamard_amount: int = 1) -> str:
+    qc = QuantumCircuit(2)
+    for _ in range(hadamard_amount):
+        qc.h(0)
+    qc.cx(0, 1)
+    qc.measure_all()
+    return qc.qasm()

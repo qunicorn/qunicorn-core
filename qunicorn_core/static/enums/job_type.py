@@ -1,4 +1,4 @@
-# Copyright 2023 University of Stuttgart
+# Copyright 2023 University of Stuttgart.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,21 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-"""Module containing the root endpoint of the JobMANAGER API."""
-
-from dataclasses import dataclass
-
-from ..flask_api_utils import SecurityBlueprint as SmorestBlueprint
-
-JOBMANAGER_API = SmorestBlueprint(
-    "job-api",
-    "JOB API",
-    description="Jobmanager API for the control plane.",
-    url_prefix="/jobs/",
-)
+from enum import StrEnum
 
 
-@dataclass()
-class RootData:
-    root: str
+class JobType(StrEnum):
+    """Enum to save the different states of the jobs
+
+    Values:
+        RUNNER: Normal execution of a job
+        SAMPLER: Samples multiple quantum programs
+        ESTIMATOR: Estimates multiple quantum programs
+    """
+
+    RUNNER = "RUNNER"
+    SAMPLER = "SAMPLER"
+    ESTIMATOR = "ESTIMATOR"
+

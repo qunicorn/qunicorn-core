@@ -31,7 +31,7 @@ from .jwt import SECURITY_SCHEMES
 from .provider_api import PROVIDER_API
 from .public_control_endpoints import PUBLIC_CONTROL_API
 from .user_api import USER_API
-from .util import MaBaseSchema
+from .flask_api_utils import MaBaseSchema
 
 """A single API instance. All api versions should be blueprints."""
 API = Api(spec_kwargs={"title": "QUNICORN_API", "version": "v1"})

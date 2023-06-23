@@ -24,7 +24,7 @@ from qiskit import QuantumCircuit
 from .deployment_dtos import DeploymentDto
 from .device_dtos import DeviceDto, DeviceDtoSchema
 from .user_dtos import UserDto, UserDtoSchema
-from ..util import MaBaseSchema
+from ..flask_api_utils import MaBaseSchema
 
 __all__ = [
     "SimpleJobDtoSchema",
@@ -39,7 +39,9 @@ __all__ = [
 from ...static.enums.assembler_languages import AssemblerLanguage
 
 from ...static.enums.job_state import JobState
+from ...static.enums.job_type import JobType
 from ...static.enums.provider_name import ProviderName
+from ...util import utils
 
 
 @dataclass
@@ -47,11 +49,12 @@ class JobRequestDto:
     """JobDto that was sent from the user as a request"""
 
     name: str
-    circuit: str
+    circuit_list: []
     provider_name: str
     shots: int
     parameters: str
     token: str
+    type: JobType
     assembler_language: AssemblerLanguage
 
 
@@ -66,6 +69,7 @@ class JobCoreDto:
     progress: str
     state: JobState
     shots: int
+    type: JobType
     started_at: datetime
     finished_at: datetime
     name: str
@@ -84,6 +88,7 @@ class JobResponseDto:
     executed_on: DeviceDto
     progress: str
     state: str
+    type: JobType
     started_at: datetime
     finished_at: datetime
     name: str
@@ -107,17 +112,9 @@ class CircuitField(fields.Field):
             raise ValidationError("Field should be str or list")
 
 
-def get_quasm_string() -> str:
-    qc = QuantumCircuit(2)
-    qc.h(0)
-    qc.cx(0, 1)
-    qc.measure_all()
-    return qc.qasm()
-
-
 class JobRequestDtoSchema(MaBaseSchema):
     name = ma.fields.String(required=True, example="JobName")
-    circuit = CircuitField(required=True, example=get_quasm_string())
+    circuit_list = CircuitField(required=True, example=[utils.get_default_qasm_string(), utils.get_default_qasm_string(2)])
     provider_name = ma.fields.Enum(required=True, example=ProviderName.IBM, enum=ProviderName)
     shots = ma.fields.Int(
         required=False,
@@ -131,6 +128,7 @@ class JobRequestDtoSchema(MaBaseSchema):
     )
     parameters = ma.fields.List(ma.fields.Float(), required=False)
     token = ma.fields.String(required=True, example="")
+    type = ma.fields.Enum(required=True, example=JobType.RUNNER, enum=JobType)
     assembler_language = ma.fields.Enum(required=True, example=AssemblerLanguage.QASM, enum=AssemblerLanguage)
 
 
@@ -140,6 +138,7 @@ class JobResponseDtoSchema(MaBaseSchema):
     executed_on = DeviceDtoSchema()
     progress = ma.fields.Int(required=True, dump_only=True)
     state = ma.fields.String(required=True, dump_only=True)
+    type = ma.fields.String(required=True, dump_only=True)
     started_at = ma.fields.String(required=True, dump_only=True)
     finished_at = ma.fields.String(required=True, dump_only=True)
     data = ma.fields.String(required=True, dump_only=True)
@@ -148,6 +147,6 @@ class JobResponseDtoSchema(MaBaseSchema):
 
 
 class SimpleJobDtoSchema(MaBaseSchema):
-    id = ma.fields.Integer(required=True, allow_none=False, dump_only=True, example=123)
+    id = ma.fields.Integer(required=True, allow_none=False, dump_only=True)
     job_name = ma.fields.String(required=False, allow_none=False, dump_only=True)
     job_state = ma.fields.String(required=False, allow_none=False, dump_only=True)

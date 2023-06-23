@@ -25,6 +25,7 @@ from .device import DeviceDataclass
 from .user import UserDataclass
 from ..db import REGISTRY
 from ...static.enums.job_state import JobState
+from ...static.enums.job_type import JobType
 
 
 @REGISTRY.mapped_as_dataclass
@@ -64,6 +65,7 @@ class JobDataclass(DbModel):
     progress: Mapped[str] = mapped_column(sql.INTEGER(), default=None)
     state: Mapped[str] = mapped_column(sql.Enum(JobState), default=None)
     shots: Mapped[int] = mapped_column(sql.INTEGER(), default=4000)
+    type: Mapped[str] = mapped_column(sql.Enum(JobType), default=JobType.RUNNER)
     started_at: Mapped[datetime] = mapped_column(sql.TIMESTAMP(timezone=True), default=datetime.utcnow())
     finished_at: Mapped[Optional[datetime]] = mapped_column(sql.TIMESTAMP(timezone=True), default=None, nullable=True)
     name: Mapped[Optional[str]] = mapped_column(sql.String(50), default=None)
