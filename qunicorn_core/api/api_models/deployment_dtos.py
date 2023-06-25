@@ -20,8 +20,8 @@ from typing import List
 
 import marshmallow as ma
 
+from .quantum_program_dtos import QuantumProgramDto
 from .user_dtos import UserDto, UserDtoSchema
-from .quantum_program_dtos import QuantumProgramDto, QuantumProgramSchema
 from ..flask_api_utils import MaBaseSchema
 
 __all__ = ["DeploymentDtoSchema", "DeploymentDto"]

@@ -27,6 +27,7 @@ from qunicorn_core.db.database_services import job_db_service
 from qunicorn_core.db.models.job import JobDataclass
 from qunicorn_core.static.enums.job_state import JobState
 from qunicorn_core.static.enums.provider_name import ProviderName
+from qunicorn_core.static.enums.job_type import JobType
 
 qiskitpilot = QiskitPilot
 awspilot = AWSPilot
@@ -36,14 +37,20 @@ awspilot = AWSPilot
 def run_job(job_core_dto_dict: dict):
     """Assign the job to the target pilot which executes the job"""
 
-    job_core_dto = yaml.load(job_core_dto_dict["data"], yaml.Loader)
+    job_core_dto: JobCoreDto = yaml.load(job_core_dto_dict["data"], yaml.Loader)
 
-    device = job_core_dto.executed_on
-    if device.provider.name == ProviderName.IBM:
+    if job_core_dto.executed_on.provider.name == ProviderName.IBM:
         pilot: QiskitPilot = qiskitpilot("QP")
-        pilot.execute(job_core_dto)
+        if job_core_dto.type == JobType.RUNNER:
+            pilot.execute(job_core_dto)
+        elif job_core_dto.type == JobType.ESTIMATOR:
+            pilot.estimate(job_core_dto)
+        elif job_core_dto.type == JobType.SAMPLER:
+            pilot.sample(job_core_dto)
+        else:
+            print("WARNING: No valid Job Type specified")
     else:
-        print("No valid target specified")
+        print("WARNING: No valid target specified")
     return 0
 
 
@@ -53,7 +60,7 @@ def create_and_run_job(job_request_dto: JobRequestDto) -> SimpleJobDto:
     job: JobDataclass = job_db_service.create_database_job(job_core_dto)
     job_core_dto.id = job.id
     serialized_job_core_dto = yaml.dump(job_core_dto)
-    run_job.delay({"data": serialized_job_core_dto})
+    run_job({"data": serialized_job_core_dto})
     return SimpleJobDto(id=str(job_core_dto.id), name=job_core_dto.name, job_state=JobState.RUNNING)
 
 

@@ -19,7 +19,6 @@ from datetime import datetime
 
 import marshmallow as ma
 from marshmallow import fields, ValidationError
-from qiskit import QuantumCircuit
 
 from .deployment_dtos import DeploymentDto
 from .device_dtos import DeviceDto, DeviceDtoSchema

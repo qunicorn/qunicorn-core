@@ -15,12 +15,15 @@ import os
 from typing import List
 
 from qiskit import QuantumCircuit, transpile
-from qiskit.primitives import SamplerResult
+from qiskit.primitives import SamplerResult, EstimatorResult
+from qiskit.providers import BackendV1
+from qiskit.quantum_info import SparsePauliOp
+from qiskit.result import QuasiDistribution
 from qiskit_ibm_provider import IBMProvider
 from qiskit_ibm_provider.api.exceptions import RequestsApiError
-from qiskit_ibm_runtime import QiskitRuntimeService, Sampler
+from qiskit_ibm_runtime import QiskitRuntimeService, Sampler, Estimator
 
-from qunicorn_core.api.api_models import JobCoreDto, QuantumProgramDto
+from qunicorn_core.api.api_models import JobCoreDto
 from qunicorn_core.core.pilotmanager.base_pilot import Pilot
 from qunicorn_core.db.database_services import job_db_service
 from qunicorn_core.db.models.job import JobDataclass
@@ -35,55 +38,75 @@ class QiskitPilot(Pilot):
     def execute(self, job_dto: JobCoreDto):
         """Execute a job on an IBM backend using the Qiskit Pilot"""
 
-        try:
-            provider = self.__get_ibm_provider_and_login(job_dto.token)
-        except RequestsApiError:
-            job_db_service.update_attribute(job_dto.id, JobState.ERROR, JobDataclass.state)
-            raise ValueError("The passed token is not valid.")
+        provider = self.__get_ibm_provider_and_login(job_dto.token, job_dto.id)
 
-        backend, transpiled = self.transpile(provider, job_dto.deployment.quantum_program.quantum_circuit)
-        job_id = job_dto.id
+        if len(job_dto.deployment.program_list) != 1:
+            print(f"WARNING: Program_list of deployment is not 1, but: {job_dto.deployment.program_list}")
 
-        job_db_service.update_attribute(job_id, JobState.RUNNING, JobDataclass.state)
+        backend, transpiled = self.transpile(provider, job_dto.deployment.program_list[0].quantum_circuit)
+
+        job_db_service.update_attribute(job_dto.id, JobState.RUNNING, JobDataclass.state)
 
         job_from_ibm = backend.run(transpiled, shots=job_dto.shots)
-        counts = job_from_ibm.result().get_counts()
-        job_db_service.update_result_and_state(job_id, JobState.FINISHED, str(counts))
+        result = job_from_ibm.result()
+        counts = result.get_counts()
+        print(result)
+        job_db_service.update_result_and_state(job_dto.id, JobState.FINISHED, str(counts))
 
-        print(f"Job with id {job_id} complete")
-        print(f"Executing job {job_from_ibm} " 
-              f"on {job_dto.executed_on.provider.name} with the Qiskit Pilot and get the result {counts}")
-        return counts
+        print(f"Run job {job_from_ibm} with id {job_dto.id} on {job_dto.executed_on.provider.name}  and get the result {counts}")
 
     def sample(self, job_dto: JobCoreDto):
-        """Execute a job on an IBM backend using the Qiskit Pilot"""
-        job_id = job_dto.id
-
-        service = QiskitRuntimeService()
-        self.__get_ibm_provider_and_login(job_dto.token)
-        backend = service.get_backend(self.IBMQ_BACKEND)
+        """Uses the Sampler to execute a job on an IBM backend using the Qiskit Pilot"""
+        backend, circuit_list = self.__get_backend_circuits_and_id_for_qiskit_runtime(job_dto)
         sampler = Sampler(session=backend)
-        program_list: List[QuantumProgramDto] = job_dto.deployment.program_list
-        circuit_list: List[QuantumCircuit] = [QuantumCircuit().from_qasm_str(program.quantum_circuit) for program in program_list]
-        job_db_service.update_attribute(job_id, JobState.RUNNING, JobDataclass.state)
         job_from_ibm = sampler.run(circuit_list)
-        counts: SamplerResult = job_from_ibm.result().quasi_dists
-        job_db_service.update_result_and_state(job_id, JobState.FINISHED, str(counts))
+        results: SamplerResult = job_from_ibm.result()
+        counts: list[QuasiDistribution] = results.quasi_dists
+        print(results)
+        job_db_service.update_result_and_state(job_dto.id, JobState.FINISHED, str(counts))
 
-        print(f"Job with id {job_id} complete")
-        print(f"Sampling job {job_from_ibm} "
-              f"on {job_dto.executed_on.provider.name} with the Qiskit Pilot and get the result {counts}")
-        return counts
+        print(f"Run job {job_from_ibm} with id {job_dto.id} on {job_dto.executed_on.provider.name}  and get the result {counts}")
+
+    def estimate(self, job_dto: JobCoreDto):
+        """Uses the Estimator to execute a job on an IBM backend using the Qiskit Pilot"""
+        backend, circuit_list = self.__get_backend_circuits_and_id_for_qiskit_runtime(job_dto)
+        estimator = Estimator(session=backend)
+        job_from_ibm = estimator.run(circuit_list, observables=[SparsePauliOp("IY"), SparsePauliOp("IY")])
+        results: EstimatorResult = job_from_ibm.result()
+        counts = results.values
+        print(results)
+        job_db_service.update_result_and_state(job_dto.id, JobState.FINISHED, str(counts))
+
+        print(f"Run job {job_from_ibm} with id {job_dto.id} on {job_dto.executed_on.provider.name}  and get the result {counts}")
+
+    def __get_backend_circuits_and_id_for_qiskit_runtime(self, job_dto):
+        """Instantiate all important configurations and updates the job_state"""
+        service: QiskitRuntimeService = QiskitRuntimeService()
+        self.__get_ibm_provider_and_login(job_dto.token, job_dto.id)
+        job_db_service.update_attribute(job_dto.id, JobState.RUNNING, JobDataclass.state)
+        circuit_list: List[QuantumCircuit] = QiskitPilot.__get_circuits_as_QuantumCircuits(job_dto)
+        backend: BackendV1 = service.get_backend(self.IBMQ_BACKEND)
+        return backend, circuit_list
 
     @staticmethod
-    def __get_ibm_provider_and_login(token: str) -> IBMProvider:
+    def __get_circuits_as_QuantumCircuits(job_dto: JobCoreDto) -> List[QuantumCircuit]:
+        """Transforms the circuit string into IBM QuantumCircuit objects"""
+        return [QuantumCircuit().from_qasm_str(program.quantum_circuit) for program in job_dto.deployment.program_list]
+
+    @staticmethod
+    def __get_ibm_provider_and_login(token: str, job_dto_id: int) -> IBMProvider:
         """Save account credentials and get provider"""
 
-        # Save account credentials.
-        # You can get you token in your account settings of the front page
+        # If the token is empty the token is taken from the environment variables.
         if token == "" and os.getenv("IBM_TOKEN") is not None:
             token = os.getenv("IBM_TOKEN")
-        IBMProvider.save_account(token=token, overwrite=True)
+
+        # Try to save the account. Update job_dto to job_state = Error, if it is not possible
+        try:
+            IBMProvider.save_account(token=token, overwrite=True)
+        except RequestsApiError:
+            job_db_service.update_attribute(job_dto_id, JobState.ERROR, JobDataclass.state)
+            raise ValueError("The passed token is not valid.")
 
         # Load previously saved account credentials.
         return IBMProvider()

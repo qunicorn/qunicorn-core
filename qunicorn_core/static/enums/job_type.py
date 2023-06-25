@@ -27,4 +27,3 @@ class JobType(StrEnum):
     RUNNER = "RUNNER"
     SAMPLER = "SAMPLER"
     ESTIMATOR = "ESTIMATOR"
-

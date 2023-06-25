@@ -36,10 +36,11 @@ def request_to_core(job: JobRequestDto):
     provider = ProviderDto(id=0, with_token=True, supported_language=ProgrammingLanguage.QISKIT, name=job.provider_name)
     device = DeviceDto(id=0, provider=provider, url="DefaultUrl")
     quantum_program_list = [
-        QuantumProgramDto(id=0, quantum_circuit=circuit, assembler_language=job.assembler_language)
-        for circuit in job.circuit_list
+        QuantumProgramDto(id=0, quantum_circuit=circuit, assembler_language=job.assembler_language) for circuit in job.circuit_list
     ]
-    deployment = DeploymentDto(id=0, deployed_by=user, program_list=quantum_program_list, name="DefaultDeployment", deployed_at=datetime.now())
+    deployment = DeploymentDto(
+        id=0, deployed_by=user, program_list=quantum_program_list, name="DefaultDeployment", deployed_at=datetime.now()
+    )
 
     return JobCoreDto(
         id=0,
