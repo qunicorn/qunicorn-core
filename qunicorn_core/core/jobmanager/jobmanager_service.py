@@ -26,8 +26,8 @@ from qunicorn_core.core.pilotmanager.qiskit_pilot import QiskitPilot
 from qunicorn_core.db.database_services import job_db_service
 from qunicorn_core.db.models.job import JobDataclass
 from qunicorn_core.static.enums.job_state import JobState
-from qunicorn_core.static.enums.provider_name import ProviderName
 from qunicorn_core.static.enums.job_type import JobType
+from qunicorn_core.static.enums.provider_name import ProviderName
 
 qiskitpilot = QiskitPilot
 awspilot = AWSPilot
@@ -60,7 +60,7 @@ def create_and_run_job(job_request_dto: JobRequestDto) -> SimpleJobDto:
     job: JobDataclass = job_db_service.create_database_job(job_core_dto)
     job_core_dto.id = job.id
     serialized_job_core_dto = yaml.dump(job_core_dto)
-    run_job({"data": serialized_job_core_dto})
+    run_job.delay({"data": serialized_job_core_dto})
     return SimpleJobDto(id=str(job_core_dto.id), name=job_core_dto.name, job_state=JobState.RUNNING)
 
 
