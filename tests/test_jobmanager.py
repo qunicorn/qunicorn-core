@@ -13,29 +13,41 @@
 # limitations under the License.
 
 """"Test class to test the functionality of the job_api"""
+import json
+import os
+
+from qunicorn_core.api.api_models import JobRequestDto, SimpleJobDto
+from qunicorn_core.core.jobmanager.jobmanager_service import create_and_run_job
+from qunicorn_core.db.database_services import job_db_service
+from qunicorn_core.db.models.job import JobDataclass
+from qunicorn_core.static.enums.job_state import JobState
+from tests.test_config import set_up_env
 
 
-# Will be implemented with #47
-def test_create_and_run_job():
-    """Tests the create job method"""
-    """root_dir = os.path.dirname(os.path.abspath(__file__))
-    file_name = 'job_test_data.json'
-    path_dir = "{}{}{}".format(root_dir, os.sep, file_name)
+def test_create_and_run_sampler():
+    """Tests the create and run job method for synchronous execution of a sampler"""
 
+    app = set_up_env()
+    data = get_object_from_json('job_test_data_sampler.json')
+    with app.app_context():
+        job_dto: JobRequestDto = JobRequestDto(**data)
+        return_dto: SimpleJobDto = create_and_run_job(job_dto, False)
+        assert return_dto.id == '2' and return_dto.name == 'JobName' and return_dto.job_state == JobState.RUNNING
+        job: JobDataclass = job_db_service.get_job(return_dto.id)
+        check_if_job_finished(job)
+        print(job)
+    print("create_and_run_job test ended")
+
+
+def check_if_job_finished(job: JobDataclass):
+    assert job.id == 2
+    assert job.progress == 100
+    assert job.state == JobState.FINISHED
+
+
+def get_object_from_json(json_file_name: str):
+    root_dir = os.path.dirname(os.path.abspath(__file__))
+    path_dir = "{}{}{}".format(root_dir, os.sep, json_file_name)
     with open(path_dir) as f:
         data = json.load(f)
-
-    job: JobDto = namedtuple(JobDto.__name__, data.keys())(*data.values())
-
-    # When no token is added to the json, an error is expected
-    if job.token != "":
-        result = create_and_run_job(job)
-
-        # Check if Counts are within certain range
-        # Assumes total count of 4000
-        assert result is not None
-        assert 1800 <= int(result["00"]) <= 2200
-        assert 1800 <= int(result["11"]) <= 2200
-    else:
-        with pytest.raises(RuntimeError):
-            create_and_run_job(job)"""
+    return data

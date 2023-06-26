@@ -98,7 +98,7 @@ class JobResponseDto:
 
 @dataclass
 class SimpleJobDto:
-    id: str
+    id: int
     name: str
     job_state: JobState = JobState.RUNNING
 

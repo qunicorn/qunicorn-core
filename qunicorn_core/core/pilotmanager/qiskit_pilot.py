@@ -50,8 +50,8 @@ class QiskitPilot(Pilot):
         job_from_ibm = backend.run(transpiled, shots=job_dto.shots)
         result = job_from_ibm.result()
         counts = result.get_counts()
-        print(result)
-        job_db_service.update_result_and_state(job_dto.id, JobState.FINISHED, str(counts))
+        print("RESULTS:", result)
+        job_db_service.update_finished_job(job_dto.id, str(counts))
 
         print(f"Run job {job_from_ibm} with id {job_dto.id} on {job_dto.executed_on.provider.name}  and get the result {counts}")
 
@@ -62,9 +62,9 @@ class QiskitPilot(Pilot):
         job_from_ibm = sampler.run(circuit_list)
         results: SamplerResult = job_from_ibm.result()
         counts: list[QuasiDistribution] = results.quasi_dists
-        print(results)
-        job_db_service.update_result_and_state(job_dto.id, JobState.FINISHED, str(counts))
-
+        print("RESULTS:", results)
+        job_db_service.update_finished_job(job_dto.id, str(counts))
+        print("SAVED JOB:", job_db_service.get_job(job_dto.id))
         print(f"Run job {job_from_ibm} with id {job_dto.id} on {job_dto.executed_on.provider.name}  and get the result {counts}")
 
     def estimate(self, job_dto: JobCoreDto):
@@ -74,8 +74,8 @@ class QiskitPilot(Pilot):
         job_from_ibm = estimator.run(circuit_list, observables=[SparsePauliOp("IY"), SparsePauliOp("IY")])
         results: EstimatorResult = job_from_ibm.result()
         counts = results.values
-        print(results)
-        job_db_service.update_result_and_state(job_dto.id, JobState.FINISHED, str(counts))
+        print("RESULTS:", results)
+        job_db_service.update_finished_job(job_dto.id, str(counts))
 
         print(f"Run job {job_from_ibm} with id {job_dto.id} on {job_dto.executed_on.provider.name}  and get the result {counts}")
 

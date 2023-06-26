@@ -6,7 +6,7 @@
   "provider_name": "IBM",
   "shots": 4000,
   "assembler_language": "QASM",
-  "type": "RUNNER",
+  "type": "SAMPLER",
   "name": "JobName",
   "parameters": [
     0
