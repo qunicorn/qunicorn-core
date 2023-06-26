@@ -62,7 +62,7 @@ def create_and_run_job(job_request_dto: JobRequestDto, asynchronous: bool = True
     serialized_job_core_dto = yaml.dump(job_core_dto)
     job_core_dto_dict = {"data": serialized_job_core_dto}
     run_job.delay(job_core_dto_dict) if asynchronous else run_job(job_core_dto_dict)
-    return SimpleJobDto(id=str(job_core_dto.id), name=job_core_dto.name, job_state=JobState.RUNNING)
+    return SimpleJobDto(id=job_core_dto.id, name=job_core_dto.name, job_state=JobState.RUNNING)
 
 
 def run_job_by_id(job_id: int) -> SimpleJobDto:
