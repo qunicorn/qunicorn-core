@@ -47,10 +47,8 @@ class JobDataclass(DbModel):
         parameters (str, optional): The parameters for the Job. Job parameters should already be prepared and error
             checked before starting the task.
     """
-    results: Mapped[Optional[List[ResultDataclass.__name__]]] = relationship(
-        ResultDataclass.__name__,
-        default_factory=list
-    )
+
+    results: Mapped[Optional[List[ResultDataclass.__name__]]] = relationship(ResultDataclass.__name__, default_factory=list)
     executed_by_id: Mapped[int] = mapped_column(ForeignKey(UserDataclass.__tablename__ + ".id"), default=None, nullable=True)
     executed_by: Mapped[UserDataclass.__name__] = relationship(UserDataclass.__name__, default=None)
 

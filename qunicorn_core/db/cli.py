@@ -102,7 +102,7 @@ def load_db_function(app: Flask):
         type=JobType.RUNNER,
         started_at=datetime.datetime.now(),
         name="JobName",
-        results=[ResultDataclass(result_dict={"0x": "550", "1x": "450"})]
+        results=[ResultDataclass(result_dict={"0x": "550", "1x": "450"})],
     )
     DB.session.add(job)
     DB.session.commit()

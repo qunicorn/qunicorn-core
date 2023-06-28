@@ -24,12 +24,9 @@ def runner_result_to_db_results(ibm_result: Result, job_dto: JobCoreDto) -> list
     for i in range(len(ibm_result.get_counts())):
         counts: dict = ibm_result.get_counts()[i]
         circuit: str = job_dto.deployment.program_list[i].quantum_circuit
-        result_dto_list.append(ResultDataclass(
-            circuit=circuit,
-            result_dict=counts,
-            result_type=ResultType.COUNTS,
-            meta_data=ibm_result.results[i].to_dict()
-        ))
+        result_dto_list.append(
+            ResultDataclass(circuit=circuit, result_dict=counts, result_type=ResultType.COUNTS, meta_data=ibm_result.results[i].to_dict())
+        )
     return result_dto_list
 
 
@@ -39,12 +36,14 @@ def estimator_result_to_db_results(ibm_result: EstimatorResult, job: JobCoreDto,
         value: float = ibm_result.values[i]
         variance: float = ibm_result.metadata[i]["variance"]
         circuit: str = job.deployment.program_list[i].quantum_circuit
-        result_dto_list.append(ResultDataclass(
-            circuit=circuit,
-            result_dict={"value": str(value), "variance": str(variance)},
-            result_type=ResultType.VALUE_AND_VARIANCE,
-            meta_data={"observer": f"SparsePauliOp-{observer}"}
-        ))
+        result_dto_list.append(
+            ResultDataclass(
+                circuit=circuit,
+                result_dict={"value": str(value), "variance": str(variance)},
+                result_type=ResultType.VALUE_AND_VARIANCE,
+                meta_data={"observer": f"SparsePauliOp-{observer}"},
+            )
+        )
     return result_dto_list
 
 
@@ -53,9 +52,11 @@ def sampler_result_to_db_results(ibm_result: SamplerResult, job_dto: JobCoreDto)
     for i in range(ibm_result.num_experiments):
         quasi_dist: dict = ibm_result.quasi_dists[i]
         circuit: str = job_dto.deployment.program_list[i].quantum_circuit
-        result_dto_list.append(ResultDataclass(
-            circuit=circuit,
-            result_dict=quasi_dist,
-            result_type=ResultType.QUASI_DIST,
-        ))
+        result_dto_list.append(
+            ResultDataclass(
+                circuit=circuit,
+                result_dict=quasi_dist,
+                result_type=ResultType.QUASI_DIST,
+            )
+        )
     return result_dto_list

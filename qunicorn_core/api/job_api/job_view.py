@@ -92,4 +92,3 @@ class JobDetailView(MethodView):
         """Pause a job via id."""
 
         pass
-

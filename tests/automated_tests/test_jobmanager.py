@@ -45,7 +45,7 @@ def test_celery_run_job(mocker):
     mocker.patch("qunicorn_core.core.mapper.result_mapper.runner_result_to_db_results", return_value=result_list)
 
     app = set_up_env()
-    job_request_dto: JobRequestDto = JobRequestDto(**get_object_from_json('job_test_data.json'))
+    job_request_dto: JobRequestDto = JobRequestDto(**get_object_from_json("job_test_data.json"))
 
     # WHEN: Executing method to be tested
     with app.app_context():

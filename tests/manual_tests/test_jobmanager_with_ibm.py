@@ -34,7 +34,7 @@ def test_create_and_run_runner():
     """Tests the create and run job method for synchronous execution of a runner"""
     # GIVEN: Database Setup & job_request_dto created
     app = set_up_env()
-    job_request_dto: JobRequestDto = JobRequestDto(**get_object_from_json('job_test_data.json'))
+    job_request_dto: JobRequestDto = JobRequestDto(**get_object_from_json("job_test_data.json"))
 
     # WHEN: create_and_run executed synchronous
     with app.app_context():
@@ -52,7 +52,7 @@ def test_create_and_run_sampler():
     """Tests the create and run job method for synchronous execution of a sampler"""
     # GIVEN: Database Setup & job_request_dto created
     app = set_up_env()
-    job_request_dto: JobRequestDto = JobRequestDto(**get_object_from_json('job_test_data.json'))
+    job_request_dto: JobRequestDto = JobRequestDto(**get_object_from_json("job_test_data.json"))
     job_request_dto.type = JobType.SAMPLER
 
     # WHEN: create_and_run executed synchronous
@@ -71,7 +71,7 @@ def test_create_and_run_estimator():
     """Tests the create and run job method for synchronous execution of an estimator"""
     # GIVEN: Database Setup & job_request_dto created
     app = set_up_env()
-    job_request_dto: JobRequestDto = JobRequestDto(**get_object_from_json('job_test_data.json'))
+    job_request_dto: JobRequestDto = JobRequestDto(**get_object_from_json("job_test_data.json"))
     job_request_dto.type = JobType.ESTIMATOR
 
     # WHEN: create_and_run executed synchronous
