@@ -25,7 +25,7 @@ from qunicorn_core.core.mapper import job_mapper
 from qunicorn_core.db.database_services import job_db_service
 from qunicorn_core.db.models.job import JobDataclass
 from qunicorn_core.static.enums.job_state import JobState
-from tests.automated_tests.conftest import set_up_env
+from tests.conftest import set_up_env
 
 
 def test_celery_run_job(mocker):

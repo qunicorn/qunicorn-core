@@ -16,8 +16,6 @@
 import json
 import os
 
-import pytest
-
 from qunicorn_core.api.api_models import JobRequestDto, SimpleJobDto
 from qunicorn_core.core.jobmanager.jobmanager_service import create_and_run_job
 from qunicorn_core.db.database_services import job_db_service
@@ -26,19 +24,18 @@ from qunicorn_core.db.models.result import ResultDataclass
 from qunicorn_core.static.enums.job_state import JobState
 from qunicorn_core.static.enums.job_type import JobType
 from qunicorn_core.static.enums.result_type import ResultType
-from tests.test_config import set_up_env
+from tests.conftest import set_up_env
 
 EXPECTED_ID: int = 2
 JOB_FINISHED_PROGRESS: int = 100
 STANDARD_JOB_NAME: str = "JobName"
 
 
-# @pytest.mark.skip(reason="A token need to be set in the environment to test this")
 def test_create_and_run_runner():
     """Tests the create and run job method for synchronous execution of a runner"""
     # GIVEN: Database Setup & job_request_dto created
-    app = set_up_env()
-    job_request_dto: JobRequestDto = JobRequestDto(**get_object_from_json('job_test_data.json'))
+    app = set_up_env(True)
+    job_request_dto: JobRequestDto = JobRequestDto(**get_object_from_json('../job_test_data.json'))
 
     # WHEN: create_and_run executed synchronous
     with app.app_context():
@@ -52,12 +49,11 @@ def test_create_and_run_runner():
         check_if_job_runner_result_correct(job)
 
 
-@pytest.mark.skip(reason="A token need to be set in the environment to test this")
 def test_create_and_run_sampler():
     """Tests the create and run job method for synchronous execution of a sampler"""
     # GIVEN: Database Setup & job_request_dto created
-    app = set_up_env()
-    job_request_dto: JobRequestDto = JobRequestDto(**get_object_from_json('job_test_data.json'))
+    app = set_up_env(True)
+    job_request_dto: JobRequestDto = JobRequestDto(**get_object_from_json('../job_test_data.json'))
     job_request_dto.type = JobType.SAMPLER
 
     # WHEN: create_and_run executed synchronous
@@ -72,12 +68,11 @@ def test_create_and_run_sampler():
         check_if_job_sample_result_correct(job)
 
 
-# @pytest.mark.skip(reason="A token need to be set in the environment to test this")
 def test_create_and_run_estimator():
     """Tests the create and run job method for synchronous execution of an estimator"""
     # GIVEN: Database Setup & job_request_dto created
-    app = set_up_env()
-    job_request_dto: JobRequestDto = JobRequestDto(**get_object_from_json('job_test_data.json'))
+    app = set_up_env(True)
+    job_request_dto: JobRequestDto = JobRequestDto(**get_object_from_json('../job_test_data.json'))
     job_request_dto.type = JobType.ESTIMATOR
 
     # WHEN: create_and_run executed synchronous

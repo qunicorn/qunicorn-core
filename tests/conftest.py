@@ -12,12 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""""Test class to test the functionality of the job_api"""
-import os
-from pathlib import Path
-
+""""pytest conftest file"""
 from qunicorn_core import create_app
-from qunicorn_core.db.cli import create_db_function, load_db_function, drop_db_function
+from qunicorn_core.db.cli import create_db_function, load_db_function
 
 DEFAULT_TEST_CONFIG = {
     "SECRET_KEY": "test",
@@ -35,17 +32,16 @@ DEFAULT_TEST_CONFIG = {
 }
 
 
-# @pytest.fixture
-def set_up_env():
-    print("SETTING UP ENVIRONMENT FOR TESTS")
+def set_up_env(load_data: bool = False):
+    """Set up Flask app and environment and return app"""
     test_config = {}
     test_config.update(DEFAULT_TEST_CONFIG)
-    test_config.update(
-        {"SQLALCHEMY_DATABASE_URI": f"sqlite:///" + os.path.join(str(Path(".").absolute()), "qunicorn_test_db")})
-    app = create_app(test_config=test_config)
+    test_config.update({"SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:"})
+
+    app = create_app(test_config)
     with app.app_context():
-        drop_db_function(app)
         create_db_function(app)
-        load_db_function(app)
+        if load_data:
+            load_db_function(app)
 
     return app
