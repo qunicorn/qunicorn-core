@@ -13,8 +13,6 @@
 # limitations under the License.
 
 """"Test class to test the functionality of the job_api"""
-import json
-import os
 
 from qunicorn_core.api.api_models import JobRequestDto, SimpleJobDto
 from qunicorn_core.core.jobmanager.jobmanager_service import create_and_run_job
@@ -25,6 +23,7 @@ from qunicorn_core.static.enums.job_state import JobState
 from qunicorn_core.static.enums.job_type import JobType
 from qunicorn_core.static.enums.result_type import ResultType
 from tests.conftest import set_up_env
+from tests.test_utils import get_object_from_json
 
 EXPECTED_ID: int = 2
 JOB_FINISHED_PROGRESS: int = 100
@@ -34,8 +33,8 @@ STANDARD_JOB_NAME: str = "JobName"
 def test_create_and_run_runner():
     """Tests the create and run job method for synchronous execution of a runner"""
     # GIVEN: Database Setup & job_request_dto created
-    app = set_up_env(True)
-    job_request_dto: JobRequestDto = JobRequestDto(**get_object_from_json('../job_test_data.json'))
+    app = set_up_env()
+    job_request_dto: JobRequestDto = JobRequestDto(**get_object_from_json('job_test_data.json'))
 
     # WHEN: create_and_run executed synchronous
     with app.app_context():
@@ -52,8 +51,8 @@ def test_create_and_run_runner():
 def test_create_and_run_sampler():
     """Tests the create and run job method for synchronous execution of a sampler"""
     # GIVEN: Database Setup & job_request_dto created
-    app = set_up_env(True)
-    job_request_dto: JobRequestDto = JobRequestDto(**get_object_from_json('../job_test_data.json'))
+    app = set_up_env()
+    job_request_dto: JobRequestDto = JobRequestDto(**get_object_from_json('job_test_data.json'))
     job_request_dto.type = JobType.SAMPLER
 
     # WHEN: create_and_run executed synchronous
@@ -71,8 +70,8 @@ def test_create_and_run_sampler():
 def test_create_and_run_estimator():
     """Tests the create and run job method for synchronous execution of an estimator"""
     # GIVEN: Database Setup & job_request_dto created
-    app = set_up_env(True)
-    job_request_dto: JobRequestDto = JobRequestDto(**get_object_from_json('../job_test_data.json'))
+    app = set_up_env()
+    job_request_dto: JobRequestDto = JobRequestDto(**get_object_from_json('job_test_data.json'))
     job_request_dto.type = JobType.ESTIMATOR
 
     # WHEN: create_and_run executed synchronous
@@ -147,11 +146,3 @@ def check_standard_result_data(i, job, result):
     assert result.result_type == ResultType.get_result_type(job.type)
     assert result.job_id == job.id
     assert result.circuit == job.deployment.program_list[i].quantum_circuit
-
-
-def get_object_from_json(json_file_name: str):
-    root_dir = os.path.dirname(os.path.abspath(__file__))
-    path_dir = "{}{}{}".format(root_dir, os.sep, json_file_name)
-    with open(path_dir) as f:
-        data = json.load(f)
-    return data

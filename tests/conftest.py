@@ -32,7 +32,7 @@ DEFAULT_TEST_CONFIG = {
 }
 
 
-def set_up_env(load_data: bool = False):
+def set_up_env():
     """Set up Flask app and environment and return app"""
     test_config = {}
     test_config.update(DEFAULT_TEST_CONFIG)
@@ -41,7 +41,6 @@ def set_up_env(load_data: bool = False):
     app = create_app(test_config)
     with app.app_context():
         create_db_function(app)
-        if load_data:
-            load_db_function(app)
+        load_db_function(app)
 
     return app
