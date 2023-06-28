@@ -57,7 +57,7 @@ def request_to_core(job: JobRequestDto):
         started_at=datetime.now(),
         finished_at=datetime.now(),
         data="",
-        results="",
+        results=[],
     )
 
 

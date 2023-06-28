@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -22,6 +22,7 @@ from sqlalchemy.sql import sqltypes as sql
 from .db_model import DbModel
 from .deployment import DeploymentDataclass
 from .device import DeviceDataclass
+from .result import ResultDataclass
 from .user import UserDataclass
 from ..db import REGISTRY
 from ...static.enums.job_state import JobState
@@ -42,11 +43,14 @@ class JobDataclass(DbModel):
         finished_at (Optional[datetime], optional): The moment the job finished successfully or with an error.
         data (Union[dict, list, str, float, int, bool, None], optional): Mutable JSON-like store for additional
             lightweight task data. Default value is empty dict.
-        results (str, optional): The output data (files) of the job
+        results (ResultDataclass, optional): List of results for each quantum program that was executed
         parameters (str, optional): The parameters for the Job. Job parameters should already be prepared and error
             checked before starting the task.
     """
-
+    results: Mapped[Optional[List[ResultDataclass.__name__]]] = relationship(
+        ResultDataclass.__name__,
+        default_factory=list
+    )
     executed_by_id: Mapped[int] = mapped_column(ForeignKey(UserDataclass.__tablename__ + ".id"), default=None, nullable=True)
     executed_by: Mapped[UserDataclass.__name__] = relationship(UserDataclass.__name__, default=None)
 
@@ -70,5 +74,4 @@ class JobDataclass(DbModel):
     finished_at: Mapped[Optional[datetime]] = mapped_column(sql.TIMESTAMP(timezone=True), default=None, nullable=True)
     name: Mapped[Optional[str]] = mapped_column(sql.String(50), default=None)
     data: Mapped[Optional[str]] = mapped_column(sql.String(50), default=None)
-    results: Mapped[Optional[str]] = mapped_column(sql.String(50), default=None)
     parameters: Mapped[Optional[str]] = mapped_column(sql.String(50), default=None)

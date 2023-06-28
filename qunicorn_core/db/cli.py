@@ -30,6 +30,7 @@ from .models.device import DeviceDataclass
 from .models.job import JobDataclass
 from .models.provider import ProviderDataclass
 from .models.quantum_program import QuantumProgramDataclass
+from .models.result import ResultDataclass
 from .models.user import UserDataclass
 from ..static.enums.job_state import JobState
 from ..static.enums.job_type import JobType
@@ -101,6 +102,7 @@ def load_db_function(app: Flask):
         type=JobType.RUNNER,
         started_at=datetime.datetime.now(),
         name="JobName",
+        results=[ResultDataclass(result_dict={"0x": "550", "1x": "450"})]
     )
     DB.session.add(job)
     DB.session.commit()

@@ -17,6 +17,7 @@ from qunicorn_core.api.api_models.job_dtos import JobCoreDto
 from qunicorn_core.core.mapper import job_mapper
 from qunicorn_core.db.database_services import db_service, device_db_service
 from qunicorn_core.db.models.job import JobDataclass
+from qunicorn_core.db.models.result import ResultDataclass
 from qunicorn_core.db.models.user import UserDataclass
 from qunicorn_core.static.enums.job_state import JobState
 
@@ -42,17 +43,14 @@ def update_attribute(job_id: int, attribute_value, attribute_name):
     db_service.get_session().commit()
 
 
-def update_finished_job(job_id: int, results: str):
+def update_finished_job(job_id: int, results: list[ResultDataclass]):
     """Updates the attributes state and results of the job with the id job_id"""
-    db_service.get_session().query(JobDataclass).filter(JobDataclass.id == job_id).update(
-        {
-            JobDataclass.state: JobState.FINISHED,
-            JobDataclass.results: results,
-            JobDataclass.progress: 100,
-            JobDataclass.finished_at: datetime.datetime.now()
-        }
-    )
-    db_service.get_session().commit()
+    job: JobDataclass = get_job(job_id)
+    job.finished_at = datetime.datetime.now()
+    job.progress = 100
+    job.results = results
+    job.state = JobState.FINISHED
+    db_service.save_database_object(job)
 
 
 def get_job(job_id: int) -> JobDataclass:

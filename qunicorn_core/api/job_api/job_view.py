@@ -61,8 +61,9 @@ class JobDetailView(MethodView):
     """Jobs endpoint for a single job."""
 
     @JOBMANAGER_API.response(HTTPStatus.OK, JobResponseDtoSchema())
-    def get(self, job_id: str):
+    def get(self, job_id: str, run_type: str):
         """Get the details of a job."""
+        print(run_type)
         job_response_dto: JobResponseDto = jobmanager_service.get_job(int(job_id))
         return jsonify(job_response_dto), 200
 
@@ -91,3 +92,4 @@ class JobDetailView(MethodView):
         """Pause a job via id."""
 
         pass
+

@@ -31,6 +31,7 @@ class DeploymentDataclass(DbModel):
     Attributes:
         name (str, optional): Optional name for a deployment_api
         deployed_by (str): The  user_id that deployed this Deployment
+        program_list (list): A list of quantum programs 
         deployed_at (Date): Date of the creation of a deployment_api
     """
 
