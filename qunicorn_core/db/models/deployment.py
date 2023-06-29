@@ -31,13 +31,13 @@ class DeploymentDataclass(DbModel):
     Attributes:
         name (str, optional): Optional name for a deployment_api
         deployed_by (str): The  user_id that deployed this Deployment
-        program_list (list): A list of quantum programs
+        programs (list): A list of quantum programs
         deployed_at (Date): Date of the creation of a deployment_api
     """
 
     deployed_by_id: Mapped[int] = mapped_column(ForeignKey(UserDataclass.__tablename__ + ".id"), default=None, nullable=True)
     deployed_by: Mapped[UserDataclass.__name__] = relationship(UserDataclass.__name__, default=None)
-    program_list: Mapped[List[QuantumProgramDataclass.__name__]] = relationship(
+    programs: Mapped[List[QuantumProgramDataclass.__name__]] = relationship(
         QuantumProgramDataclass.__name__,
         default=None,
     )

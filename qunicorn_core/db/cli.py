@@ -85,7 +85,7 @@ def load_db_function(app: Flask):
     user = UserDataclass(name="DefaultUser")
     qc = QuantumProgramDataclass(quantum_circuit=utils.get_default_qasm_string(1))
     qc2 = QuantumProgramDataclass(quantum_circuit=utils.get_default_qasm_string(2))
-    deployment = DeploymentDataclass(deployed_by=user, program_list=[qc, qc2], deployed_at=datetime.datetime.now(), name="DeploymentName")
+    deployment = DeploymentDataclass(deployed_by=user, programs=[qc, qc2], deployed_at=datetime.datetime.now(), name="DeploymentName")
     provider = ProviderDataclass(
         with_token=True,
         supported_language=ProgrammingLanguage.QISKIT,

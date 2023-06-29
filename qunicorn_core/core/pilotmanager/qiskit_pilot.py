@@ -62,10 +62,10 @@ class QiskitPilot(Pilot):
 
     def __sample(self, job_dto: JobCoreDto):
         """Uses the Sampler to execute a job on an IBM backend using the Qiskit Pilot"""
-        backend, circuit_list = self.__get_backend_circuits_and_id_for_qiskit_runtime(job_dto)
+        backend, circuits = self.__get_backend_circuits_and_id_for_qiskit_runtime(job_dto)
         sampler = Sampler(session=backend)
 
-        job_from_ibm: RuntimeJob = sampler.run(circuit_list)
+        job_from_ibm: RuntimeJob = sampler.run(circuits)
         ibm_result: SamplerResult = job_from_ibm.result()
         results: list[ResultDataclass] = result_mapper.sampler_result_to_db_results(ibm_result, job_dto)
         job_db_service.update_finished_job(job_dto.id, results)
@@ -73,11 +73,11 @@ class QiskitPilot(Pilot):
 
     def __estimate(self, job_dto: JobCoreDto):
         """Uses the Estimator to execute a job on an IBM backend using the Qiskit Pilot"""
-        backend, circuit_list = self.__get_backend_circuits_and_id_for_qiskit_runtime(job_dto)
+        backend, circuits = self.__get_backend_circuits_and_id_for_qiskit_runtime(job_dto)
         estimator = Estimator(session=backend)
         estimator_observables: list[SparsePauliOp] = [SparsePauliOp("IY"), SparsePauliOp("IY")]
 
-        job_from_ibm = estimator.run(circuit_list, observables=estimator_observables)
+        job_from_ibm = estimator.run(circuits, observables=estimator_observables)
         ibm_result: EstimatorResult = job_from_ibm.result()
         results: list[ResultDataclass] = result_mapper.estimator_result_to_db_results(ibm_result, job_dto, "IY")
         job_db_service.update_finished_job(job_dto.id, results)
@@ -88,14 +88,14 @@ class QiskitPilot(Pilot):
         service: QiskitRuntimeService = QiskitRuntimeService()
         self.__get_ibm_provider_and_login(job_dto.token, job_dto.id)
         job_db_service.update_attribute(job_dto.id, JobState.RUNNING, JobDataclass.state)
-        circuit_list: List[QuantumCircuit] = QiskitPilot.__get_circuits_as_QuantumCircuits(job_dto)
+        circuits: List[QuantumCircuit] = QiskitPilot.__get_circuits_as_QuantumCircuits(job_dto)
         backend: BackendV1 = service.get_backend(self.IBMQ_BACKEND)
-        return backend, circuit_list
+        return backend, circuits
 
     @staticmethod
     def __get_circuits_as_QuantumCircuits(job_dto: JobCoreDto) -> List[QuantumCircuit]:
         """Transforms the circuit string into IBM QuantumCircuit objects"""
-        return [QuantumCircuit().from_qasm_str(program.quantum_circuit) for program in job_dto.deployment.program_list]
+        return [QuantumCircuit().from_qasm_str(program.quantum_circuit) for program in job_dto.deployment.programs]
 
     @staticmethod
     def __get_ibm_provider_and_login(token: str, job_dto_id: int) -> IBMProvider:
@@ -118,9 +118,9 @@ class QiskitPilot(Pilot):
     def transpile(self, provider: IBMProvider, job_dto: JobCoreDto):
         """Transpile job on an IBM backend"""
 
-        circuit_list: list[QuantumCircuit] = self.__get_circuits_as_QuantumCircuits(job_dto)
+        circuits: list[QuantumCircuit] = self.__get_circuits_as_QuantumCircuits(job_dto)
         backend = provider.get_backend(self.IBMQ_BACKEND)
-        transpiled = transpile(circuit_list, backend=backend)
+        transpiled = transpile(circuits, backend=backend)
 
         print("Transpiled quantum circuit(s) for a specific IBM backend")
         return backend, transpiled

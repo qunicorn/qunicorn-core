@@ -41,8 +41,8 @@ def test_celery_run_job(mocker):
     mocker.patch(f"{path_to_pilot}._QiskitPilot__get_ibm_provider_and_login", return_value=backend_mock)
     mocker.patch(f"{path_to_pilot}.transpile", return_value=(backend_mock, None))
 
-    result_list: list[ResultDataclass] = [ResultDataclass(result_dict={"00": 4000})]
-    mocker.patch("qunicorn_core.core.mapper.result_mapper.runner_result_to_db_results", return_value=result_list)
+    results: list[ResultDataclass] = [ResultDataclass(result_dict={"00": 4000})]
+    mocker.patch("qunicorn_core.core.mapper.result_mapper.runner_result_to_db_results", return_value=results)
 
     app = set_up_env()
     job_request_dto: JobRequestDto = JobRequestDto(**get_object_from_json("job_request_dto_test_data.json"))

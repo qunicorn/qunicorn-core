@@ -30,7 +30,7 @@ __all__ = ["DeploymentDtoSchema", "DeploymentDto"]
 @dataclass
 class DeploymentDto:
     id: int
-    program_list: List[QuantumProgramDto]
+    programs: List[QuantumProgramDto]
     deployed_by: UserDto
     deployed_at: datetime
     name: str
@@ -39,7 +39,7 @@ class DeploymentDto:
 class DeploymentDtoSchema(MaBaseSchema):
     id = ma.fields.Integer(required=False, metadata={"description": "UID for the deployment_api"})
     deployed_by = UserDtoSchema()
-    program_list = ma.fields.List(ma.fields.Int, required=False, netadata={"description": "Ids of quantum programs"})
+    programs = ma.fields.List(ma.fields.Int, required=False, netadata={"description": "Ids of quantum programs"})
     deployed_at = ma.fields.Date(required=False, metadata={"description": "Time of Deployment"})
     name = ma.fields.String(
         required=True,

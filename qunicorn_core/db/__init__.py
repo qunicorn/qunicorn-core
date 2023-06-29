@@ -28,7 +28,6 @@ from .db import DB, MIGRATE
 def register_db(app: Flask):
     """Register the sqlalchemy db and alembic migrations with the flask app."""
     if not app.config.get("SQLALCHEMY_DATABASE_URI"):
-        print("Yes we are:", app.instance_path, app.import_name)
         app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{app.instance_path}/{app.import_name}.db"
 
     DB.init_app(app)
