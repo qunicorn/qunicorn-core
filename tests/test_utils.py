@@ -18,6 +18,8 @@ import os
 
 
 def get_object_from_json(json_file_name: str):
+    """Returns the json object out of the json file with the name json_file_name"""
+
     root_dir = os.path.dirname(os.path.abspath(__file__))
     path_dir = "{}{}{}".format(root_dir, os.sep, json_file_name)
     with open(path_dir) as f:
