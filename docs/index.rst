@@ -14,8 +14,11 @@ Welcome to Qunicorn_Core's documentation!
    cli
    adr/index
    changelog
-
-`Api documentation <api.html>`_
+   models/dbmodels
+   models/domainmodel
+   apidocumentation
+   architecture
+  
 
 Indices and tables
 ==================

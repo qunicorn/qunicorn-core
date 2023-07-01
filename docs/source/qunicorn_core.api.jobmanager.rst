@@ -4,13 +4,37 @@ qunicorn\_core.api.jobmanager package
 Submodules
 ----------
 
-.. toctree::
-   :maxdepth: 4
+qunicorn\_core.api.jobmanager.job\_pilots module
+------------------------------------------------
 
-   qunicorn_core.api.jobmanager.job_pilots
-   qunicorn_core.api.jobmanager.jobs
-   qunicorn_core.api.jobmanager.pilot_base
-   qunicorn_core.api.jobmanager.root
+.. automodule:: qunicorn_core.api.jobmanager.job_pilots
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+qunicorn\_core.api.jobmanager.jobs module
+-----------------------------------------
+
+.. automodule:: qunicorn_core.api.jobmanager.jobs
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+qunicorn\_core.api.jobmanager.pilot\_base module
+------------------------------------------------
+
+.. automodule:: qunicorn_core.api.jobmanager.pilot_base
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+qunicorn\_core.api.jobmanager.root module
+-----------------------------------------
+
+.. automodule:: qunicorn_core.api.jobmanager.root
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 Module contents
 ---------------

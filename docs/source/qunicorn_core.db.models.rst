@@ -4,12 +4,29 @@ qunicorn\_core.db.models package
 Submodules
 ----------
 
-.. toctree::
-   :maxdepth: 4
+qunicorn\_core.db.models.deployments module
+-------------------------------------------
 
-   qunicorn_core.db.models.deployments
-   qunicorn_core.db.models.example
-   qunicorn_core.db.models.jobs
+.. automodule:: qunicorn_core.db.models.deployments
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+qunicorn\_core.db.models.example module
+---------------------------------------
+
+.. automodule:: qunicorn_core.db.models.example
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+qunicorn\_core.db.models.jobs module
+------------------------------------
+
+.. automodule:: qunicorn_core.db.models.jobs
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 Module contents
 ---------------
