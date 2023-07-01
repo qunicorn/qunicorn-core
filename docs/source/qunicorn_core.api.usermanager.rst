@@ -4,11 +4,21 @@ qunicorn\_core.api.usermanager package
 Submodules
 ----------
 
-.. toctree::
-   :maxdepth: 4
+qunicorn\_core.api.usermanager.root module
+------------------------------------------
 
-   qunicorn_core.api.usermanager.root
-   qunicorn_core.api.usermanager.users
+.. automodule:: qunicorn_core.api.usermanager.root
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+qunicorn\_core.api.usermanager.users module
+-------------------------------------------
+
+.. automodule:: qunicorn_core.api.usermanager.users
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 Module contents
 ---------------

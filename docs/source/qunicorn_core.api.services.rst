@@ -4,11 +4,21 @@ qunicorn\_core.api.services package
 Submodules
 ----------
 
-.. toctree::
-   :maxdepth: 4
+qunicorn\_core.api.services.root module
+---------------------------------------
 
-   qunicorn_core.api.services.root
-   qunicorn_core.api.services.services
+.. automodule:: qunicorn_core.api.services.root
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+qunicorn\_core.api.services.services module
+-------------------------------------------
+
+.. automodule:: qunicorn_core.api.services.services
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
 Module contents
 ---------------
