@@ -32,6 +32,12 @@ To override any variable create a `.env` file.
 Environment variables in `.env` take precedence over `.flaskenv`.
 See the content of the `.flaskenv` file for the default environment variables.
 
+The currently available endpoints are:
+* **POST /jobs/** *(Create/Register and run new job)*
+  * Needs a valid token to connect to IBM
+  * Runs asynchronously so the results are not shown in the api response  
+* **GET /jobs/{job_id}/** *(Get details/results of a job)*
+
 Run the development server with
 
 ```bash
