@@ -18,6 +18,7 @@ These test can be manually triggered to the App End-To-End with also the Quantum
 They are found in "tests/manual_tests".
 To test the IBM Runner/Sampler or Estimator, a token need to be added to the Environment Variables.
 The key should be "IBM_TOKEN" and the token can be copied from your landing page at https://quantum-computing.ibm.com/.
+Instead, the token could also be added to the "job_request_dto_test_data.json"-File.
 
 ## How to run tests
 

@@ -49,7 +49,7 @@ class JobRequestDto:
     """JobDto that was sent from the user as a request"""
 
     name: str
-    circuits: []
+    circuits: list[str]
     provider_name: str
     shots: int
     parameters: str
