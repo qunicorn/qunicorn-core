@@ -14,7 +14,7 @@
 
 """"pytest conftest file"""
 from qunicorn_core import create_app
-from qunicorn_core.db.cli import create_db_function
+from qunicorn_core.db.cli import create_db_function, load_db_function
 
 DEFAULT_TEST_CONFIG = {
     "SECRET_KEY": "test",
@@ -41,5 +41,6 @@ def set_up_env():
     app = create_app(test_config)
     with app.app_context():
         create_db_function(app)
+        load_db_function(app)
 
     return app

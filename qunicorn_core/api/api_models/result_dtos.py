@@ -13,30 +13,33 @@
 # limitations under the License.
 
 
-"""Module containing all Dtos and their Schemas  for tasks in the Services API."""
+"""Module containing all Dtos and their Schemas for tasks in the Jobmanager API."""
 from dataclasses import dataclass
 
 import marshmallow as ma
 
 from ..flask_api_utils import MaBaseSchema
 
-__all__ = ["ProviderDtoSchema", "ProviderIDSchema", "ProviderDto"]
+__all__ = [
+    "ResultDto",
+    "ResultDtoSchema",
+]
+
+from ...static.enums.result_type import ResultType
 
 
 @dataclass
-class ProviderDto:
+class ResultDto:
     id: int
-    with_token: bool
-    supported_language: str
-    name: str
+    circuit: str
+    results: dict
+    header: dict
+    result_type: ResultType
 
 
-class ProviderDtoSchema(MaBaseSchema):
-    id = ma.fields.Integer(required=True, allow_none=False)
-    with_token = ma.fields.Boolean(required=False, allow_none=True)
-    supported_language = ma.fields.String(required=False, allow_none=True)
-    name = ma.fields.String(required=True, allow_none=False)
-
-
-class ProviderIDSchema(MaBaseSchema):
-    provider_id = ma.fields.String(required=True, allow_none=False)
+class ResultDtoSchema(MaBaseSchema):
+    id = ma.fields.Int(required=True, dump_only=True)
+    circuit = ma.fields.String(required=True, dump_only=True)
+    results = ma.fields.Dict(required=True, dump_only=True)
+    result_type = ma.fields.Enum(enum=ResultType, required=True, dump_only=True)
+    header = ma.fields.Dict(required=True, dump_only=True)

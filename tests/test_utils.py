@@ -12,21 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-"""Module containing the root endpoint of the JobMANAGER API."""
-
-from dataclasses import dataclass
-
-from ..flask_api_utils import SecurityBlueprint as SmorestBlueprint
-
-JOBMANAGER_API = SmorestBlueprint(
-    "job-api",
-    "JOB API",
-    description="Jobmanager API for the control plane.",
-    url_prefix="/jobs/",
-)
+""""pytest utils file"""
+import json
+import os
 
 
-@dataclass()
-class RootData:
-    root: str
+def get_object_from_json(json_file_name: str):
+    """Returns the json object out of the json file with the name json_file_name"""
+
+    root_dir = os.path.dirname(os.path.abspath(__file__))
+    path_dir = "{}{}{}".format(root_dir, os.sep, json_file_name)
+    with open(path_dir) as f:
+        data = json.load(f)
+    return data
