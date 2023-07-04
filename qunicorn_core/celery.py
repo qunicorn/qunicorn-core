@@ -22,7 +22,15 @@ class FlaskTask(Task):
             # run task with app context
             return self.run(*args, **kwargs)
 
-CELERY = Celery("task", flask_app=None, broker='redis://localhost:6379', backend='redis://localhost:6379')
+
+CELERY = Celery(
+    __name__,
+    flask_app=None,
+    task_cls=FlaskTask,
+    broker="redis://localhost:6379",
+    backend="redis://localhost:6379",
+)
+
 
 def register_celery(app: Flask):
     """Load the celery config from the app instance."""
@@ -30,4 +38,4 @@ def register_celery(app: Flask):
         app.config.get("CELERY", {}),
         beat_schedule={},
     )
-    CELERY.flask_app = app  # set flask_app attribute used by
+    CELERY.flask_app = app

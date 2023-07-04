@@ -14,33 +14,29 @@
 
 """Root module containing the flask app factory."""
 
+from json import load as load_json
+from logging import Logger, Formatter, Handler, WARNING, getLogger
+from logging.config import dictConfig
 from os import environ, makedirs
 from pathlib import Path
 from typing import Any, Dict, Optional, cast
-from logging import Logger, Formatter, Handler, WARNING, getLogger
-from logging.config import dictConfig
 
+import click
 from flask.app import Flask
 from flask.cli import FlaskGroup
 from flask.logging import default_handler
 from flask_cors import CORS
-
-from json import load as load_json
 from tomli import load as load_toml
 
-import click
-
-from .util.config import ProductionConfig, DebugConfig
-from . import licenses
-from . import db
-from . import api
+from . import api, celery, db, licenses
 from .api import jwt
-
+from .util.config import ProductionConfig, DebugConfig
 
 # change this to change tha flask app name and the config env var prefix
 # must not contain any spaces!
 APP_NAME = __name__
 CONFIG_ENV_VAR_PREFIX = APP_NAME.upper().replace("-", "_").replace(" ", "_")
+app: Flask
 
 
 def create_app(test_config: Optional[Dict[str, Any]] = None):
@@ -53,14 +49,9 @@ def create_app(test_config: Optional[Dict[str, Any]] = None):
     # create and configure the app
     app = Flask(APP_NAME, instance_relative_config=True, instance_path=instance_path)
 
-    # Start Loading config #################
-
     # load defaults
     config = app.config
-    flask_debug: bool = (
-        config.get("DEBUG", False)
-        or environ.get("FLASK_ENV", "production").lower() == "development"
-    )
+    flask_debug: bool = config.get("DEBUG", False) or environ.get("FLASK_ENV", "production").lower() == "development"  # noqa
     if flask_debug:
         config.from_object(DebugConfig)
     elif test_config is None:
@@ -83,7 +74,6 @@ def create_app(test_config: Optional[Dict[str, Any]] = None):
             celery_conf = config.get("CELERY", {})
             celery_conf["broker_url"] = environ["BROKER_URL"]
             config["CELERY"] = celery_conf
-
 
     else:
         # load the test config if passed in
@@ -118,9 +108,7 @@ def create_app(test_config: Optional[Dict[str, Any]] = None):
     )
 
     if config.get("SECRET_KEY") == "debug_secret":
-        logger.error(
-            'The configured SECRET_KEY="debug_secret" is unsafe and must not be used in production!'
-        )
+        logger.error('The configured SECRET_KEY="debug_secret" is unsafe and must not be used in production!')
 
     # ensure the instance folder exists
     try:
@@ -131,6 +119,8 @@ def create_app(test_config: Optional[Dict[str, Any]] = None):
     # Begin loading extensions and routes
 
     licenses.register_licenses(app)
+
+    celery.register_celery(app)
 
     db.register_db(app)
 

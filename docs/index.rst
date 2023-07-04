@@ -12,6 +12,7 @@ Welcome to Qunicorn_Core's documentation!
 
    readme
    cli
+   adr/index
    changelog
    models/dbmodels
    models/domainmodel

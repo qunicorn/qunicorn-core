@@ -7,8 +7,10 @@ exclude =
     build,
     dist
 max-line-length = 140
-max-doc-length = 80
+max-doc-length = 140
 max-complexity = 10
 docstring-convention=google
 select=C,E,F,W,B,B902
 extend-ignore = E203
+per-file-ignores =
+    __init__.py:F401,F403,C901

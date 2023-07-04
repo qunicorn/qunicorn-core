@@ -1,4 +1,4 @@
-# Copyright 2021 QHAna plugin runner contributors.
+# Copyright 2023 University of Stuttgart
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,22 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# flake8: noqa
+
 from os import environ
 from os import execvpe as replace_process
-from os import urandom
+from pathlib import Path
+from platform import system
 from re import match
 from shutil import copytree
 from typing import List, Optional, cast
 
 from dotenv import load_dotenv, set_key, unset_key
-from invoke import UnexpectedExit, call, task
+from invoke import UnexpectedExit
+from invoke import task
 from invoke.context import Context
 from invoke.runners import Result
-
-from pathlib import Path
-from platform import system
-
-from invoke import task
 
 if system() == "Windows":
     from subprocess import list2cmdline as join
@@ -39,7 +38,6 @@ load_dotenv(".env")
 
 MODULE_NAME = "qunicorn_core"
 CELERY_WORKER = f"{MODULE_NAME}.celery_worker:CELERY"
-
 
 # a list of allowed licenses, dependencies with other licenses will trigger an error in the list-licenses command
 ALLOWED_LICENSES = [
@@ -250,18 +248,20 @@ def start_containers(c):
 
 
 @task
-def worker(
-    c, pool="solo", concurrency=1, dev=False, log_level="INFO", periodic_scheduler=False
-):
+def worker(c, pool="solo", concurrency=1, dev=False, log_level="INFO", periodic_scheduler=False):
     """Run the celery worker, optionally starting the redis broker.
 
     Args:
         c (Context): task context
         pool (str, optional): the executor pool to use for celery workers (defaults to "solo" for development on linux and windows)
         concurrency (int, optional): the number of concurrent workers (defaults to 1 for development)
-        dev (bool, optional): If true the redis docker container will be started before the worker and stopped after the workers finished. Defaults to False.
-        log_level (str, optional): The log level of the celery logger in the worker (DEBUG|INFO|WARNING|ERROR|CRITICAL|FATAL). Defaults to "INFO".
-        periodic_scheduler (bool, optional): If true a celery beat scheduler will be started alongside the worker. This is needed for periodic tasks. Should only be set to True for one worker otherwise the periodic tasks get executed too often (see readme file).
+        dev (bool, optional): If true the redis docker container will be started before the worker and stopped after the workers
+        finished. Defaults to False.  #noqa
+        log_level (str, optional): The log level of the celery logger in the worker (DEBUG|INFO|WARNING|ERROR|CRITICAL|FATAL). Defaults
+        to "INFO".  #noqa
+        periodic_scheduler (bool, optional): If true a celery beat scheduler will be started alongside the worker. This is needed for
+        periodic tasks. Should only be set to True for one worker otherwise the periodic tasks get executed too often (see readme file).
+        S #noqa
     """
     if dev:
         start_broker(c)
@@ -289,6 +289,24 @@ def worker(
         # if not in dev mode completely replace the current process with the started process
         print(join(cmd))
         replace_process(cmd[0], cmd, environ)
+
+
+@task
+def check_linting(c):
+    """Checks if there are some linting issues which would be detected by the python pipeline"""
+
+    print("First check if there are some flake8 warnings/errors:")
+    c.run(
+        join(["flake8", "."]),
+        echo=True,
+        warn=True,
+    )
+    print("\nNow check if there are some black warnings/errors:")
+    c.run(
+        join(["black", "--check", "."]),
+        echo=True,
+        warn=True,
+    )
 
 
 @task
@@ -396,9 +414,7 @@ def purge_task_queues(c):
     Args:
         c (Context): task context
     """
-    answer = input(
-        "This action cannot be undone. Type in 'purge' to purge all task queues:"
-    )
+    answer = input("This action cannot be undone. Type in 'purge' to purge all task queues:")
     if answer != "purge":
         print("Not purging task queues.")
         return
@@ -554,7 +570,7 @@ def await_db(c):
 
 @task
 def upgrade_db(c):
-    """Upgrade the datzabase to the newest migration."""
+    """Upgrade the database to the newest migration."""
     c.run(join(["python", "-m", "flask", "db", "upgrade"]), echo=True, warn=True)
 
 
@@ -584,9 +600,7 @@ def start_docker(c):
             periodic_scheduler=periodic_scheduler,
         )
     else:
-        raise ValueError(
-            "Environment variable 'CONTAINER_MODE' must be set to either 'server' or 'worker'!"
-        )
+        raise ValueError("Environment variable 'CONTAINER_MODE' must be set to either 'server' or 'worker'!")
 
 
 @task
@@ -681,25 +695,20 @@ def doc_index(c, filter_=""):
             hide="stdout",
         )
         print(
-            "".join(
-                l
-                for l in output.stdout.splitlines(True)
-                if (l and not l[0].isspace()) or (not filter_) or (filter_ in l.lower())
-            ),
+            "".join(l for l in output.stdout.splitlines(True) if (l and not l[0].isspace()) or (not filter_) or (filter_ in l.lower())),
         )
 
 
 @task
-def list_licenses(
-    c, format_="json", include_installed=False, summary=False, short=False, echo=False
-):
+def list_licenses(c, format_="json", include_installed=False, summary=False, short=False, echo=False):
     """List licenses of dependencies.
 
     By default only the direct (and transitive) dependencies of the plugin runner are included.
 
     Args:
         c (Context): task context
-        format_ (str, optional): The output format (json, html, markdown, plain, plain-vertical, rst, confluence, json-license-finder, csv). Defaults to "json".
+        format_ (str, optional): The output format (json, html, markdown, plain, plain-vertical, rst, confluence, json-license-finder,
+        csv). Defaults to "json". #noqa
         include_installed (bool, optional): If true all currently installed packages are considered dependencies. Defaults to False.
         summary (bool, optional): If true output a summary of found licenses. Defaults to False.
         short (bool, optional): If true only name, version, license and authors of a apackage are printed. Defaults to False.
@@ -788,12 +797,13 @@ def update_licenses(c, include_installed=False):
         warn=True,
     )
 
+
 # Does not work correctly under windows
 @task(update_licenses)
 def update_dependencies(c):
     """Update dependencies that are derived from the pyproject.toml dependencies (e.g. doc dependencies and licenses).
 
-    
+
     Args:
         c (Context): task context
     """
@@ -808,10 +818,9 @@ def update_dependencies(c):
                 "--without-hashes",  # with hashes fails because pip is to strict with transitive dependencies
                 "--output",
                 str(Path("./docs/requirements.txt")),
-                
             ]
         ),
         echo=True,
-        #hide="err",
+        # hide="err",
         warn=True,
     )

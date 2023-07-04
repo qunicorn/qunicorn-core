@@ -1,4 +1,4 @@
-# Copyright 2021 QHAna plugin runner contributors.
+# Copyright 2023 University of Stuttgart
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,7 +19,10 @@
 
 from copy import deepcopy
 from dataclasses import dataclass
+from functools import wraps
 from typing import Any, Callable, Dict, List, Optional, TypeVar, Union
+from warnings import warn
+
 from apispec.core import APISpec
 from apispec.utils import deepupdate
 from flask.app import Flask
@@ -28,8 +31,6 @@ from flask_jwt_extended import JWTManager
 from flask_jwt_extended.exceptions import JWTExtendedException
 from flask_jwt_extended.view_decorators import verify_jwt_in_request
 from flask_smorest import Api, abort
-from warnings import warn
-from functools import wraps
 
 JWT = JWTManager()
 
@@ -55,7 +56,6 @@ SECURITY_SCHEMES = {
     "jwt-refresh-token": JWT_REFRESH_SCHEME,
 }
 
-
 RT = TypeVar("RT")
 
 
@@ -75,7 +75,6 @@ class JWTMixin:
             security_scheme = {security_scheme: []}
 
         def decorator(func: Callable[..., RT]) -> Callable[..., RT]:
-
             # map to names that are less likely to have collisions with user defined arguments!
             _jwt_optional = optional
             _jwt_fresh = fresh
@@ -123,9 +122,7 @@ class JWTMixin:
         """Actually prepare the documentation."""
         operation: Optional[List[Dict[str, List[Any]]]] = doc_info.get("security")
         if operation:
-            available_schemas: Dict[str, Any] = (
-                spec.to_dict().get("components").get("securitySchemes")
-            )
+            available_schemas: Dict[str, Any] = spec.to_dict().get("components").get("securitySchemes")
             for scheme in operation:
                 if not scheme:
                     continue  # encountered empty schema for optional security
@@ -148,7 +145,7 @@ class DemoUser:
 
 @JWT.user_identity_loader
 def load_user_identity(user: DemoUser):
-    # load the user identity (primary key) fromthe user object here
+    # load the user identity (primary key) from the user object here
     return user.username
 
 
@@ -167,11 +164,7 @@ def loadUserObject(jwt_header: dict, jwt_payload: dict):
 @JWT.user_lookup_error_loader
 def on_user_load_error(jwt_header: dict, jwt_payload: dict):
     identity: Optional[str] = jwt_payload.get("sub")
-    abort(
-        401,
-        message=f"The user with the id '{identity}' could not be loaded."
-        
-    )
+    abort(401, message=f"The user with the id '{identity}' could not be loaded.")
 
 
 @JWT.expired_token_loader
