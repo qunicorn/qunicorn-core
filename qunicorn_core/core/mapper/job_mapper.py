@@ -34,7 +34,7 @@ def request_to_core(job: JobRequestDto):
     """Helper class. When the db objects are saved correctly we do not need it anymore"""
     user = UserDto(id=0, name="default")
     provider = ProviderDto(id=0, with_token=True, supported_language=ProgrammingLanguage.QISKIT, name=job.provider_name)
-    device = DeviceDto(id=0, provider=provider, url="DefaultUrl")
+    device = DeviceDto(id=0, device_name=job.device_name, provider=provider, url="DefaultUrl")
     quantum_programs = [
         QuantumProgramDto(id=0, quantum_circuit=circuit, assembler_language=job.assembler_language) for circuit in job.circuits
     ]
