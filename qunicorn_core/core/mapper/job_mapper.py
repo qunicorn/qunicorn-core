@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from datetime import datetime
 
 from qunicorn_core.api.api_models import ProviderDto
@@ -24,9 +23,10 @@ from qunicorn_core.api.api_models.job_dtos import (
 )
 from qunicorn_core.api.api_models.quantum_program_dtos import QuantumProgramDto
 from qunicorn_core.api.api_models.user_dtos import UserDto
-from qunicorn_core.core.mapper import deployment_mapper, device_mapper, user_mapper
+from qunicorn_core.core.mapper import deployment_mapper, device_mapper, user_mapper, result_mapper
 from qunicorn_core.db.models.job import JobDataclass
 from qunicorn_core.static.enums.job_state import JobState
+from qunicorn_core.static.enums.job_type import JobType
 from qunicorn_core.static.enums.programming_language import ProgrammingLanguage
 
 
@@ -35,9 +35,13 @@ def request_to_core(job: JobRequestDto):
     user = UserDto(id=0, name="default")
     provider = ProviderDto(id=0, with_token=True, supported_language=ProgrammingLanguage.QISKIT, name=job.provider_name)
     device = DeviceDto(id=0, device_name=job.device_name, provider=provider, url="DefaultUrl")
-    quantum_programs = [
-        QuantumProgramDto(id=0, quantum_circuit=circuit, assembler_language=job.assembler_language) for circuit in job.circuits
-    ]
+    if job.type != JobType.IBM_UPLOAD and job.type != JobType.IBM_RUN:
+        quantum_programs = [
+            QuantumProgramDto(id=0, quantum_circuit=circuit, assembler_language=job.assembler_language) for circuit in job.circuits
+        ]
+    else:
+        quantum_programs = job.programs
+
     deployment = DeploymentDto(id=0, deployed_by=user, programs=quantum_programs, name="DefaultDeployment", deployed_at=datetime.now())
 
     return JobCoreDto(
@@ -144,6 +148,6 @@ def job_to_job_core_dto(job: JobDataclass) -> JobCoreDto:
         finished_at=job.finished_at,
         name=job.name,
         data=job.data,
-        results=job.results,
+        results=[result_mapper.result_to_result_dto(result) for result in job.results],
         parameters=job.parameters,
     )
