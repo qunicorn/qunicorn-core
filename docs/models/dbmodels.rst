@@ -87,7 +87,7 @@ Attributes of Job Data
 
     *   - task_status 
         - Optional[str] (optional) 
-        - The status of a job, can only be ``PENDING``, ``RUNNING`` ,``FINISHED``, or ``ERROR``.
+        - The status of a job, can only be ``PENDING``, ``RUNNING`` , ``FINISHED``, or ``ERROR``.
 
     *   - results 
         - List[Job] (optional) 
