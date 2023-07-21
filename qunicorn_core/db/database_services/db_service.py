@@ -30,7 +30,13 @@ def save_database_object(db_object: DbModel) -> DbModel:
 
 def remove_database_object(db_object: DbModel):
     """Deletes a database object, as long as it is a database-model"""
-    session.remove(db_object)
+    session.delete(db_object)
+    session.commit()
+
+
+def delete_database_object_by_id(db_object: DbModel, id: int):
+    """Deletes a database object, as long as it is a database-model"""
+    session.query(db_object).filter_by(id=id).delete()
     session.commit()
 
 
@@ -44,12 +50,23 @@ def get_database_object(db_object_id: int, database_object_class: DbModel) -> Db
     return session.get(database_object_class, db_object_id)
 
 
+def get_all_database_objects(database_object_class: DbModel) -> list[DbModel]:
+    """Gets all database objects of a table
+
+    Arguments:
+        database_object_class   - class of the database objects
+    """
+    return session.query(database_object_class).all()
+
+
 def save_device_by_name(device: DeviceDataclass):
     """Updates device object in database if is exists and creates new entry if it doesn't exist"""
     successful = (
         session.query(DeviceDataclass)
         .filter(DeviceDataclass.device_name == device.device_name)
-        .update({"num_qubits": device.num_qubits, "provider_id": device.provider_id, "is_simulator": device.is_simulator})
+        .update(
+            {"num_qubits": device.num_qubits, "provider_id": device.provider_id, "is_simulator": device.is_simulator}
+        )
     )
     if not successful:
         session.add(device)

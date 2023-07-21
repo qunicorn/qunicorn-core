@@ -21,13 +21,12 @@ from flask import jsonify, url_for
 from flask.views import MethodView
 
 from .root import DEVICES_API, RootData
+from ..api_models import RootSchema
 from ..api_models.device_dtos import (
     DeviceDtoSchema,
     DeviceRequestSchema,
     DeviceRequest,
 )
-from ..api_models import RootSchema
-
 from ...core.devicemanager import devicemanager_service
 
 
@@ -45,13 +44,13 @@ class RootView(MethodView):
 
     @DEVICES_API.response(HTTPStatus.OK, RootSchema())
     def get(self):
-        """Get the urls of the next endpoints of the device_api api to call."""
-        return RootData(root=url_for("device-api.DeviceView", device_id=1, _external=True))  # device_id=1 only a dummy value
+        """TBD: Get the urls of the next endpoints of the device_api api to call."""
+        return RootData(root=url_for("device-api.DeviceView", device_id=1, _external=True))  # id=1 only a dummy value
 
 
 @DEVICES_API.route("/<string:device_id>/")
 class DeviceView(MethodView):
-    """Devices Endpoint to get properties of a specific device."""
+    """TBD: Devices Endpoint to get properties of a specific device."""
 
     @DEVICES_API.response(HTTPStatus.OK, DeviceDtoSchema())
     def get(self, device_id):
@@ -62,7 +61,7 @@ class DeviceView(MethodView):
 
 @DEVICES_API.route("/<string:device_id>/status")
 class DevicesStatusStatus(MethodView):
-    """Devices Endpoint to get properties of a specific device."""
+    """TBD: Devices Endpoint to get properties of a specific device."""
 
     @DEVICES_API.response(HTTPStatus.OK, DeviceDtoSchema())
     def get(self, device_id):
@@ -73,7 +72,7 @@ class DevicesStatusStatus(MethodView):
 
 @DEVICES_API.route("/<string:device_id>/calibration")
 class DevicesCalibrationView(MethodView):
-    """Devices Endpoint to get properties of a specific device."""
+    """TBD: Devices Endpoint to get properties of a specific device."""
 
     @DEVICES_API.response(HTTPStatus.OK, DeviceDtoSchema())
     def get(self, device_id):
@@ -84,7 +83,7 @@ class DevicesCalibrationView(MethodView):
 
 @DEVICES_API.route("/<string:device_id>/jobs")
 class DevicesJobsView(MethodView):
-    """Devices Endpoint to get properties of a specific device/service."""
+    """TBD: Devices Endpoint to get properties of a specific device/service."""
 
     @DEVICES_API.response(HTTPStatus.OK, DeviceDtoSchema())
     def get(self, device_id):

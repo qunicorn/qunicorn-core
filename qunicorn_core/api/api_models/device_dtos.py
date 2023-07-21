@@ -40,7 +40,7 @@ class DeviceRequest:
 class DeviceDtoSchema(MaBaseSchema):
     device_id = ma.fields.Integer(required=True, allow_none=False, metadata={"description": "The unique deviceID."})
     address_url = ma.fields.String(required=True, allow_none=False, metadata={"description": "URL of a device."})
-    provider = ProviderDtoSchema()
+    provider = ma.fields.Nested(ProviderDtoSchema())
 
 
 class DeviceRequestSchema(MaBaseSchema):
