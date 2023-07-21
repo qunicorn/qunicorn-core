@@ -14,7 +14,6 @@
 
 
 """Module containing the routes of the job manager API."""
-import os
 from http import HTTPStatus
 
 from flask import jsonify
@@ -103,9 +102,8 @@ class JobCancelView(MethodView):
     def post(self, body, job_id: str):
         """TBD: Cancel a job execution via id."""
         logging.info("Request: cancel job")
-        logging.warn(
-            os.environ.get("EXECUTE_CELERY_TASK_ASYNCHRONOUS")
-        )  # return jsonify(jobmanager_service.cancel_job_by_id(job_id))
+
+        return jsonify(jobmanager_service.cancel_job_by_id(job_id))
 
 
 @JOBMANAGER_API.route("/pause/<string:job_id>/")
