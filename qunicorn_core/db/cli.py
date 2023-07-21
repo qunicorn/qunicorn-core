@@ -96,7 +96,7 @@ def load_db_function(app: Flask):
         name=ProviderName.IBM,
     )
     # TODO delete default device since devices are loaded into db from start
-    device = DeviceDataclass(provider=provider, url="")
+    device = DeviceDataclass(provider=provider, url="", device_name="aer_simulator", is_simulator=True)
     job = JobDataclass(
         executed_by=user,
         executed_on=device,
