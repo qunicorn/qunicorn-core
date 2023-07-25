@@ -144,11 +144,12 @@ def create_app(test_config: Optional[Dict[str, Any]] = None):
     @app.errorhandler(Exception)
     def handle_internal_server_error(error):
         logging.error(str(error))
+        error_code: int = 500 if not hasattr(error, "status_code") else error.status_code
         return {
-            "code": 500 if not hasattr(error, "status_code") else error.status_code,
+            "code": error_code,
             "error": type(error).__name__,
             "message": str(error),
-        }
+        }, error_code
 
     return app
 
