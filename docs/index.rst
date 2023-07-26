@@ -15,7 +15,7 @@ Welcome to Qunicorn_Core's documentation!
    adr/index
    changelog
    models/dbmodels
-   models/domainmodel
+   models/projectstructuremodels
    apidocumentation
    architecture
   

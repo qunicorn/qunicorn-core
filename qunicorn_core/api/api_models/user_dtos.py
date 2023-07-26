@@ -18,7 +18,7 @@ from dataclasses import dataclass
 
 import marshmallow as ma
 
-from ..util import MaBaseSchema
+from ..flask_api_utils import MaBaseSchema
 
 __all__ = ["UserDtoSchema", "UserDto"]
 
@@ -27,6 +27,10 @@ __all__ = ["UserDtoSchema", "UserDto"]
 class UserDto:
     id: int
     name: str | None = None
+
+    @staticmethod
+    def get_default_user() -> "UserDto":
+        return UserDto(id=0, name="default")
 
 
 class UserDtoSchema(MaBaseSchema):
