@@ -91,9 +91,11 @@ def get_job(job_id: int) -> JobResponseDto:
     return job_mapper.job_to_response(db_job)
 
 
-def delete_job_data_by_id(job_id):
+def delete_job_data_by_id(job_id) -> JobResponseDto:
     """delete job data from db"""
+    job = get_job(job_id)
     job_db_service.delete(job_id)
+    return job
 
 
 def get_all_jobs() -> list[SimpleJobDto]:
@@ -124,3 +126,14 @@ def pause_job_by_id(job_id):
 def cancel_job_by_id(job_id):
     """cancel job execution"""
     raise NotImplementedError
+
+
+def get_jobs_by_deployment_id(deployment_id) -> list[JobResponseDto]:
+    jobs_by_deployment_id = job_db_service.get_jobs_by_deployment_id(deployment_id)
+    return [job_mapper.job_to_response(job) for job in jobs_by_deployment_id]
+
+
+def delete_jobs_by_deployment_id(deployment_id) -> list[JobResponseDto]:
+    jobs = get_jobs_by_deployment_id(deployment_id)
+    job_db_service.delete_jobs_by_deployment_id(deployment_id)
+    return jobs
