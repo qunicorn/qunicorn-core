@@ -58,6 +58,8 @@ celery worker and execute all tasks synchronously.
 * **DEVICES**
     * **PUT /devices/** *(Updates the devices, by retrieving them from IBM)*
 
+### Run manually
+
 Run the development server with
 
 ```bash
@@ -88,6 +90,17 @@ Trying out the tests -> See tests/README.md
 ```bash
 poetry run pytest .
 ```
+
+### Run using docker-compose
+
+Execute the following command the deployment will be started using docker-compose. This will build the dockerimage
+containing the application and creates all required containers including the database and the message queue.
+
+```bash
+docker-compose up
+```
+
+![Architecture](docker-compose-architecture.svg)
 
 ### Trying out the Template
 
