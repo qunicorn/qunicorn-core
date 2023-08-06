@@ -26,6 +26,7 @@ from qunicorn_core.db.database_services import job_db_service, db_service
 from qunicorn_core.db.models.job import JobDataclass
 from qunicorn_core.static.enums.job_state import JobState
 from qunicorn_core.static.enums.job_type import JobType
+from qunicorn_core.static.enums.provider_name import ProviderName
 from qunicorn_core.static.enums.result_type import ResultType
 from tests import test_utils
 from tests.conftest import set_up_env
@@ -58,7 +59,7 @@ def test_invalid_circuit():
     app = set_up_env()
     job_request_dto: JobRequestDto = JobRequestDto(**get_object_from_json("job_request_dto_test_data_IBM.json"))
     job_request_dto.device_name = "ibmq_qasm_simulator"
-    deployment_dto: DeploymentRequestDto = test_utils.get_test_deployment()
+    deployment_dto: DeploymentRequestDto = test_utils.get_test_deployment_request(ProviderName.IBM)
     deployment_dto.programs[0].quantum_circuit = "invalid circuit"
 
     # WHEN: Executing create and run

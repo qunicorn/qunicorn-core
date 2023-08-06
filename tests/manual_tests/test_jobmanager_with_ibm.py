@@ -41,7 +41,7 @@ def test_create_and_run_runner():
 
     # WHEN: create_and_run executed synchronous
     with app.app_context():
-        test_utils.save_deployment_and_add_id_to_job(job_request_dto, ProviderName.IBM, True)
+        test_utils.save_deployment_and_add_id_to_job(job_request_dto, ProviderName.IBM)
         return_dto: SimpleJobDto = create_and_run_job(job_request_dto, IS_ASYNCHRONOUS)
 
     # THEN: Check if the correct job with its result is saved in the db
@@ -62,7 +62,7 @@ def test_create_and_run_sampler():
 
     # WHEN: create_and_run executed synchronous
     with app.app_context():
-        test_utils.save_deployment_and_add_id_to_job(job_request_dto, ProviderName.IBM, True)
+        test_utils.save_deployment_and_add_id_to_job(job_request_dto, ProviderName.IBM)
         return_dto: SimpleJobDto = create_and_run_job(job_request_dto, IS_ASYNCHRONOUS)
 
     # THEN: Check if the correct job with its result is saved in the db
@@ -83,7 +83,7 @@ def test_create_and_run_estimator():
 
     # WHEN: create_and_run executed synchronous
     with app.app_context():
-        test_utils.save_deployment_and_add_id_to_job(job_request_dto, ProviderName.IBM, True)
+        test_utils.save_deployment_and_add_id_to_job(job_request_dto, ProviderName.IBM)
         return_dto: SimpleJobDto = create_and_run_job(job_request_dto, IS_ASYNCHRONOUS)
 
     # THEN: Check if the correct job with its result is saved in the db

@@ -39,20 +39,13 @@ def get_object_from_json(json_file_name: str):
     return data
 
 
-def save_deployment_and_add_id_to_job(job_request_dto: JobRequestDto, provider: ProviderName, with_circuits=False):
-    deployment_request: DeploymentRequestDto = (
-        get_test_deployment_circuits(provider) if with_circuits else get_test_deployment()
-    )
+def save_deployment_and_add_id_to_job(job_request_dto: JobRequestDto, provider: ProviderName):
+    deployment_request: DeploymentRequestDto = get_test_deployment_request(provider)
     deployment: DeploymentDto = deployment_service.create_deployment(deployment_request)
     job_request_dto.deployment_id = deployment.id
 
 
-def get_test_deployment() -> DeploymentRequestDto:
-    deployment_dict: dict = get_object_from_json(DEPLOYMENT_JSON)
-    return DeploymentRequestDto.from_dict(deployment_dict)
-
-
-def get_test_deployment_circuits(provider: ProviderName) -> DeploymentRequestDto:
+def get_test_deployment_request(provider: ProviderName) -> DeploymentRequestDto:
     if provider == ProviderName.IBM:
         deployment_dict: dict = get_object_from_json(DEPLOYMENT_CIRCUITS_JSON_IBM)
         return DeploymentRequestDto.from_dict(deployment_dict)
