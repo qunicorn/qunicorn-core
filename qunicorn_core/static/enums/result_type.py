@@ -40,5 +40,7 @@ class ResultType(StrEnum):
             return ResultType.COUNTS
         elif job_type == JobType.SAMPLER:
             return ResultType.QUASI_DIST
-        else:
+        elif job_type == JobType.ESTIMATOR:
             return ResultType.VALUE_AND_VARIANCE
+        else:
+            return ResultType.ERROR

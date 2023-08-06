@@ -87,30 +87,78 @@ def load_db_function(app: Flask):
     user = UserDataclass(name="DefaultUser")
     qc = QuantumProgramDataclass(quantum_circuit=utils.get_default_qasm_string(1))
     qc2 = QuantumProgramDataclass(quantum_circuit=utils.get_default_qasm_string(2))
-    deployment = DeploymentDataclass(
-        deployed_by=user, programs=[qc, qc2], deployed_at=datetime.datetime.now(), name="DeploymentName"
+    qasm3_str: str = "OPENQASM 3; \nqubit[3] q;\nbit[3] c;\nh q[0];\ncnot q[0], q[1];\ncnot q[1], q[2];\nc = measure q;"
+    qasm3_program = QuantumProgramDataclass(quantum_circuit=qasm3_str)
+
+    deployment_ibm = DeploymentDataclass(
+        deployed_by=user, programs=[qc, qc2], deployed_at=datetime.datetime.now(), name="DeploymentIBMName"
     )
-    provider = ProviderDataclass(
+    deployment_aws = DeploymentDataclass(
+        deployed_by=user, programs=[qasm3_program], deployed_at=datetime.datetime.now(), name="DeploymentAWSName"
+    )
+    provider_ibm = ProviderDataclass(
         with_token=True,
         supported_language=ProgrammingLanguage.QISKIT,
         name=ProviderName.IBM,
     )
+
+    provider_aws = ProviderDataclass(
+        with_token=False,
+        supported_language=ProgrammingLanguage.BRAKET,
+        name=ProviderName.AWS,
+    )
+
     # TODO delete default device since devices are loaded into db from start
-    device = DeviceDataclass(provider=provider, url="", device_name="aer_simulator", is_simulator=True)
-    job = JobDataclass(
+    device = DeviceDataclass(
+        provider=provider_ibm,
+        url="",
+        device_name="aer_simulator",
+        is_simulator=True,
+        num_qubits=-1,
+    )
+
+    device_aws_local_simulator = DeviceDataclass(
+        provider=provider_aws,
+        url="",
+        device_name="local_simulator",
+        is_simulator=True,
+        num_qubits=-1,
+    )
+
+    ibm_default_job = JobDataclass(
         executed_by=user,
         executed_on=device,
-        deployment=deployment,
+        deployment=deployment_ibm,
         progress=0,
         state=JobState.READY,
         shots=4000,
         type=JobType.RUNNER,
         started_at=datetime.datetime.now(),
-        name="JobName",
+        name="JobIBMName",
         results=[ResultDataclass(result_dict={"0x": "550", "1x": "450"})],
     )
-    add_devices(provider=provider)
-    DB.session.add(job)
+
+    aws_default_job = JobDataclass(
+        executed_by=user,
+        executed_on=device_aws_local_simulator,
+        deployment=deployment_aws,
+        progress=0,
+        state=JobState.READY,
+        shots=4000,
+        type=JobType.RUNNER,
+        started_at=datetime.datetime.now(),
+        name="JobAWSName",
+        results=[
+            ResultDataclass(
+                result_dict={"counts": {"000": 2007, "111": 1993}, "probabilities": {"000": 0.50175, "111": 0.49825}}
+            )
+        ],
+    )
+
+    add_devices(provider=provider_ibm)
+
+    DB.session.add(ibm_default_job)
+    DB.session.add(aws_default_job)
     DB.session.commit()
     get_logger(app, DB_COMMAND_LOGGER).info("Test Data loaded.")
 

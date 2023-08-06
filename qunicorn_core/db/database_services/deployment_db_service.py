@@ -23,6 +23,7 @@ from qunicorn_core.db.models.user import UserDataclass
 
 def create(deployment: DeploymentDataclass) -> DeploymentDataclass:
     """Creates a database job with the given circuit and saves it in the database"""
+
     default_user: UserDataclass = db_service.get_database_object(1, UserDataclass)
     deployment.deployed_by = default_user
     deployment.deployed_at = datetime.now()
@@ -30,7 +31,7 @@ def create(deployment: DeploymentDataclass) -> DeploymentDataclass:
 
 
 def get_all_deployments() -> list[DeploymentDataclass]:
-    """Gets the Deployment with the deployment_id from the database"""
+    """Gets all deployments from the database"""
     return db_service.get_all_database_objects(DeploymentDataclass)
 
 

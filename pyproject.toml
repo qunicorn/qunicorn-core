@@ -26,7 +26,7 @@ PyYAML = "^6.0"
 mocker = "^1.1.1"
 gunicorn = "^21.2.0"
 psycopg2 ="^2.9.6"
-
+amazon-braket-sdk = "^1.49.1"
 
 [tool.poetry.dev-dependencies]
 Sphinx = "^5.0.0"

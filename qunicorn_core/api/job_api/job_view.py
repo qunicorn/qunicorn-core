@@ -29,6 +29,7 @@ from ..api_models.job_dtos import (
     SimpleJobDtoSchema,
     JobExecutionDtoSchema,
     JobExecutePythonFileDto,
+    SimpleJobDto,
 )
 from ...core.jobmanager import jobmanager_service
 from ...util import logging
@@ -49,7 +50,8 @@ class JobIDView(MethodView):
     def post(self, body):
         """Create/Register and run new job."""
         job_dto: JobRequestDto = JobRequestDto(**body)
-        return jsonify(jobmanager_service.create_and_run_job(job_dto))
+        job_response: SimpleJobDto = jobmanager_service.create_and_run_job(job_dto)
+        return jsonify(job_response)
 
 
 @JOBMANAGER_API.route("/<string:job_id>/")
