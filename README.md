@@ -105,7 +105,8 @@ Execute the following command the deployment will be started using docker-compos
 containing the application and creates all required containers including the database and the message queue.
 
 ```bash
-docker-compose up
+docker-compose up -d
+docker-compose exec server python -m flask create-and-load-db
 ```
 
 ![Architecture](docker-compose-architecture.svg)
