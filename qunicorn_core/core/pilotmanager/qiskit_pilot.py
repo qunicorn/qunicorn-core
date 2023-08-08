@@ -72,7 +72,8 @@ class QiskitPilot(Pilot):
         results: list[ResultDataclass] = result_mapper.runner_result_to_db_results(result, job_dto)
         # AerCircuit is not serializable and needs to be removed
         for res in results:
-            res.meta_data.pop("circuit")
+            if res is not None and "circuit" in res.meta_data:
+                res.meta_data.pop("circuit")
         job_db_service.update_finished_job(job_id, results)
         logging.info(f"Run job with id {job_dto.id} locally on aer_simulator and get the result {results}")
 
