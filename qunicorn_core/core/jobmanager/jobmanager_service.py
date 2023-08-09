@@ -23,7 +23,11 @@ from qunicorn_core.api.api_models.job_dtos import (
     JobExecutePythonFileDto,
 )
 from qunicorn_core.celery import CELERY
+
+from qunicorn_core.core.pilotmanager.aws_pilot import AWSPilot
+
 from qunicorn_core.core.mapper import job_mapper, result_mapper
+
 from qunicorn_core.core.pilotmanager.qiskit_pilot import QiskitPilot
 from qunicorn_core.db.database_services import job_db_service
 from qunicorn_core.db.models.job import JobDataclass
@@ -40,10 +44,13 @@ def run_job(job_core_dto_dict: dict):
     job_core_dto: JobCoreDto = yaml.load(job_core_dto_dict["data"], yaml.Loader)
 
     device = job_core_dto.executed_on
-    pilot: QiskitPilot = QiskitPilot("QP")
 
     if device.provider.name == ProviderName.IBM:
-        pilot.execute(job_core_dto)
+        qiskit_pilot: QiskitPilot = QiskitPilot("QP")
+        qiskit_pilot.execute(job_core_dto)
+    elif job_core_dto.executed_on.provider.name == ProviderName.AWS:
+        aws_pilot: AWSPilot = AWSPilot("AP")
+        aws_pilot.execute(job_core_dto)
     else:
         exception: Exception = ValueError("No valid Target specified")
         job_db_service.update_finished_job(job_core_dto.id, result_mapper.get_error_results(exception), JobState.ERROR)
@@ -91,9 +98,11 @@ def get_job(job_id: int) -> JobResponseDto:
     return job_mapper.job_to_response(db_job)
 
 
-def delete_job_data_by_id(job_id):
+def delete_job_data_by_id(job_id) -> JobResponseDto:
     """delete job data from db"""
+    job = get_job(job_id)
     job_db_service.delete(job_id)
+    return job
 
 
 def get_all_jobs() -> list[SimpleJobDto]:
@@ -124,3 +133,14 @@ def pause_job_by_id(job_id):
 def cancel_job_by_id(job_id):
     """cancel job execution"""
     raise NotImplementedError
+
+
+def get_jobs_by_deployment_id(deployment_id) -> list[JobResponseDto]:
+    jobs_by_deployment_id = job_db_service.get_jobs_by_deployment_id(deployment_id)
+    return [job_mapper.job_to_response(job) for job in jobs_by_deployment_id]
+
+
+def delete_jobs_by_deployment_id(deployment_id) -> list[JobResponseDto]:
+    jobs = get_jobs_by_deployment_id(deployment_id)
+    job_db_service.delete_jobs_by_deployment_id(deployment_id)
+    return jobs

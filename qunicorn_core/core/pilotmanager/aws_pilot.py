@@ -12,18 +12,57 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from braket.devices import LocalSimulator
+from braket.ir.openqasm import Program as OpenQASMProgram
+from braket.tasks.local_quantum_task import LocalQuantumTask
 
+from qunicorn_core.api.api_models.job_dtos import JobCoreDto
+from qunicorn_core.core.mapper import result_mapper
 from qunicorn_core.core.pilotmanager.base_pilot import Pilot
+from qunicorn_core.db.database_services import job_db_service
+from qunicorn_core.db.models.job import JobDataclass
+from qunicorn_core.db.models.result import ResultDataclass
+from qunicorn_core.static.enums.job_state import JobState
+from qunicorn_core.static.enums.job_type import JobType
 from qunicorn_core.util import logging
 
 
 class AWSPilot(Pilot):
     """The AWS Pilot"""
 
-    def execute(self, job):
-        logging.info(f"Executing job {job} with AWS Pilot")
+    def execute(self, job_core_dto: JobCoreDto):
+        """Execute a job with AWS Pilot and saves results in the database"""
 
-    def transpile(self, job):
-        """Transpile job on an IBM backend, needs a device_id"""
+        logging.info(f"Executing job {job_core_dto} with AWS Pilot")
+        if job_core_dto.type == JobType.RUNNER:
+            if job_core_dto.executed_on.device_name == "local_simulator":
+                self.__local_simulation(job_core_dto)
+            else:
+                exception: Exception = ValueError("No valid device specified")
+                raise exception
+        else:
+            exception: Exception = ValueError("No valid Job Type specified")
+            results = result_mapper.get_error_results(exception)
+            job_db_service.update_finished_job(job_core_dto.id, results, JobState.ERROR)
+            raise exception
 
+    @staticmethod
+    def transpile(job_core_dto: JobCoreDto):
+        """Transpile job for an AWS backend"""
         logging.info("Transpile a quantum circuit for a specific AWS backend")
+
+        circuit = OpenQASMProgram(source=job_core_dto.deployment.programs[0].quantum_circuit)
+        return circuit
+
+    def __local_simulation(self, job_core_dto: JobCoreDto):
+        """Execute the job on a local simulator and saves results in the database"""
+
+        job_db_service.update_attribute(job_core_dto.id, JobState.RUNNING, JobDataclass.state)
+        device = LocalSimulator()
+        circuit = self.transpile(job_core_dto)
+        quantum_task: LocalQuantumTask = device.run(circuit, shots=job_core_dto.shots)
+        aws_simulator_result = quantum_task.result()
+        results: list[ResultDataclass] = result_mapper.aws_local_simulator_result_to_db_results(
+            aws_simulator_result, job_core_dto
+        )
+        job_db_service.update_finished_job(job_core_dto.id, results)

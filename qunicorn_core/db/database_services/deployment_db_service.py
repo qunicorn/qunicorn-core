@@ -15,7 +15,6 @@ from datetime import datetime
 
 from qunicorn_core.db.database_services import db_service
 from qunicorn_core.db.models.deployment import DeploymentDataclass
-from qunicorn_core.db.models.job import JobDataclass
 from qunicorn_core.db.models.user import UserDataclass
 
 
@@ -24,6 +23,7 @@ from qunicorn_core.db.models.user import UserDataclass
 
 def create(deployment: DeploymentDataclass) -> DeploymentDataclass:
     """Creates a database job with the given circuit and saves it in the database"""
+
     default_user: UserDataclass = db_service.get_database_object(1, UserDataclass)
     deployment.deployed_by = default_user
     deployment.deployed_at = datetime.now()
@@ -31,7 +31,7 @@ def create(deployment: DeploymentDataclass) -> DeploymentDataclass:
 
 
 def get_all_deployments() -> list[DeploymentDataclass]:
-    """Gets the Deployment with the deployment_id from the database"""
+    """Gets all deployments from the database"""
     return db_service.get_all_database_objects(DeploymentDataclass)
 
 
@@ -40,6 +40,6 @@ def delete(id: int):
     db_service.delete_database_object_by_id(DeploymentDataclass, id)
 
 
-def get_deployment(deployment_id: int) -> JobDataclass:
+def get_deployment(deployment_id: int) -> DeploymentDataclass:
     """Gets the Deployment with the deployment_id from the database"""
     return db_service.get_database_object(deployment_id, DeploymentDataclass)

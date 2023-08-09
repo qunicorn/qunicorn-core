@@ -18,18 +18,19 @@ from qunicorn_core.api.api_models import DeploymentRequestDto
 from qunicorn_core.core.jobmanager import deployment_service
 from qunicorn_core.db.database_services import db_service
 from qunicorn_core.db.models.deployment import DeploymentDataclass
+from qunicorn_core.static.enums.provider_name import ProviderName
 from tests import test_utils
 from tests.conftest import set_up_env
 
 DEPLOYMENT_NAME = "DeploymentName"
-PROGRAM_NUMBER = 1
+PROGRAM_NUMBER = 2
 
 
 def test_create_deployments():
     """Testing the if the creation of deployments works"""
     # GIVEN: Get Deployments from JSON
     app = set_up_env()
-    deployment: DeploymentRequestDto = test_utils.get_test_deployment()
+    deployment: DeploymentRequestDto = test_utils.get_test_deployment_request(ProviderName.IBM)
 
     # WHEN: Create deployment and save it in the db
     with app.app_context():
