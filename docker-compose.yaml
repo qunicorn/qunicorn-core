@@ -1,0 +1,52 @@
+version: "3"
+services:
+  server:
+    build: .
+    networks:
+      - qunicorn
+    environment:
+      CONTAINER_MODE: server
+      SERVER_PORT: 8080
+      BROKER_URL: "redis://broker:6379"
+      DB_URL: "postgresql://postgres:passwd@postgres/qunicorn"
+    depends_on:
+      - postgres
+      - broker
+    ports:
+      - "8080:8080"
+
+  worker:
+    build: .
+    networks:
+      - qunicorn
+    environment:
+      CONTAINER_MODE: worker
+      BROKER_URL: "redis://broker:6379"
+      DB_URL: "postgresql://postgres:passwd@postgres/qunicorn"
+    depends_on:
+      - postgres
+      - broker
+
+  broker:
+    image: redis:7.0.12
+    networks:
+      - qunicorn
+
+  postgres:
+    image: postgres:15.3
+    networks:
+      - qunicorn
+    environment:
+      PGDATA: /var/lib/postgresql/data/pgdata
+      POSTGRES_PASSWORD: passwd
+      POSTGRES_DB: qunicorn
+    volumes:
+      - pgdata:/var/lib/postgresql/data \
+
+
+networks:
+  qunicorn:
+
+volumes:
+  pgdata:
+
