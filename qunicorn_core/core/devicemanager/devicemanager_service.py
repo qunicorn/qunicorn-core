@@ -11,8 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from qunicorn_core.util import logging
-
 from qiskit.providers import QiskitBackendNotFoundError
 from qiskit_ibm_provider import IBMProvider, IBMBackend
 
@@ -24,6 +22,7 @@ from qunicorn_core.db.database_services import db_service, device_db_service
 from qunicorn_core.db.models.device import DeviceDataclass
 from qunicorn_core.db.models.provider import ProviderDataclass
 from qunicorn_core.static.enums.provider_name import ProviderName
+from qunicorn_core.util import logging
 
 
 @CELERY.task()
@@ -47,9 +46,9 @@ def update_devices_in_db(all_devices: dict):
             device_name=device["name"],
             url=device["url"],
             is_simulator=device["is_simulator"],
-            provider=db_service.get_database_object(1, ProviderDataclass),
+            provider=db_service.get_database_object_by_id(1, ProviderDataclass),
         )
-        db_service.save_device_by_name(final_device)
+        device_db_service.save_device_by_name(final_device)
 
 
 def get_device_dict(devices: [IBMBackend]) -> dict:
