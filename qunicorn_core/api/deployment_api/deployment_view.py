@@ -22,7 +22,7 @@ from flask.views import MethodView
 from .root import DEPLOYMENT_API
 from ..api_models import JobResponseDtoSchema
 from ..api_models.deployment_dtos import DeploymentDtoSchema, DeploymentRequestDtoSchema, DeploymentRequestDto
-from ...core.jobmanager import deployment_service, jobmanager_service
+from ...core import deployment_service, jobmanager_service
 from ...util import logging
 
 
@@ -53,7 +53,7 @@ class DeploymentDetailView(MethodView):
     def get(self, deployment_id: int):
         """Get detailed information for single deployed job-definition."""
         logging.info("Request: get deployment by id")
-        return deployment_service.get_deployment(deployment_id)
+        return deployment_service.get_deployment_by_id(deployment_id)
 
     @DEPLOYMENT_API.response(HTTPStatus.OK, DeploymentDtoSchema)
     def delete(self, deployment_id: int):
