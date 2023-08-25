@@ -68,9 +68,7 @@ class TranspileManager:
         steps = self._find_transpile_strategy(src_language, dest_language)
 
         def transpile(circuit):
-            return reduce(
-                lambda immediate_circuit, step: step.transpile_method(immediate_circuit), steps, circuit
-            )
+            return reduce(lambda immediate_circuit, step: step.transpile_method(immediate_circuit), steps, circuit)
 
         return transpile
 

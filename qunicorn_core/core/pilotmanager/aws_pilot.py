@@ -56,8 +56,9 @@ class AWSPilot(Pilot):
         transpiled_programs: list[OpenQASMProgram | Circuit] = []
 
         for program in job_core_dto.deployment.programs:
-            transpiler = transpile_manager.get_transpiler(program.assembler_language,
-                                                          dest_language=AssemblerLanguage.BRAKET)
+            transpiler = transpile_manager.get_transpiler(
+                program.assembler_language, dest_language=AssemblerLanguage.BRAKET
+            )
             transpiled_programs.append(transpiler(program.quantum_circuit))
 
         return transpiled_programs

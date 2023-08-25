@@ -15,8 +15,6 @@ import os
 from typing import List
 
 import qiskit
-from braket.circuits import Circuit
-from braket.circuits.serialization import IRType
 from qiskit import QuantumCircuit, transpile
 from qiskit.primitives import SamplerResult, EstimatorResult
 from qiskit.providers import BackendV1
@@ -140,7 +138,9 @@ class IBMPilot(Pilot):
         # transform each circuit into a QuantumCircuit-Object
         for program in job_dto.deployment.programs:
             try:
-                transpiler = transpile_manager.get_transpiler(program.assembler_language, dest_language=AssemblerLanguage.QISKIT)
+                transpiler = transpile_manager.get_transpiler(
+                    program.assembler_language, dest_language=AssemblerLanguage.QISKIT
+                )
                 circuits.append(transpiler(program.quantum_circuit))
             except QasmError as exception:
                 error_results.extend(result_mapper.exception_to_error_results(exception, program.quantum_circuit))
