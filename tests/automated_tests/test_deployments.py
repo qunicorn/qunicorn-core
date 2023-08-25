@@ -27,7 +27,7 @@ PROGRAM_NUMBER = 2
 
 
 def test_create_deployments():
-    """Testing if the creation of deployments works"""
+    """Testing the if the creation of deployments works"""
     # GIVEN: Get Deployments from JSON
     app = set_up_env()
     deployment: DeploymentRequestDto = test_utils.get_test_deployment_request(ProviderName.IBM)
