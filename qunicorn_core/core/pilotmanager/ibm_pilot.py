@@ -41,6 +41,9 @@ from qunicorn_core.util import logging
 class IBMPilot(Pilot):
     """The IBM Pilot"""
 
+    """object to be used to build the qiskit circuit from external location"""
+    qiskit_circuit = None
+
     def execute(self, job_core_dto: JobCoreDto):
         """Execute a job on an IBM backend using the IBM Pilot"""
 
@@ -133,13 +136,23 @@ class IBMPilot(Pilot):
     @staticmethod
     def __get_circuits_as_QuantumCircuits(job_dto: JobCoreDto) -> list[QuantumCircuit]:
         """Transforms the circuit string into IBM QuantumCircuit objects"""
+        global qiskit_circuit
         circuits: list[QuantumCircuit] = []
         error_results: list[ResultDataclass] = []
 
         # transform each circuit into a QuantumCircuit-Object
         for program in job_dto.deployment.programs:
             try:
-                circuits.append(QuantumCircuit().from_qasm_str(program.quantum_circuit))
+                """retrieving the quantum circuit from different assembler languages"""
+                if program.assembler_language == AssemblerLanguage.QASM:
+                    circuits.append(QuantumCircuit().from_qasm_str(program.quantum_circuit))
+                elif program.assembler_language == AssemblerLanguage.QISKIT:
+                    # since the qiskit circuit modifies the circuit object instead of simple returning the object (it
+                    # returns the instruction set) the 'qiskit_circuit' is modified from the exec
+                    _locals = locals()
+                    exec(program.quantum_circuit, globals(), _locals)
+                    circuit: QuantumCircuit = qiskit_circuit
+                    circuits.append(circuit)
             except QasmError as exception:
                 error_results.extend(result_mapper.exception_to_error_results(exception, program.quantum_circuit))
 
