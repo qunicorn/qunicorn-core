@@ -139,7 +139,8 @@ class IBMPilot(Pilot):
         for program in job_dto.deployment.programs:
             try:
                 transpiler = transpile_manager.get_transpiler(
-                    program.assembler_language, dest_language=AssemblerLanguage.QISKIT
+                    src_language=program.assembler_language,
+                    dest_language=AssemblerLanguage.QISKIT
                 )
                 circuits.append(transpiler(program.quantum_circuit))
             except QasmError as exception:

@@ -84,7 +84,7 @@ def braket_to_qasm(source: Circuit) -> str:
 @transpile_manager.register_transpile_method(AssemblerLanguage.QISKIT, AssemblerLanguage.QASM2)
 def qiskit_to_qasm2(circuit: qiskit.circuit.QuantumCircuit) -> str:
     qasm = circuit.qasm()
-    # TODO
+    # XXX replace gate references standard gate library an add 'CX' to 'cnot' mapping
     with open(path.join(path.dirname(qiskit.__file__), "qasm/libs/qelib1.inc")) as qelib1_file:
         qelib1 = qelib1_file.read()
         qasm = qasm.replace('include "qelib1.inc";', "gate CX a,b { cnot a,b; }\n" + qelib1)
@@ -94,6 +94,7 @@ def qiskit_to_qasm2(circuit: qiskit.circuit.QuantumCircuit) -> str:
 @transpile_manager.register_transpile_method(AssemblerLanguage.QISKIT, AssemblerLanguage.QASM3)
 def qiskit_to_qasm3(circuit: qiskit.circuit.QuantumCircuit) -> str:
     qasm = qiskit.qasm3.Exporter(allow_aliasing=False).dumps(circuit)
+    # XXX replace gate references standard gate library
     with open(path.join(path.dirname(qiskit.__file__), "qasm/libs/stdgates.inc")) as stdgates_file:
         stdgates = stdgates_file.read()
     qasm = qasm.replace('include "stdgates.inc";', stdgates)
