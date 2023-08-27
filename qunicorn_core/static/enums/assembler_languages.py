@@ -25,7 +25,9 @@ class AssemblerLanguage(StrEnum):
         PYTHON: Python language for IBM File Upload
     """
 
-    QASM = "QASM"
+    QASM2 = "QASM2"
+    QASM3 = "QASM3"
+    QRISP = "QRISP"
     BRAKET = "BRAKET"
-    PYTHON = "PYTHON"
     QISKIT = "QISKIT"
+    PYTHON = "PYTHON"

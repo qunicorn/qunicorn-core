@@ -20,6 +20,7 @@ from braket.tasks.local_quantum_task_batch import LocalQuantumTaskBatch
 from qunicorn_core.api.api_models.job_dtos import JobCoreDto
 from qunicorn_core.core.mapper import result_mapper
 from qunicorn_core.core.pilotmanager.base_pilot import Pilot
+from qunicorn_core.core.transpiler.transpiler_manager import transpile_manager
 from qunicorn_core.db.database_services import job_db_service
 from qunicorn_core.db.models.job import JobDataclass
 from qunicorn_core.db.models.result import ResultDataclass
@@ -54,13 +55,11 @@ class AWSPilot(Pilot):
         logging.info("Transpile a quantum circuit for a specific AWS backend")
         transpiled_programs: list[OpenQASMProgram | Circuit] = []
 
-        # TODO add exception handing - if language does not match syntax
         for program in job_core_dto.deployment.programs:
-            if program.assembler_language == AssemblerLanguage.QASM:
-                transpiled_programs.append(OpenQASMProgram(source=program.quantum_circuit))
-            elif program.assembler_language == AssemblerLanguage.BRAKET:
-                circuit: Circuit = eval(program.quantum_circuit)
-                transpiled_programs.append(circuit)
+            transpiler = transpile_manager.get_transpiler(
+                src_language=program.assembler_language, dest_language=AssemblerLanguage.BRAKET
+            )
+            transpiled_programs.append(transpiler(program.quantum_circuit))
 
         return transpiled_programs
 

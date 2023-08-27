@@ -87,18 +87,18 @@ def get_quasm_string() -> str:
 def load_db_function(app: Flask):
     user = UserDataclass(name="DefaultUser")
     qc = QuantumProgramDataclass(
-        quantum_circuit=utils.get_default_qasm_string(1), assembler_language=AssemblerLanguage.QASM
+        quantum_circuit=utils.get_default_qasm_string(1), assembler_language=AssemblerLanguage.QASM3
     )
     qc2 = QuantumProgramDataclass(
-        quantum_circuit=utils.get_default_qasm_string(2), assembler_language=AssemblerLanguage.QASM
+        quantum_circuit=utils.get_default_qasm_string(2), assembler_language=AssemblerLanguage.QASM3
     )
     qasm3_str: str = "OPENQASM 3; \nqubit[3] q;\nbit[3] c;\nh q[0];\ncnot q[0], q[1];\ncnot q[1], q[2];\nc = measure q;"
-    qasm3_program = QuantumProgramDataclass(quantum_circuit=qasm3_str, assembler_language=AssemblerLanguage.QASM)
+    qasm3_program = QuantumProgramDataclass(quantum_circuit=qasm3_str, assembler_language=AssemblerLanguage.QASM3)
     braket_str: str = "Circuit().h(0).cnot(0, 1)"
     braket_program = QuantumProgramDataclass(quantum_circuit=braket_str, assembler_language=AssemblerLanguage.BRAKET)
 
     qiskit_str: str = (
-        "global qiskit_circuit; qiskit_circuit = QuantumCircuit(2, 2);qiskit_circuit.h(0);"
+        "qiskit_circuit = QuantumCircuit(2, 2);qiskit_circuit.h(0);"
         "qiskit_circuit.cx(0, 1);qiskit_circuit.measure(0, 0);qiskit_circuit.measure(1, 1)"
     )
     qiskit_program = QuantumProgramDataclass(quantum_circuit=qiskit_str, assembler_language=AssemblerLanguage.QISKIT)
