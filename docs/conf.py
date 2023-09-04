@@ -186,7 +186,7 @@ if ON_READTHEDOCS:
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 # html_static_path = ["_static"]
-html_logo = "images/qunicorn_vertical_website_version.png"
+html_logo = "resources/images/qunicorn_vertical_website_version.png"
 html_theme_options = {
     "logo_only": True,
     "display_version": False,
@@ -261,12 +261,12 @@ def setup(app):
 
 if sphinx_config.get("include-changelog"):
     changelog = project_root / Path("CHANGELOG.md")
-    dest = project_root / Path("docs/changelog.md")
+    dest = project_root / Path("docs/others/changelog.md")
     copyfile(changelog, dest)
 
 if sphinx_config.get("include-readme"):
     readme = project_root / Path("README.md")
-    dest = project_root / Path("docs/readme.md")
+    dest = project_root / Path("docs/others/readme.md")
     copyfile(readme, dest)
 
 # -- Monkeypatches -----------------------------------------------------------
