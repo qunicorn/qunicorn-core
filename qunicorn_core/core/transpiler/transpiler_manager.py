@@ -11,6 +11,8 @@ import qiskit.qasm2
 import qiskit.qasm3
 from os import path
 
+from rustworkx.visualization import graphviz_draw
+
 from qunicorn_core.static.enums.assembler_languages import AssemblerLanguage
 
 
@@ -71,6 +73,11 @@ class TranspileManager:
             return reduce(lambda immediate_circuit, step: step.transpile_method(immediate_circuit), steps, circuit)
 
         return transpile
+
+    def visualize_transpile_strategy(self, filename):
+        graphviz_draw(
+            self._transpile_method_graph, node_attr_fn=lambda language: {"label": str(language)}, filename=filename
+        )
 
 
 transpile_manager = TranspileManager()

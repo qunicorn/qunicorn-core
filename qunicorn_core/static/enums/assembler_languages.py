@@ -33,5 +33,4 @@ class AssemblerLanguage(StrEnum):
     BRAKET = "BRAKET"
     QISKIT = "QISKIT"
     PYTHON = "PYTHON"
-    QRISP = "QRISP"
     BASIQ = "BASIQ"
