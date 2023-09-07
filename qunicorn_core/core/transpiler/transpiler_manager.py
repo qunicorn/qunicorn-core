@@ -1,17 +1,19 @@
 import dataclasses
 from functools import reduce
+from os import path
 from typing import Callable
 
 import qiskit.circuit
-from braket.circuits import Circuit
-from braket.circuits.serialization import IRType
-from rustworkx import PyDiGraph, dijkstra_shortest_paths
-from braket.ir.openqasm import Program as OpenQASMProgram
 import qiskit.qasm2
 import qiskit.qasm3
-from os import path
+from braket.circuits import Circuit
+from braket.circuits.serialization import IRType
+from braket.ir.openqasm import Program as OpenQASMProgram
+from rustworkx import PyDiGraph, digraph_dijkstra_shortest_paths
 
 from qunicorn_core.static.enums.assembler_languages import AssemblerLanguage
+
+"""Class that handles all transpiling between different assembler languages"""
 
 
 @dataclasses.dataclass
@@ -48,7 +50,7 @@ class TranspileManager:
         self, src_language: AssemblerLanguage, dest_language: AssemblerLanguage
     ) -> list[TranspileStrategyStep]:
         dest_node = self._language_nodes[dest_language]
-        paths = dijkstra_shortest_paths(
+        paths = digraph_dijkstra_shortest_paths(
             self._transpile_method_graph, self._language_nodes[src_language], dest_node, default_weight=1
         )
         path_to_dest = paths[dest_node]
