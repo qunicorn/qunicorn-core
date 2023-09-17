@@ -27,6 +27,7 @@ from qunicorn_core.static.enums.job_state import JobState
 from qunicorn_core.static.enums.job_type import JobType
 from qunicorn_core.static.enums.provider_name import ProviderName
 from qunicorn_core.static.enums.result_type import ResultType
+
 from tests.conftest import set_up_env
 
 JOB_JSON_IBM = "job_request_dto_test_data_IBM.json"
@@ -37,6 +38,7 @@ DEPLOYMENT_QASM3_CIRCUITS_JSON = "deployment_request_dto_with_qasm3_circuit_test
 DEPLOYMENT_BRAKET_CIRCUITS_JSON = "deployment_request_dto_with_braket_circuit_test_data.json"
 DEPLOYMENT_QISKIT_CIRCUITS_JSON = "deployment_request_dto_with_qiskit_circuit_test_data.json"
 PROGRAM_JSON = "program_request_dto_test_data.json"
+
 EXPECTED_ID: int = 3  # hardcoded ID can be removed if tests for the correct ID are no longer needed
 JOB_FINISHED_PROGRESS: int = 100
 STANDARD_JOB_NAME: str = "JobName"
@@ -51,6 +53,7 @@ def execute_job_test(
 
     # GIVEN: Database Setup
     app = set_up_env()
+
     with app.app_context():
         job_request_dto: JobRequestDto = get_test_job(provider)
         job_request_dto.device_name = device
@@ -145,6 +148,7 @@ def check_aws_local_simulator_results(results, shots: int):
         if i == 0:
             if counts.get("00") is not None and counts.get("11") is not None:
                 counts0 = counts.get("00")
+
                 probability00 = probabilities.get("00")
                 counts1 = counts.get("11")
                 probability11 = probabilities.get("11")
@@ -152,6 +156,7 @@ def check_aws_local_simulator_results(results, shots: int):
                 raise AssertionError
             assert shots / 2 - RESULT_TOLERANCE < counts0 < shots / 2 + RESULT_TOLERANCE
             assert shots / 2 - RESULT_TOLERANCE < counts1 < shots / 2 + RESULT_TOLERANCE
+
             assert 0.48 < probability00 < 0.52 and 0.48 < probability11 < 0.52
         else:
             assert counts.get("00") == shots

@@ -35,6 +35,7 @@ def test_create_and_run_aws_local_simulator():
     with app.app_context():
         job_request_dto: JobRequestDto = test_utils.get_test_job(ProviderName.AWS)
         test_utils.save_deployment_and_add_id_to_job(job_request_dto, AssemblerLanguage.QASM3)
+
         return_dto: SimpleJobDto = job_service.create_and_run_job(job_request_dto)
 
         # THEN: Check if the correct job with its result is saved in the db
