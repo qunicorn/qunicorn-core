@@ -15,8 +15,6 @@ import os
 from typing import List
 
 import qiskit
-from braket.circuits import Circuit
-from braket.circuits.serialization import IRType
 from qiskit import QuantumCircuit, transpile
 from qiskit.primitives import SamplerResult, EstimatorResult
 from qiskit.providers import BackendV1
@@ -28,6 +26,7 @@ from qiskit_ibm_runtime import QiskitRuntimeService, Sampler, Estimator, Runtime
 from qunicorn_core.api.api_models import JobCoreDto
 from qunicorn_core.core.mapper import result_mapper
 from qunicorn_core.core.pilotmanager.base_pilot import Pilot
+from qunicorn_core.core.transpiler.transpiler_manager import transpile_manager
 from qunicorn_core.db.database_services import job_db_service
 from qunicorn_core.db.models.job import JobDataclass
 from qunicorn_core.db.models.result import ResultDataclass
@@ -136,29 +135,31 @@ class IBMPilot(Pilot):
     @staticmethod
     def __get_circuits_as_QuantumCircuits(job_dto: JobCoreDto) -> list[QuantumCircuit]:
         """Transforms the circuit string into IBM QuantumCircuit objects"""
-        global qiskit_circuit
         circuits: list[QuantumCircuit] = []
         error_results: list[ResultDataclass] = []
 
         # transform each circuit into a QuantumCircuit-Object
         for program in job_dto.deployment.programs:
             try:
-                """retrieving the quantum circuit from different assembler languages"""
-                if program.assembler_language == AssemblerLanguage.QASM:
-                    circuits.append(QuantumCircuit().from_qasm_str(program.quantum_circuit))
-                elif program.assembler_language == AssemblerLanguage.QISKIT:
+                if program.assembler_language == AssemblerLanguage.QISKIT:
+                    circuit_globals = {"QuantumCircuit": QuantumCircuit}
                     # since the qiskit circuit modifies the circuit object instead of simple returning the object (it
                     # returns the instruction set) the 'qiskit_circuit' is modified from the exec
-                    exec(program.quantum_circuit)
-                    circuit: QuantumCircuit = qiskit_circuit
-                    circuits.append(circuit)
+                    exec(program.quantum_circuit, circuit_globals)
+                    qiskit_circuit = circuit_globals["qiskit_circuit"]
+                else:
+                    transpiler = transpile_manager.get_transpiler(
+                        src_language=program.assembler_language, dest_language=AssemblerLanguage.QISKIT
+                    )
+                    qiskit_circuit = transpiler(program.quantum_circuit)
+                circuits.append(qiskit_circuit)
             except QasmError as exception:
                 error_results.extend(result_mapper.exception_to_error_results(exception, program.quantum_circuit))
 
         # If an error was caught -> Update the job and raise it again
         if len(error_results) > 0:
             job_db_service.update_finished_job(job_dto.id, error_results, JobState.ERROR)
-            raise QasmError("Invalide Qasm String.")
+            raise QasmError("Invalid QASM String.")
 
         return circuits
 
@@ -187,15 +188,6 @@ class IBMPilot(Pilot):
 
     def transpile(self, provider: IBMProvider, job_dto: JobCoreDto):
         """Transpile job on an IBM backend"""
-
-        # TODO this can be used for the universal QASM translation for AWS and IBM - currently the resulting QSAM String
-        #  can be invalid
-        for program in job_dto.deployment.programs:
-            if program.assembler_language == AssemblerLanguage.BRAKET:
-                circuit: Circuit = eval(program.quantum_circuit)
-                program.quantum_circuit = circuit.to_ir(IRType.OPENQASM).source
-                print("Converted String vom BRAKET to QASM for IBM:", program.quantum_circuit)
-        # ############################################################################################
 
         circuits: list[QuantumCircuit] = self.__get_circuits_as_QuantumCircuits(job_dto)
         backend = provider.get_backend(job_dto.executed_on.device_name)
