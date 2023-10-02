@@ -67,6 +67,13 @@ class AWSPilot(Pilot):
 
         raise return_exception_and_update_job(job_core_dto.id, ValueError("No valid Job Type specified"))
 
+    def cancel_provider_specific(self, job_dto):
+        logging.warn(
+            f"Cancel job with id {job_dto.id} on {job_dto.executed_on.provider.name} failed."
+            f"Canceling while in execution not supported for AWS Jobs"
+        )
+        raise ValueError("Canceling not supported on AWS devices")
+
     @staticmethod
     def __map_aws_results_to_dataclass(
         aws_results: list[GateModelQuantumTaskResult], job_dto: JobCoreDto

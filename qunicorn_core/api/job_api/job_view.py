@@ -18,6 +18,7 @@ from http import HTTPStatus
 
 from flask import jsonify
 from flask.views import MethodView
+from qiskit_ibm_runtime import IBMRuntimeError, RuntimeInvalidStateError
 
 from .root import JOBMANAGER_API
 from ..api_models.job_dtos import (
@@ -102,6 +103,18 @@ class JobCancelView(MethodView):
     @JOBMANAGER_API.arguments(TokenSchema(), location="json")
     @JOBMANAGER_API.response(HTTPStatus.OK, SimpleJobDtoSchema())
     def post(self, body, job_id: str):
-        """TBD: Cancel a job execution via id."""
+        """Cancel a job execution via id."""
         logging.info("Request: cancel job")
-        return jsonify(job_service.cancel_job_by_id(job_id))
+        try:
+            return jsonify(job_service.cancel_job_by_id(job_id, body["token"])), 200
+        except (ValueError, IBMRuntimeError, RuntimeInvalidStateError) as exception:
+            return (
+                jsonify(
+                    {
+                        "code": 422,
+                        "message": "Unable to cancel job",
+                        "errors": {exception.__class__.__name__: str(exception)},
+                    }
+                ),
+                422,
+            )

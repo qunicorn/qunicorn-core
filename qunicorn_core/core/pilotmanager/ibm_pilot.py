@@ -20,7 +20,13 @@ from qiskit.providers import QiskitBackendNotFoundError
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.result import Result
 from qiskit_ibm_provider import IBMProvider
-from qiskit_ibm_runtime import QiskitRuntimeService, Sampler, Estimator, RuntimeJob, IBMRuntimeError
+from qiskit_ibm_runtime import (
+    QiskitRuntimeService,
+    Sampler,
+    Estimator,
+    RuntimeJob,
+    IBMRuntimeError,
+)
 
 from qunicorn_core.api.api_models import JobCoreDto, DeviceDto
 from qunicorn_core.core.pilotmanager.base_pilot import Pilot
@@ -73,7 +79,9 @@ class IBMPilot(Pilot):
             provider = self.__get_provider_login_and_update_job(job_dto.token, job_dto.id)
             backend = provider.get_backend(job_dto.executed_on.name)
 
-        result = qiskit.execute(job_dto.transpiled_circuits, backend=backend, shots=job_dto.shots).result()
+        job = qiskit.execute(job_dto.transpiled_circuits, backend=backend, shots=job_dto.shots)
+        job_db_service.update_attribute(job_dto.id, job.job_id(), JobDataclass.provider_specific_id)
+        result = job.result()
         results: list[ResultDataclass] = IBMPilot.__map_runner_results_to_dataclass(result, job_dto)
 
         # AerCircuit is not serializable and needs to be removed
@@ -82,6 +90,13 @@ class IBMPilot(Pilot):
                 res.meta_data.pop("circuit")
 
         return results
+
+    def cancel_provider_specific(self, job_dto: JobCoreDto):
+        """Cancel a job on an IBM backend using the IBM Pilot"""
+        job = self.__get_qiskit_job_from_qiskit_runtime(job_dto)
+        job.cancel()
+        job_db_service.update_attribute(job_dto.id, JobState.CANCELED, JobDataclass.state)
+        logging.info(f"Cancel job with id {job_dto.id} on {job_dto.executed_on.provider.name} successful.")
 
     def __sample(self, job_dto: JobCoreDto):
         """Uses the Sampler to execute a job on an IBM backend using the IBM Pilot"""
@@ -109,6 +124,13 @@ class IBMPilot(Pilot):
 
         self.__get_provider_login_and_update_job(job_dto.token, job_dto.id)
         return QiskitRuntimeService().get_backend(job_dto.executed_on.name)
+
+    def __get_qiskit_job_from_qiskit_runtime(self, job_dto: JobCoreDto):
+        """Returns the job of the provider specific ID created on the given account"""
+
+        self.__get_provider_login_and_update_job(job_dto.token, job_dto.id)
+        service: QiskitRuntimeService = QiskitRuntimeService()
+        return service.job(job_dto.provider_specific_id)
 
     @staticmethod
     def get_ibm_provider_and_login(token: str) -> IBMProvider:

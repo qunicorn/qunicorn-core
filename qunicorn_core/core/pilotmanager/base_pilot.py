@@ -14,6 +14,12 @@
 import json
 import os
 
+
+from celery.states import PENDING
+
+
+from qunicorn_core.celery import CELERY
+from qunicorn_core.db.database_services import job_db_service
 from qunicorn_core.api.api_models import JobCoreDto, DeviceRequestDto, DeviceDto
 from qunicorn_core.db.database_services.job_db_service import return_exception_and_update_job
 from qunicorn_core.db.models.device import DeviceDataclass
@@ -22,6 +28,7 @@ from qunicorn_core.db.models.provider import ProviderDataclass
 from qunicorn_core.db.models.result import ResultDataclass
 from qunicorn_core.db.models.user import UserDataclass
 from qunicorn_core.static.enums.assembler_languages import AssemblerLanguage
+from qunicorn_core.static.enums.job_state import JobState
 from qunicorn_core.static.enums.job_type import JobType
 from qunicorn_core.static.enums.provider_name import ProviderName
 
@@ -67,6 +74,22 @@ class Pilot:
             return self.run(job_core_dto)
         else:
             return self.execute_provider_specific(job_core_dto)
+
+    def cancel(self, job: JobCoreDto):
+        """Cancel the execution of a job, locally or if that is not possible at the backend"""
+        if job.state == JobState.READY and not JobCoreDto.celery_id == "synchronous":
+            res = CELERY.AsyncResult(job.celery_id)
+            if res.status == PENDING:
+                res.revoke()
+                job_db_service.update_attribute(job.id, JobState.CANCELED, JobDataclass.state)
+        elif job.state == JobState.RUNNING:
+            self.cancel_provider_specific(job)
+        else:
+            raise ValueError(f"Job is in invalid state for canceling: {job.state}")
+
+    def cancel_provider_specific(self, job):
+        """Cancel execution of a job at the corresponding backend"""
+        raise NotImplementedError()
 
     def has_same_provider(self, provider_name: ProviderName) -> bool:
         """Check if the provider name is the same as the pilot provider name"""
