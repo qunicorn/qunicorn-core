@@ -61,10 +61,10 @@ class IBMPilot(Pilot):
             return self.__estimate(job_core_dto)
         elif job_core_dto.type == JobType.SAMPLER:
             return self.__sample(job_core_dto)
-        elif job_core_dto.type == JobType.FILE_RUNNER:
-            return self.__run_program(job_core_dto)
-        elif job_core_dto.type == JobType.FILE_UPLOAD:
-            return self.__upload_program(job_core_dto)
+        elif job_core_dto.type == JobType.IBM_RUNNER:
+            return self.__run_ibm_program(job_core_dto)
+        elif job_core_dto.type == JobType.IBM_UPLOAD:
+            return self.__upload_ibm_program(job_core_dto)
         else:
             raise job_db_service.return_exception_and_update_job(
                 job_core_dto.id, ValueError("No valid Job Type specified")
@@ -158,8 +158,10 @@ class IBMPilot(Pilot):
         working_directory_path = os.path.abspath(os.getcwd())
         return working_directory_path + os.sep + "resources" + os.sep + "upload_files" + os.sep + file_name
 
-    def __upload_program(self, job_core_dto: JobCoreDto):
+    def __upload_ibm_program(self, job_core_dto: JobCoreDto):
+        """EXPERIMENTAL"""
         """Upload and then run a quantum program on the QiskitRuntimeService"""
+        logging.warn("This function is experimental and could not be fully tested yet")
 
         service = self.__get_runtime_service(job_core_dto)
         ibm_program_ids = []
@@ -174,7 +176,11 @@ class IBMPilot(Pilot):
         ]
         job_db_service.update_finished_job(job_core_dto.id, ibm_results, job_state=JobState.READY)
 
-    def __run_program(self, job_core_dto: JobCoreDto):
+    def __run_ibm_program(self, job_core_dto: JobCoreDto):
+        """EXPERIMENTAL"""
+        """Run a program previously uploaded to the IBM Backend"""
+        logging.warn("This function is experimental and could not be fully tested yet")
+
         service = self.__get_runtime_service(job_core_dto)
         ibm_results = []
         options_dict: dict = job_core_dto.ibm_file_options
