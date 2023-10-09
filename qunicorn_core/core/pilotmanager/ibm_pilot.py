@@ -13,6 +13,7 @@
 # limitations under the License.
 import os
 from datetime import datetime
+from typing import Optional
 
 import qiskit
 from qiskit.primitives import EstimatorResult, SamplerResult, Sampler as LocalSampler, Estimator as LocalEstimator
@@ -38,7 +39,6 @@ from qunicorn_core.db.models.provider import ProviderDataclass
 from qunicorn_core.db.models.provider_assembler_language import ProviderAssemblerLanguageDataclass
 from qunicorn_core.db.models.quantum_program import QuantumProgramDataclass
 from qunicorn_core.db.models.result import ResultDataclass
-from qunicorn_core.db.models.user import UserDataclass
 from qunicorn_core.static.enums.assembler_languages import AssemblerLanguage
 from qunicorn_core.static.enums.job_state import JobState
 from qunicorn_core.static.enums.job_type import JobType
@@ -276,21 +276,21 @@ class IBMPilot(Pilot):
         ]
         return ProviderDataclass(with_token=True, supported_languages=supported_languages, name=self.provider_name)
 
-    def get_standard_job_with_deployment(self, user: UserDataclass, device: DeviceDataclass) -> JobDataclass:
+    def get_standard_job_with_deployment(self, user_id: Optional[str], device: DeviceDataclass) -> JobDataclass:
         language: AssemblerLanguage = AssemblerLanguage.QASM2
         programs: list[QuantumProgramDataclass] = [
             QuantumProgramDataclass(quantum_circuit=utils.get_default_qasm_string(1), assembler_language=language),
             QuantumProgramDataclass(quantum_circuit=utils.get_default_qasm_string(2), assembler_language=language),
         ]
         deployment = DeploymentDataclass(
-            deployed_by=user,
+            deployed_by=user_id,
             programs=programs,
             deployed_at=datetime.now(),
             name="DeploymentIBMQasmName",
         )
 
         return JobDataclass(
-            executed_by=user,
+            executed_by=user_id,
             executed_on=device,
             deployment=deployment,
             progress=0,

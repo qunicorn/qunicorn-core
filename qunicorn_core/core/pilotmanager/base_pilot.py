@@ -13,6 +13,7 @@
 # limitations under the License.
 import json
 import os
+from typing import Optional
 
 
 from celery.states import PENDING
@@ -21,12 +22,10 @@ from celery.states import PENDING
 from qunicorn_core.celery import CELERY
 from qunicorn_core.db.database_services import job_db_service
 from qunicorn_core.api.api_models import JobCoreDto, DeviceRequestDto, DeviceDto
-from qunicorn_core.db.database_services.job_db_service import return_exception_and_update_job
 from qunicorn_core.db.models.device import DeviceDataclass
 from qunicorn_core.db.models.job import JobDataclass
 from qunicorn_core.db.models.provider import ProviderDataclass
 from qunicorn_core.db.models.result import ResultDataclass
-from qunicorn_core.db.models.user import UserDataclass
 from qunicorn_core.static.enums.assembler_languages import AssemblerLanguage
 from qunicorn_core.static.enums.job_state import JobState
 from qunicorn_core.static.enums.job_type import JobType
@@ -51,7 +50,7 @@ class Pilot:
         """Create the standard ProviderDataclass Object for the pilot and return it"""
         raise NotImplementedError()
 
-    def get_standard_job_with_deployment(self, user: UserDataclass, device: DeviceDataclass) -> JobDataclass:
+    def get_standard_job_with_deployment(self, user_id: Optional[str], device: DeviceDataclass) -> JobDataclass:
         """Create the standard ProviderDataclass Object for the pilot and return it"""
         raise NotImplementedError()
 
@@ -126,6 +125,8 @@ class Pilot:
         try:
             return dict([(hex(k), v) for k, v in qubits_in_binary.items()])
         except Exception:
+            from qunicorn_core.db.database_services.job_db_service import return_exception_and_update_job
+
             raise return_exception_and_update_job(job_id, ValueError("Could not convert decimal-results to hex"))
 
     @staticmethod
@@ -135,4 +136,6 @@ class Pilot:
         try:
             return dict([(hex(int(k, 2)), v) for k, v in qubits_in_binary.items()])
         except Exception:
+            from qunicorn_core.db.database_services.job_db_service import return_exception_and_update_job
+
             raise return_exception_and_update_job(job_id, ValueError("Could not convert binary-results to hex"))

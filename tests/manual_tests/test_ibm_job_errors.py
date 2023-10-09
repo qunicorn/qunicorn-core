@@ -21,7 +21,7 @@ from qiskit_ibm_provider.api.exceptions import RequestsApiError
 from qunicorn_core.api.api_models import JobRequestDto, DeploymentRequestDto
 from qunicorn_core.core import job_service
 from qunicorn_core.core.mapper import deployment_mapper
-from qunicorn_core.db.database_services import job_db_service, db_service, user_db_service
+from qunicorn_core.db.database_services import job_db_service, db_service
 from qunicorn_core.db.models.deployment import DeploymentDataclass
 from qunicorn_core.db.models.job import JobDataclass
 from qunicorn_core.static.enums.assembler_languages import AssemblerLanguage
@@ -61,7 +61,7 @@ def test_invalid_circuit():
     # WHEN: Executing create and run
     with app.app_context():
         deployment: DeploymentDataclass = deployment_mapper.request_to_dataclass(deployment_dto)
-        deployment.deployed_by = user_db_service.get_default_user()
+        deployment.deployed_by = None
         depl_id: int = db_service.save_database_object(deployment).id
         job_request_dto.deployment_id = depl_id
         with pytest.raises(Exception) as exception:
