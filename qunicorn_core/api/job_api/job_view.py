@@ -19,7 +19,9 @@ from typing import Optional
 
 from flask import jsonify
 from flask.views import MethodView
-from qiskit_ibm_runtime import IBMRuntimeError, RuntimeInvalidStateError
+from qiskit_ibm_runtime.exceptions import RuntimeInvalidStateError
+from qiskit_ibm_runtime.exceptions import IBMRuntimeError
+
 
 from .root import JOBMANAGER_API
 from ..api_models.job_dtos import (
