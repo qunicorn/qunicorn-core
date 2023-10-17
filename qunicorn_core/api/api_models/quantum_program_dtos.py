@@ -44,10 +44,10 @@ class QuantumProgramRequestDto:
 
 class QuantumProgramRequestDtoSchema(MaBaseSchema):
     quantum_circuit = ma.fields.String(
-        required=True, allow_none=True, metadata={"example": utils.get_default_qasm_string()}
+        required=True, allow_none=True, metadata={"example": utils.get_default_qasm2_string()}
     )
     assembler_language = ma.fields.Enum(
-        required=True, metadata={"example": AssemblerLanguage.QASM3}, enum=AssemblerLanguage
+        required=True, metadata={"example": AssemblerLanguage.QASM2}, enum=AssemblerLanguage
     )
     python_file_path = ma.fields.String(
         required=False,

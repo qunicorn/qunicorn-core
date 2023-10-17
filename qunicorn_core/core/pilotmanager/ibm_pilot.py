@@ -279,8 +279,8 @@ class IBMPilot(Pilot):
     def get_standard_job_with_deployment(self, device: DeviceDataclass, user_id: Optional[str] = None) -> JobDataclass:
         language: AssemblerLanguage = AssemblerLanguage.QASM2
         programs: list[QuantumProgramDataclass] = [
-            QuantumProgramDataclass(quantum_circuit=utils.get_default_qasm_string(1), assembler_language=language),
-            QuantumProgramDataclass(quantum_circuit=utils.get_default_qasm_string(2), assembler_language=language),
+            QuantumProgramDataclass(quantum_circuit=utils.get_default_qasm2_string(1), assembler_language=language),
+            QuantumProgramDataclass(quantum_circuit=utils.get_default_qasm2_string(2), assembler_language=language),
         ]
         deployment = DeploymentDataclass(
             deployed_by=user_id,
