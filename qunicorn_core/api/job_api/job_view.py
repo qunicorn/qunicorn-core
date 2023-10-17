@@ -35,7 +35,7 @@ from ..api_models.job_dtos import (
     JobExecutePythonFileDto,
     SimpleJobDto,
 )
-from ..jwt import abort_unauthorized
+from ..jwt import abort_if_user_unauthorized
 from ...core import job_service
 from ...util import logging
 
@@ -70,8 +70,7 @@ class JobDetailView(MethodView):
     def get(self, job_id: str, jwt_subject: Optional[str]):
         """Get the details/results of a job."""
         job_response_dto: JobResponseDto = job_service.get_job_by_id(int(job_id))
-        if job_response_dto.executed_by is not None and job_response_dto.executed_by != jwt_subject:
-            abort_unauthorized()
+        abort_if_user_unauthorized(job_response_dto.executed_by, jwt_subject)
         return jsonify(job_response_dto), 200
 
     @JOBMANAGER_API.response(HTTPStatus.OK, JobResponseDtoSchema())

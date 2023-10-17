@@ -16,8 +16,8 @@
 
 
 """Module containing JWT security features for the API."""
+
 import inspect
-import warnings
 from copy import deepcopy
 from datetime import timedelta
 from functools import wraps
@@ -32,6 +32,8 @@ from flask.app import Flask
 from flask.globals import request
 from flask_smorest import Api, abort
 from jwt import PyJWKClient, InvalidTokenError
+
+from qunicorn_core.util import logging
 
 """Basic JWT security scheme."""
 JWT_SCHEME = {
@@ -101,7 +103,7 @@ class JWTMixin:
             @wraps(func)
             def wrapper(*args: Any, **kwargs) -> RT:
                 if jwks_client is None:
-                    warnings.warn("Skipping JWT check because not JWKS Url is set")
+                    logging.warn("Skipping JWT check because not JWKS Url is set")
                     jwt_subject = None
                 else:
                     jwt_subject = self._validate_request(_jwt_optional)
@@ -147,5 +149,10 @@ class JWTMixin:
         return doc
 
 
-def abort_unauthorized():
-    abort(401, message="unauthorized")
+def abort_if_user_unauthorized(user_from_data_object: Optional[str], logged_in_user_id: str):
+    """
+    If the user_from_data_object is None everybody can access it.
+    If the user_from_data_object is not None, only the correct user can access it -> Otherwise abort.
+    """
+    if user_from_data_object is not None and user_from_data_object != logged_in_user_id:
+        abort(401, message="unauthorized")
