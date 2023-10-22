@@ -27,18 +27,17 @@ class DeploymentDataclass(DbModel):
     """Dataclass for storing deployments
 
     Attributes:
+        name (str, optional): Optional name for a deployment_api.
+        deployed_at (Date): Date of the creation of a deployment_api.
+        programs (list): A list of quantum programs.
         id (int): The id of a deployment.
         deployed_by (str): The  user_id that deployed this Deployment.
-        programs (list): A list of quantum programs.
-        deployed_at (Date): Date of the creation of a deployment_api.
-        name (str, optional): Optional name for a deployment_api.
     """
 
+    # non-default arguments
+    name: Mapped[Optional[str]] = mapped_column(sql.String(50))
+    deployed_at: Mapped[datetime] = mapped_column(sql.TIMESTAMP(timezone=True))
+    programs: Mapped[List[QuantumProgramDataclass.__name__]] = relationship(QuantumProgramDataclass.__name__)
+    # default arguments
     id: Mapped[int] = mapped_column(sql.INTEGER(), primary_key=True, autoincrement=True, default=None)
     deployed_by: Mapped[Optional[str]] = mapped_column(sql.String(100), default=None)
-    programs: Mapped[List[QuantumProgramDataclass.__name__]] = relationship(
-        QuantumProgramDataclass.__name__,
-        default=None,
-    )
-    deployed_at: Mapped[datetime] = mapped_column(sql.TIMESTAMP(timezone=True), default=datetime.utcnow())
-    name: Mapped[Optional[str]] = mapped_column(sql.String(50), default=None)
