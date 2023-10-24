@@ -37,6 +37,8 @@ See the content of the `.flaskenv` file for the default environment variables.
 You can also add an `IBM_TOKEN` to the `.env` file to use the IBM backend without a token in each request.
 Set the `EXECUTE_CELERY_TASK_ASYNCHRONOUS` in your .env file to False, if you don't want to start a
 celery worker and execute all tasks synchronously.
+Set the `ENABLE_EXPERIMENTAL_FEATURES` in your .env file to True, if you want to use experimental features like
+the qasm to quil transpilation, and IBM File_Runner and File_Upload job types.
 
 Run the Development Server
 ###########################
@@ -61,6 +63,20 @@ Create the initial database (If this doesn't work, try to delete the db-file fro
 .. code-block:: bash
 
    flask create-and-load-db
+
+
+If you want to run requests using the rigetti pilot you need to have instances of quilc and qvm running.
+For this first download the forest-sdk on https://qcs.rigetti.com/sdk-downloads and then run the following commands:
+
+.. code-block:: bash
+
+    // Terminal 1
+
+   quilc -S
+
+    // Terminal 2
+
+    qvm -S
 
 Check Linting Errors
 

@@ -12,4 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from . import aws_pilot, base_pilot, ibm_pilot, pilot_manager, rigetti_pilot
+from qunicorn_core.static.enums.assembler_languages import AssemblerLanguage
+from qunicorn_core.static.enums.provider_name import ProviderName
+from tests import test_utils
+
+"""Tests the execution of rigetti. quilc and qvm need to be running in server mode for this test to work"""
+
+IS_ASYNCHRONOUS: bool = False
+RESULT_TOLERANCE: int = 100
+
+
+def test_rigetti_local_simulator_braket_job_results():
+    test_utils.execute_job_test(ProviderName.RIGETTI, "2q-qvm", AssemblerLanguage.QASM2)

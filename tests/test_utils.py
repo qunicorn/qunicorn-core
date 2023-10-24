@@ -34,6 +34,7 @@ JOB_JSON_PATHS = [
     "job_request_dto_ibm_test_data.json",
     "job_request_dto_aws_test_data.json",
     "job_request_dto_qunicorn_test_data.json",
+    "job_request_dto_rigetti_test_data.json",
 ]
 
 # The AssemblerLanguage must be in lower case in the file name
@@ -44,9 +45,10 @@ DEPLOYMENT_JSON_PATHS = [
     "deployment_request_dto_qiskit_test_data.json",
     "deployment_request_dto_qrisp_test_data.json",
     "deployment_request_dto_qunicorn_test_data.json",
+    "deployment_request_dto_quil_test_data.json",
 ]
 
-EXPECTED_ID: int = 3  # hardcoded ID can be removed if tests for the correct ID are no longer needed
+EXPECTED_ID: int = 4  # hardcoded ID can be removed if tests for the correct ID are no longer needed
 JOB_FINISHED_PROGRESS: int = 100
 STANDARD_JOB_NAME: str = "JobName"
 IS_ASYNCHRONOUS: bool = False
@@ -66,7 +68,7 @@ def execute_job_test(
     Eg: deployment_request_dto_qiskit_test_data.json
 
     It is an End-to-End test, which means that the job is created and executed on the provider.
-    Afterwards it is checked if the job is saved in the database and if the results are correct.
+    Afterward it is checked if the job is saved in the database and if the results are correct.
     This can be done for different assembler languages and providers.
     """
 

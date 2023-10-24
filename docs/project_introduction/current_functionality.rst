@@ -6,7 +6,7 @@ The user currently has one main way to access the application, this is through t
 
 A good way to get an overview, as well as example values, is to access those through the Swagger UI.
 
-The Endpoints defined can be found on the api documentation under :doc:`my document <../architecture_documentation/api_documentation/apidocumentation>`.
+The Endpoints defined can be found on the api documentation under :doc:`API Documentation <../architecture_documentation/api_documentation/apidocumentation>`.
 
 Available Providers
 ^^^^^^^^^^^^^^^^^^^
@@ -30,6 +30,12 @@ Currently the following providers are available:
     * Available Functions
         * RUNNER
 
+* Rigetti:
+    * Base languages:
+        * Quil
+    * Available Functions
+        * RUNNER
+
 Please note that this list is not exhaustive and will be updated as more providers are added.
 
 
@@ -37,11 +43,12 @@ Supported Assembler languages
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Qunicorn supports a vast array of different assembler languages in the context of quantum computing.
 
-* QASM
+* QASM2
+* QASM3
 * Braket
 * Python
 * Qrisp
-* BasiQ
+* Quil
 
 Please note that this list is not exhaustive and will be updated as more assembler languages are added.
 

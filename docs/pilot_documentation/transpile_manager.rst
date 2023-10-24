@@ -26,6 +26,9 @@ Currently Supported Languages
 * QASM3
 * QISKIT
 * BRAKET
+* QUIL
+
+**Note:** (QUIL Transpilation needs to be enabled by setting ENABLE_EXPERIMENTAL_FEATURES in .env to True.)
 
 Currently Supported Transpile Strategies
 -----------------------------------------

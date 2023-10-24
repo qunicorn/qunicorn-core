@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import os
 from datetime import datetime
 from typing import Optional
@@ -163,6 +164,15 @@ class IBMPilot(Pilot):
     def __upload_ibm_program(self, job_core_dto: JobCoreDto):
         """EXPERIMENTAL"""
         """Upload and then run a quantum program on the QiskitRuntimeService"""
+        if not utils.is_experimental_feature_enabled():
+            raise job_db_service.return_exception_and_update_job(
+                job_core_dto.id,
+                QunicornError(
+                    "Running uploaded IBM Programs is experimental and was not fully tested. Set "
+                    "ENABLE_EXPERIMENTAL_FEATURES to True to enable this feature.",
+                    405,
+                ),
+            )
         logging.warn("This function is experimental and could not be fully tested yet")
 
         service = self.__get_runtime_service(job_core_dto)
@@ -171,7 +181,7 @@ class IBMPilot(Pilot):
             python_file_path = self.__get_file_path_to_resources(program.python_file_path)
             python_file_metadata_path = self.__get_file_path_to_resources(program.python_file_metadata)
             ibm_program_ids.append(service.upload_program(python_file_path, python_file_metadata_path))
-        job_db_service.update_attribute(job_core_dto.id, JobType.FILE_RUNNER, JobDataclass.type)
+        job_db_service.update_attribute(job_core_dto.id, JobType.IBM_RUNNER, JobDataclass.type)
         job_db_service.update_attribute(job_core_dto.id, JobState.READY, JobDataclass.state)
         ibm_results = [
             ResultDataclass(result_dict={"ibm_job_id": ibm_program_ids[0]}, result_type=ResultType.UPLOAD_SUCCESSFUL)
@@ -181,6 +191,15 @@ class IBMPilot(Pilot):
     def __run_ibm_program(self, job_core_dto: JobCoreDto):
         """EXPERIMENTAL"""
         """Run a program previously uploaded to the IBM Backend"""
+        if not utils.is_experimental_feature_enabled():
+            raise job_db_service.return_exception_and_update_job(
+                job_core_dto.id,
+                QunicornError(
+                    "Running uploaded IBM Programs is experimental and was not fully tested. Set "
+                    "ENABLE_EXPERIMENTAL_FEATURES to True to enable this feature.",
+                    405,
+                ),
+            )
         logging.warn("This function is experimental and could not be fully tested yet")
 
         service = self.__get_runtime_service(job_core_dto)
@@ -216,7 +235,7 @@ class IBMPilot(Pilot):
 
         for i in range(len(ibm_result.results)):
             counts: dict = ibm_result.results[i].data.counts
-            probabilities: dict = IBMPilot.calculate_probabilities(counts)
+            probabilities: dict = Pilot.calculate_probabilities(counts)
             circuit: str = job_dto.deployment.programs[i].quantum_circuit
             result_dtos.append(
                 ResultDataclass(
@@ -227,16 +246,6 @@ class IBMPilot(Pilot):
                 )
             )
         return result_dtos
-
-    @staticmethod
-    def calculate_probabilities(counts: dict) -> dict:
-        """Calculates the probabilities from the counts, probability = counts / total_counts"""
-
-        total_counts = sum(counts.values())
-        probabilities = {}
-        for key, value in counts.items():
-            probabilities[key] = value / total_counts
-        return probabilities
 
     @staticmethod
     def _map_estimator_results_to_dataclass(
@@ -300,8 +309,15 @@ class IBMPilot(Pilot):
             shots=4000,
             type=JobType.RUNNER,
             started_at=datetime.now(),
-            name="IMBJob",
-            results=[ResultDataclass(result_dict={"0x": "550", "1x": "450"})],
+            name="IBMJob",
+            results=[
+                ResultDataclass(
+                    result_dict={
+                        "counts": {"0x0": 2007, "0x3": 1993},
+                        "probabilities": {"0x0": 0.50175, "0x3": 0.49825},
+                    }
+                )
+            ],
         )
 
     def save_devices_from_provider(self, device_request):

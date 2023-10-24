@@ -70,6 +70,8 @@ def load_db_function(app: Flask, if_not_exists=True):
     db_is_empty = DB.session.query(JobDataclass).first() is None
     if if_not_exists and not db_is_empty:
         return
+
+    # Create default deployments for languages that do not have their own primary pilot.
     DB.session.add(create_default_braket_deployment())
     DB.session.add(create_default_qiskit_deployment())
     DB.session.commit()
