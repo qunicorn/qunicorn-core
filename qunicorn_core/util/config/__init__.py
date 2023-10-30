@@ -21,7 +21,6 @@ from .smorest_config import SmorestProductionConfig, SmorestDebugConfig
 from .sqlalchemy_config import SQLAchemyProductionConfig, SQLAchemyDebugConfig
 
 
-
 class ProductionConfig(SQLAchemyProductionConfig, SmorestProductionConfig):
     ENV = "production"
     SECRET_KEY = urandom(32)
