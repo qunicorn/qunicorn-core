@@ -11,14 +11,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os
 
 from qiskit import QuantumCircuit
 
 
-def get_default_qasm_string(hadamard_amount: int = 1) -> str:
+def get_default_qasm2_string(hadamard_amount: int = 1) -> str:
     qc = QuantumCircuit(2)
     for _ in range(hadamard_amount):
         qc.h(0)
     qc.cx(0, 1)
     qc.measure_all()
     return qc.qasm()
+
+
+def is_experimental_feature_enabled() -> bool:
+    return os.environ.get("ENABLE_EXPERIMENTAL_FEATURES") == "True"
+
+
+def is_running_in_docker() -> bool:
+    return os.environ.get("RUNNING_IN_DOCKER", "") == "True"

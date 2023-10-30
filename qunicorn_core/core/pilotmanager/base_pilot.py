@@ -13,24 +13,22 @@
 # limitations under the License.
 import json
 import os
-
+from typing import Optional
 
 from celery.states import PENDING
 
-
+from qunicorn_core.api.api_models import JobCoreDto, DeviceRequestDto, DeviceDto
 from qunicorn_core.celery import CELERY
 from qunicorn_core.db.database_services import job_db_service
-from qunicorn_core.api.api_models import JobCoreDto, DeviceRequestDto, DeviceDto
-from qunicorn_core.db.database_services.job_db_service import return_exception_and_update_job
 from qunicorn_core.db.models.device import DeviceDataclass
 from qunicorn_core.db.models.job import JobDataclass
 from qunicorn_core.db.models.provider import ProviderDataclass
 from qunicorn_core.db.models.result import ResultDataclass
-from qunicorn_core.db.models.user import UserDataclass
 from qunicorn_core.static.enums.assembler_languages import AssemblerLanguage
 from qunicorn_core.static.enums.job_state import JobState
 from qunicorn_core.static.enums.job_type import JobType
 from qunicorn_core.static.enums.provider_name import ProviderName
+from qunicorn_core.static.qunicorn_exception import QunicornError
 
 
 class Pilot:
@@ -51,12 +49,12 @@ class Pilot:
         """Create the standard ProviderDataclass Object for the pilot and return it"""
         raise NotImplementedError()
 
-    def get_standard_job_with_deployment(self, user: UserDataclass, device: DeviceDataclass) -> JobDataclass:
+    def get_standard_job_with_deployment(self, device: DeviceDataclass, user_id: Optional[str] = None) -> JobDataclass:
         """Create the standard ProviderDataclass Object for the pilot and return it"""
         raise NotImplementedError()
 
     def save_devices_from_provider(self, device_request: DeviceRequestDto):
-        """Create the standard ProviderDataclass Object for the pilot and return it"""
+        """Access the devices from the cloud service of the provider, to update the current device list of qunicorn"""
         raise NotImplementedError()
 
     def is_device_available(self, device: DeviceDto, token: str) -> bool:
@@ -85,7 +83,7 @@ class Pilot:
         elif job.state == JobState.RUNNING:
             self.cancel_provider_specific(job)
         else:
-            raise ValueError(f"Job is in invalid state for canceling: {job.state}")
+            raise QunicornError(f"Job is in invalid state for canceling: {job.state}")
 
     def cancel_provider_specific(self, job):
         """Cancel execution of a job at the corresponding backend"""
@@ -109,13 +107,13 @@ class Pilot:
         default_device: DeviceDataclass | None = None
         for device_json in all_devices["all_devices"]:
             device: DeviceDataclass = DeviceDataclass(provider=provider, provider_id=provider.id, **device_json)
-            if device.is_local:
+            if device.is_local and default_device is None:
                 default_device = device
             else:
                 devices_without_default.append(device)
 
         if default_device is None:
-            raise ValueError("No default device found for provider {}".format(self.provider_name))
+            raise QunicornError("No default device found for provider {}".format(self.provider_name))
 
         return devices_without_default, default_device
 
@@ -126,7 +124,9 @@ class Pilot:
         try:
             return dict([(hex(k), v) for k, v in qubits_in_binary.items()])
         except Exception:
-            raise return_exception_and_update_job(job_id, ValueError("Could not convert decimal-results to hex"))
+            raise job_db_service.return_exception_and_update_job(
+                job_id, QunicornError("Could not convert decimal-results to hex")
+            )
 
     @staticmethod
     def qubit_binary_to_hex(qubits_in_binary: dict, job_id: int) -> dict:
@@ -135,4 +135,16 @@ class Pilot:
         try:
             return dict([(hex(int(k, 2)), v) for k, v in qubits_in_binary.items()])
         except Exception:
-            raise return_exception_and_update_job(job_id, ValueError("Could not convert binary-results to hex"))
+            raise job_db_service.return_exception_and_update_job(
+                job_id, QunicornError("Could not convert binary-results to hex")
+            )
+
+    @staticmethod
+    def calculate_probabilities(counts: dict) -> dict:
+        """Calculates the probabilities from the counts, probability = counts / total_counts"""
+
+        total_counts = sum(counts.values())
+        probabilities = {}
+        for key, value in counts.items():
+            probabilities[key] = value / total_counts
+        return probabilities

@@ -12,16 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from qunicorn_core.core.mapper import user_mapper
-from qunicorn_core.api.api_models.user_dtos import UserDto
-from qunicorn_core.db.database_services import user_db_service
+from qunicorn_core.static.enums.assembler_languages import AssemblerLanguage
+from qunicorn_core.static.enums.provider_name import ProviderName
+from tests import test_utils
+
+"""Tests the execution of rigetti. quilc and qvm need to be running in server mode for this test to work"""
+
+IS_ASYNCHRONOUS: bool = False
+RESULT_TOLERANCE: int = 100
 
 
-def get_all_users() -> list[UserDto]:
-    """Gets all Users from the DB and maps them"""
-    return [user_mapper.dataclass_to_dto(user) for user in user_db_service.get_all_users()]
-
-
-def get_user_by_id(user_id: int) -> UserDto:
-    """Gets a User from the DB by its ID and maps it"""
-    return user_mapper.dataclass_to_dto(user_db_service.get_user_by_id(user_id))
+def test_rigetti_local_simulator_braket_job_results():
+    test_utils.execute_job_test(ProviderName.RIGETTI, "2q-qvm", AssemblerLanguage.QASM2)

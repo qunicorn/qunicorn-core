@@ -26,6 +26,8 @@ from invoke import UnexpectedExit, task
 from invoke.context import Context
 from invoke.runners import Result
 
+from qunicorn_core.static.qunicorn_exception import QunicornError
+
 if system() == "Windows":
     from subprocess import list2cmdline as join
 else:
@@ -476,7 +478,7 @@ def git_url_to_folder(url: str) -> str:
     # roughly matches …[/<organization]/<repository-name>[.git][/]
     url_match = match(r".*(?:\/(?P<orga>[^\/.]+))?\/(?P<repo>[^\/]+)(?:\.git)\/?$", url)
     if not url_match:
-        raise ValueError(f"Url '{url}' could not be parsed!", url_match)
+        raise QunicornError((f"Url '{url}' could not be parsed!", url_match))
     if url_match["orga"]:
         return f"{url_match['orga']}__{url_match['repo']}"
     else:
@@ -581,11 +583,11 @@ def ensure_paths(c):
 @task(ensure_paths)
 def start_docker(c):
     """Docker entry point task. Do not call!"""
-    c.run("python -m flask create-and-load-db", echo=True)
     log_level = environ.get("DEFAULT_LOG_LEVEL", "INFO")
     concurrency_env = environ.get("CONCURRENCY", "1")
     concurrency = int(concurrency_env) if concurrency_env.isdigit() else 1
     if environ.get("CONTAINER_MODE", "").lower() == "server":
+        c.run("python -m flask create-and-load-db", echo=True)
         start_gunicorn(c, workers=concurrency, log_level=log_level, docker=True)
     elif environ.get("CONTAINER_MODE", "").lower() == "worker":
         worker_pool = environ.get("CELERY_WORKER_POOL", "threads")
@@ -598,7 +600,7 @@ def start_docker(c):
             periodic_scheduler=periodic_scheduler,
         )
     else:
-        raise ValueError("Environment variable 'CONTAINER_MODE' must be set to either 'server' or 'worker'!")
+        raise QunicornError("Environment variable 'CONTAINER_MODE' must be set to either 'server' or 'worker'!")
 
 
 @task

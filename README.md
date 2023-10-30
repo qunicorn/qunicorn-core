@@ -37,6 +37,8 @@ See the content of the `.flaskenv` file for the default environment variables.
 You can also add an `IBM_TOKEN` to the `.env` file to use the IBM backend without a token in each request.
 Set the `EXECUTE_CELERY_TASK_ASYNCHRONOUS` in your .env file to False, if you don't want to start a
 celery worker and execute all tasks synchronously.
+Set the `ENABLE_EXPERIMENTAL_FEATURES` in your .env file to True, if you want to use experimental features like
+the qasm to quil transpilation, and IBM File_Runner and File_Upload job types.
 
 ### Available endpoints are:
 
@@ -145,6 +147,12 @@ Configured in `qunicorn_core/util/config/smorest_config.py`.
 * Rapidoc: <http://localhost:5005/rapidoc>
 * Swagger-UI: <http://localhost:5005/swagger-ui>
 * OpenAPI Spec (JSON): <http://localhost:5005/api-spec.json>
+
+#### Authentication:
+
+The authentication is done with Keycloak.
+All endpoints are available for everybody but jobs created by a user with a token can only be seen by the user himself.
+To authenticate yourself have a look at the following read the docs chapter: ArchitectureDocumentation/Authentication.
 
 #### Debug pages:
 

@@ -1,0 +1,9 @@
+{
+  "name": "JobName",
+  "provider_name": "RIGETTI",
+  "type": "RUNNER",
+  "token": "",
+  "device_name": "2q-qvm",
+  "shots": 4000,
+  "deployment_id": 6
+}

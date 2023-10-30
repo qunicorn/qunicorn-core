@@ -18,6 +18,8 @@ ENV CONTAINER_MODE=server
 ENV DEFAULT_LOG_LEVEL=INFO
 ENV CONCURRENCY=2
 ENV CELERY_WORKER_POOL=threads
+ENV EXECUTE_CELERY_TASK_ASYNCHRONOUS=True
+ENV RUNNING_IN_DOCKER=True
 
 # make directories and set user rights
 RUN mkdir --parents /app/instance \

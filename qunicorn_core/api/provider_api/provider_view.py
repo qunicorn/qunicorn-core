@@ -20,7 +20,6 @@ from flask.views import MethodView
 
 from .root import PROVIDER_API
 from ..api_models.provider_dtos import ProviderDtoSchema
-
 from ...core import provider_service
 
 

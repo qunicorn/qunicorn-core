@@ -1,4 +1,4 @@
-# Copyright 2023 University of Stuttgart.
+# Copyright 2023 University of Stuttgart
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,20 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from enum import StrEnum
+"""File to store all costume exceptions used in qunicorn"""
 
 
-class ProgrammingLanguage(StrEnum):
-    """Enum to save the different programming languages for quantum circuits
+class QunicornError(Exception):
+    """General Exception raised for errors in qunicorn"""
 
-    Values:
-        QISKIT: The programming language is QISKIT
-        PYQUIL: The programming language is PYQUIL
-        QMWARE: The programming language is QMWARE
-        BRAKET: The programming language is BRAKET
-    """
+    status_code: int
 
-    QISKIT = "QISKIT"
-    PYQUIL = "PYQUIL"
-    QMWARE = "QMWARE"
-    BRAKET = "BRAKET"
+    def __init__(self, msg, status_code=404):
+        super().__init__(msg)
+        self.status_code = status_code
