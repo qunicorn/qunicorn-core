@@ -15,8 +15,9 @@
 """"pytest utils file"""
 import json
 import os
+from typing import Optional
 
-from qunicorn_core.api.api_models import DeploymentRequestDto, JobRequestDto, DeploymentDto, SimpleJobDto
+from qunicorn_core.api.api_models import DeploymentRequestDto, JobRequestDto, SimpleJobDto, DeploymentResponseDto
 from qunicorn_core.core import deployment_service, job_service
 from qunicorn_core.db.database_services import job_db_service
 from qunicorn_core.db.models.job import JobDataclass
@@ -47,6 +48,8 @@ DEPLOYMENT_JSON_PATHS = [
     "deployment_request_dto_quil_test_data.json",
 ]
 
+AWS_LOCAL_SIMULATOR = "local_simulator"
+IBM_LOCAL_SIMULATOR = "aer_simulator"
 EXPECTED_ID: int = 4  # hardcoded ID can be removed if tests for the correct ID are no longer needed
 JOB_FINISHED_PROGRESS: int = 100
 STANDARD_JOB_NAME: str = "JobName"
@@ -61,7 +64,10 @@ QUBIT_8: str = "0x7"
 
 
 def execute_job_test(
-    provider: ProviderName, device: str, input_assembler_language: AssemblerLanguage, is_asynchronous: bool = False
+    provider: ProviderName,
+    device: str,
+    assembler_language_list: list[AssemblerLanguage],
+    is_asynchronous: bool = False,
 ):
     """
     This is the main testing method to test the execution of a job on a device of a provider.
@@ -79,7 +85,7 @@ def execute_job_test(
     with app.app_context():
         job_request_dto: JobRequestDto = get_test_job(provider)
         job_request_dto.device_name = device
-        save_deployment_and_add_id_to_job(job_request_dto, input_assembler_language)
+        save_deployment_and_add_id_to_job(job_request_dto, assembler_language_list)
 
         # WHEN: create_and_run
         return_dto: SimpleJobDto = job_service.create_and_run_job(job_request_dto, is_asynchronous)
@@ -102,20 +108,33 @@ def get_object_from_json(json_file_name: str):
     return data
 
 
-def save_deployment_and_add_id_to_job(job_request_dto: JobRequestDto, assembler_language):
-    deployment_request: DeploymentRequestDto = get_test_deployment_request(assembler_language=assembler_language)
-    deployment: DeploymentDto = deployment_service.create_deployment(deployment_request)
+def save_deployment_and_add_id_to_job(job_request_dto: JobRequestDto, assembler_language_list: list[AssemblerLanguage]):
+    """Save the deployment and add the id to the job_request_dto"""
+    deployment_request: DeploymentRequestDto = get_test_deployment_request(
+        assembler_language_list=assembler_language_list
+    )
+    deployment: DeploymentResponseDto = deployment_service.create_deployment(deployment_request)
     job_request_dto.deployment_id = deployment.id
 
 
-def get_test_deployment_request(assembler_language: AssemblerLanguage) -> DeploymentRequestDto:
+def get_test_deployment_request(assembler_language_list: list[AssemblerLanguage]) -> DeploymentRequestDto:
     """Search for an assembler_language in the file names to create a DeploymentRequestDto"""
+    deployment_dict: Optional[dict] = None
+    combined_deployment_dict_programs = []
     for path in DEPLOYMENT_JSON_PATHS:
-        if assembler_language.lower() in path:
-            deployment_dict: dict = get_object_from_json(path)
-            return DeploymentRequestDto.from_dict(deployment_dict)
-
-    raise QunicornError("No deployment json found for assembler language: {}".format(assembler_language))
+        for assembler_language in assembler_language_list:
+            if assembler_language.lower() in path:
+                # Filling Deployment Dict from path for correct assembler language
+                deployment_dict = get_object_from_json(path)
+                # Extend programs with programs from other assembler languages
+                combined_deployment_dict_programs.extend(deployment_dict["programs"])
+    if len(combined_deployment_dict_programs) > 0:
+        # Return DeploymentDict as DeploymentRequestDto with all combined programs
+        deployment_dict["programs"] = combined_deployment_dict_programs
+        return DeploymentRequestDto.from_dict(deployment_dict)
+    else:
+        # Raise Error if no deployment json was found
+        raise QunicornError("No deployment json found for assembler_language: {}".format(assembler_language_list))
 
 
 def get_test_job(provider: ProviderName) -> JobRequestDto:
@@ -151,7 +170,7 @@ def check_if_job_runner_result_correct(job: JobDataclass):
         probabilities: dict = result.result_dict["probabilities"]
 
         # Check if the first result is distributed correctly: 50% for the qubit zero and 50% for the qubit three
-        if i == 0:
+        if (i % 2) == 0:
             assert compare_values_with_tolerance(shots / 2, counts[QUBIT_0], COUNTS_TOLERANCE)
             assert compare_values_with_tolerance(shots / 2, counts[QUBIT_3], COUNTS_TOLERANCE)
             assert (counts[QUBIT_0] + counts[QUBIT_3]) == shots

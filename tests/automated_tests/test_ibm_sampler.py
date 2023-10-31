@@ -24,11 +24,18 @@ from qunicorn_core.static.enums.job_type import JobType
 from qunicorn_core.static.enums.provider_name import ProviderName
 from tests import test_utils
 from tests.conftest import set_up_env
-from tests.test_utils import IS_ASYNCHRONOUS, PROBABILITY_1, PROBABILITY_TOLERANCE, QUBIT_3, QUBIT_0
+from tests.test_utils import (
+    IS_ASYNCHRONOUS,
+    PROBABILITY_1,
+    PROBABILITY_TOLERANCE,
+    QUBIT_3,
+    QUBIT_0,
+    IBM_LOCAL_SIMULATOR,
+)
 
 
 def test_create_and_run_sampler():
-    create_and_run_sampler_with_device("aer_simulator")
+    create_and_run_sampler_with_device(IBM_LOCAL_SIMULATOR)
 
 
 def create_and_run_sampler_with_device(device_name: str):
@@ -41,7 +48,7 @@ def create_and_run_sampler_with_device(device_name: str):
 
     # WHEN: create_and_run executed synchronous
     with app.app_context():
-        test_utils.save_deployment_and_add_id_to_job(job_request_dto, AssemblerLanguage.QISKIT)
+        test_utils.save_deployment_and_add_id_to_job(job_request_dto, [AssemblerLanguage.QISKIT])
         return_dto: SimpleJobDto = job_service.create_and_run_job(job_request_dto, IS_ASYNCHRONOUS)
 
     # THEN: Check if the correct job with its result is saved in the db
