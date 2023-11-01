@@ -33,10 +33,9 @@ from qunicorn_core.static.enums.assembler_languages import AssemblerLanguage
 from qunicorn_core.static.qunicorn_exception import QunicornError
 from qunicorn_core.util import logging, utils
 
-"""
-Class that handles all transpiling between different assembler languages
 
-The different languages are implemented as nodes and the shortest route is used to find the required transpiling steps
+"""
+Data class for each step when transpiling from a source language to the destination language
 """
 
 
@@ -47,12 +46,21 @@ class TranspileStrategyStep:
     transpile_method: Callable[[str], str]
 
 
+"""
+Class that handles all transpiling between different assembler languages
+
+The different languages are implemented as nodes and the shortest route is used to find the required transpiling steps
+"""
+
+
 class TranspileManager:
     def __init__(self):
         self._transpile_method_graph = PyDiGraph()
         self._language_nodes = dict()
 
     def register_transpile_method(self, src_language: AssemblerLanguage, dest_language: AssemblerLanguage):
+        """Decorator to define the transpile method from a Node A (source language) to Node B (destination language)"""
+
         def decorator(transpile_method: Callable[[str], str]):
             self._transpile_method_graph.add_edge(
                 self._get_or_create_language_node(src_language),
@@ -73,6 +81,7 @@ class TranspileManager:
     def _find_transpile_strategy(
         self, src_language: AssemblerLanguage, dest_language: AssemblerLanguage
     ) -> list[TranspileStrategyStep]:
+        """Transpile strategy is selected from a graph with a node for each language by using the dijkstra algorithm"""
         dest_node = self._language_nodes[dest_language]
         paths = digraph_dijkstra_shortest_paths(
             self._transpile_method_graph, self._language_nodes[src_language], dest_node, default_weight=1
@@ -91,19 +100,25 @@ class TranspileManager:
         ]
 
     def get_transpiler(self, src_language: AssemblerLanguage, dest_languages: [AssemblerLanguage]) -> any:
+        """Main method of the class that returns the method to be used to transpile to the destination language"""
         steps = None
-        # in case of multiple supported languages the shortest path is selected
+        # in case of multiple supported languages the shortest path is selected by comparing the options
         for dest_language in dest_languages:
             steps_of_current_run = self._find_transpile_strategy(src_language, dest_language)
             if steps is None or len(steps_of_current_run) < len(steps):
                 steps = steps_of_current_run
 
         def transpile(circuit) -> any:
+            """This method transpiles the circuit from the source language to the destination language by using
+            intermediate circuits along the discovered shortest path (saved in "steps"). It iteratively applies
+            the transpile methods from the selected steps to return one single transpiled circuit.
+            The result of one iteration becomes the immediate_circuit/input for the next iteration."""
             return reduce(lambda immediate_circuit, step: step.transpile_method(immediate_circuit), steps, circuit)
 
         return transpile
 
     def visualize_transpile_strategy(self, filename):
+        """Visualisation of the graph of the possible transpile methods between each node"""
         graphviz_draw(
             self._transpile_method_graph, node_attr_fn=lambda language: {"label": str(language)}, filename=filename
         )
@@ -113,14 +128,14 @@ transpile_manager = TranspileManager()
 
 
 @transpile_manager.register_transpile_method(AssemblerLanguage.BRAKET, AssemblerLanguage.QASM3)
-def braket_to_qasm(source: Circuit) -> str:
+def braket_to_qasm3(source: Circuit) -> str:
     return source.to_ir(IRType.OPENQASM).source
 
 
 @transpile_manager.register_transpile_method(AssemblerLanguage.QISKIT, AssemblerLanguage.QASM2)
 def qiskit_to_qasm2(circuit: qiskit.circuit.QuantumCircuit) -> str:
     qasm = circuit.qasm()
-    # XXX replace gate references standard gate library an add 'CX' to 'cnot' mapping
+    # replace gate references standard gate library an add 'CX' to 'cnot' mapping
     with open(path.join(path.dirname(qiskit.__file__), "qasm/libs/qelib1.inc")) as qelib1_file:
         qelib1 = qelib1_file.read()
         qasm = qasm.replace('include "qelib1.inc";', "gate CX a,b { cnot a,b; }\n" + qelib1)
@@ -130,7 +145,7 @@ def qiskit_to_qasm2(circuit: qiskit.circuit.QuantumCircuit) -> str:
 @transpile_manager.register_transpile_method(AssemblerLanguage.QISKIT, AssemblerLanguage.QASM3)
 def qiskit_to_qasm3(circuit: qiskit.circuit.QuantumCircuit) -> str:
     qasm = qiskit.qasm3.Exporter(allow_aliasing=False).dumps(circuit)
-    # XXX replace gate references standard gate library
+    # replace gate references standard gate library
     with open(path.join(path.dirname(qiskit.__file__), "qasm/libs/stdgates.inc")) as stdgates_file:
         stdgates = stdgates_file.read()
     qasm = qasm.replace('include "stdgates.inc";', stdgates)
@@ -153,7 +168,7 @@ def qasm2_to_qiskit(source: str) -> qiskit.circuit.QuantumCircuit:
 
 
 @transpile_manager.register_transpile_method(AssemblerLanguage.QASM3, AssemblerLanguage.BRAKET)
-def qasm_to_braket(source: str) -> OpenQASMProgram:
+def qasm3_to_braket(source: str) -> OpenQASMProgram:
     return OpenQASMProgram(source=source)
 
 
@@ -163,9 +178,9 @@ def qrisp_to_qiskit(circuit: qrisp.circuit.QuantumCircuit) -> OpenQASMProgram:
 
 
 @transpile_manager.register_transpile_method(AssemblerLanguage.QASM2, AssemblerLanguage.QUIL)
-def qasm_to_quil(source: str) -> Program:
+def qasm2_to_quil(source: str) -> Program:
     # qvm and quilc from pyquil should run in server mode and can be found with get_qc
-    # WARNING: the qasm to quil transpilation does not allow for the use of standard gates.
+    # WARNING: the qasm to quil transpilation does not allow for the use of standard gate library.
     if not utils.is_experimental_feature_enabled():
         raise QunicornError(
             "Experimental transpilation features are disabled, set ENABLE_EXPERIMENTAL_TRANSPILATION to true to "
