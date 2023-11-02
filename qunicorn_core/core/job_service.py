@@ -29,7 +29,9 @@ from qunicorn_core.core.mapper import job_mapper
 from qunicorn_core.db.database_services import job_db_service
 from qunicorn_core.db.models.job import JobDataclass
 from qunicorn_core.static.enums.job_state import JobState
+from qunicorn_core.static.qunicorn_exception import QunicornError
 from qunicorn_core.util import logging
+from qunicorn_core.util.utils import is_running_asynchronously
 
 """
 This module contains the service layer for jobs. It is used to create and run jobs.
@@ -120,17 +122,17 @@ def cancel_job_by_id(job_id, token, user_id: Optional[str] = None) -> SimpleJobD
     return SimpleJobDto(id=job_core_dto.id, name=job_core_dto.name, state=JobState.CANCELED)
 
 
-def get_jobs_by_deployment_id(deployment_id, user_id: Optional[str] = None) -> list[JobResponseDto]:
+def get_jobs_by_deployment_id(deployment_id, user_id: Optional[str] = None) -> list[SimpleJobDto]:
     """get all jobs of a deployment that the user is authorized to with the id deployment_id"""
     jobs_by_deployment_id = job_db_service.get_jobs_by_deployment_id(deployment_id)
-    user_owned_jobs: list[JobResponseDto] = []
+    user_owned_jobs: list[SimpleJobDto] = []
     for job in jobs_by_deployment_id:
         if job.executed_by == user_id or job.executed_by is None:
-            user_owned_jobs.append(job_mapper.dataclass_to_response(job))
+            user_owned_jobs.append(job_mapper.dataclass_to_simple(job))
     return user_owned_jobs
 
 
-def delete_jobs_by_deployment_id(deployment_id, user_id: Optional[str] = None) -> list[JobResponseDto]:
+def delete_jobs_by_deployment_id(deployment_id, user_id: Optional[str] = None) -> list[SimpleJobDto]:
     """delete all jobs of a deployment that the user is authorized to with the id deployment_id"""
     jobs = get_jobs_by_deployment_id(deployment_id, user_id=user_id)
     job_db_service.delete_jobs_by_deployment_id(deployment_id)
@@ -139,6 +141,8 @@ def delete_jobs_by_deployment_id(deployment_id, user_id: Optional[str] = None) -
 
 def get_job_queue_items() -> dict:
     """Get the latest running job and all latest ready jobs"""
+    if not is_running_asynchronously():
+        raise QunicornError("Returning queued jobs is not possible in synchronous mode", status_code=400)
     all_jobs: list[JobDataclass] = job_db_service.get_all()
     return {"running_job": get_latest_running_job(all_jobs), "queued_jobs": get_latest_ready_jobs(all_jobs)}
 
