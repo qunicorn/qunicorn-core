@@ -30,15 +30,15 @@ def test_create_deployments():
     """Testing if the creation of deployments works"""
     # GIVEN: Get Deployments from JSON
     app = set_up_env()
-    deployment: DeploymentRequestDto = test_utils.get_test_deployment_request(AssemblerLanguage.QASM2)
+    deployment: DeploymentRequestDto = test_utils.get_test_deployment_request([AssemblerLanguage.QASM2])
 
     # WHEN: Create deployment and save it in the db
     with app.app_context():
-        depl_id: int = deployment_service.create_deployment(deployment).id
+        deployment_id: int = deployment_service.create_deployment(deployment).id
 
     # THEN: Test if the name and number of programs is correct
     with app.app_context():
-        deployment: DeploymentDataclass = deployment_db_service.get_deployment_by_id(depl_id)
+        deployment: DeploymentDataclass = deployment_db_service.get_deployment_by_id(deployment_id)
         assert deployment.name == DEPLOYMENT_NAME
         assert len(deployment.programs) == PROGRAM_NUMBER
 

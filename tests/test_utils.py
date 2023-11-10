@@ -15,15 +15,15 @@
 """"pytest utils file"""
 import json
 import os
+from typing import Optional
 
-from qunicorn_core.api.api_models import DeploymentRequestDto, JobRequestDto, DeploymentDto, SimpleJobDto
+from qunicorn_core.api.api_models import DeploymentRequestDto, JobRequestDto, SimpleJobDto, DeploymentResponseDto
 from qunicorn_core.core import deployment_service, job_service
 from qunicorn_core.db.database_services import job_db_service
 from qunicorn_core.db.models.job import JobDataclass
 from qunicorn_core.db.models.result import ResultDataclass
 from qunicorn_core.static.enums.assembler_languages import AssemblerLanguage
 from qunicorn_core.static.enums.job_state import JobState
-from qunicorn_core.static.enums.job_type import JobType
 from qunicorn_core.static.enums.provider_name import ProviderName
 from qunicorn_core.static.enums.result_type import ResultType
 from qunicorn_core.static.qunicorn_exception import QunicornError
@@ -48,6 +48,8 @@ DEPLOYMENT_JSON_PATHS = [
     "deployment_request_dto_quil_test_data.json",
 ]
 
+AWS_LOCAL_SIMULATOR = "local_simulator"
+IBM_LOCAL_SIMULATOR = "aer_simulator"
 EXPECTED_ID: int = 4  # hardcoded ID can be removed if tests for the correct ID are no longer needed
 JOB_FINISHED_PROGRESS: int = 100
 STANDARD_JOB_NAME: str = "JobName"
@@ -56,11 +58,16 @@ COUNTS_TOLERANCE: int = 100
 PROBABILITY_1: float = 1
 PROBABILITY_TOLERANCE: float = 0.1
 QUBIT_0: str = "0x0"
+QUBIT_1: str = "0x1"
 QUBIT_3: str = "0x3"
+QUBIT_8: str = "0x7"
 
 
 def execute_job_test(
-    provider: ProviderName, device: str, input_assembler_language: AssemblerLanguage, is_asynchronous: bool = False
+    provider: ProviderName,
+    device: str,
+    assembler_language_list: list[AssemblerLanguage],
+    is_asynchronous: bool = False,
 ):
     """
     This is the main testing method to test the execution of a job on a device of a provider.
@@ -78,7 +85,7 @@ def execute_job_test(
     with app.app_context():
         job_request_dto: JobRequestDto = get_test_job(provider)
         job_request_dto.device_name = device
-        save_deployment_and_add_id_to_job(job_request_dto, input_assembler_language)
+        save_deployment_and_add_id_to_job(job_request_dto, assembler_language_list)
 
         # WHEN: create_and_run
         return_dto: SimpleJobDto = job_service.create_and_run_job(job_request_dto, is_asynchronous)
@@ -87,7 +94,7 @@ def execute_job_test(
         check_simple_job_dto(return_dto)
         job: JobDataclass = job_db_service.get_job_by_id(return_dto.id)
         check_if_job_finished(job)
-        ibm_check_if_job_runner_result_correct(job)
+        check_if_job_runner_result_correct(job)
 
 
 def get_object_from_json(json_file_name: str):
@@ -101,20 +108,33 @@ def get_object_from_json(json_file_name: str):
     return data
 
 
-def save_deployment_and_add_id_to_job(job_request_dto: JobRequestDto, assembler_language):
-    deployment_request: DeploymentRequestDto = get_test_deployment_request(assembler_language=assembler_language)
-    deployment: DeploymentDto = deployment_service.create_deployment(deployment_request)
+def save_deployment_and_add_id_to_job(job_request_dto: JobRequestDto, assembler_language_list: list[AssemblerLanguage]):
+    """Save the deployment and add the id to the job_request_dto"""
+    deployment_request: DeploymentRequestDto = get_test_deployment_request(
+        assembler_language_list=assembler_language_list
+    )
+    deployment: DeploymentResponseDto = deployment_service.create_deployment(deployment_request)
     job_request_dto.deployment_id = deployment.id
 
 
-def get_test_deployment_request(assembler_language: AssemblerLanguage) -> DeploymentRequestDto:
+def get_test_deployment_request(assembler_language_list: list[AssemblerLanguage]) -> DeploymentRequestDto:
     """Search for an assembler_language in the file names to create a DeploymentRequestDto"""
+    deployment_dict: Optional[dict] = None
+    combined_deployment_dict_programs = []
     for path in DEPLOYMENT_JSON_PATHS:
-        if assembler_language.lower() in path:
-            deployment_dict: dict = get_object_from_json(path)
-            return DeploymentRequestDto.from_dict(deployment_dict)
-
-    raise QunicornError("No deployment json found for assembler language: {}".format(assembler_language))
+        for assembler_language in assembler_language_list:
+            if assembler_language.lower() in path:
+                # Filling Deployment Dict from path for correct assembler language
+                deployment_dict = get_object_from_json(path)
+                # Extend programs with programs from other assembler languages
+                combined_deployment_dict_programs.extend(deployment_dict["programs"])
+    if len(combined_deployment_dict_programs) > 0:
+        # Return DeploymentDict as DeploymentRequestDto with all combined programs
+        deployment_dict["programs"] = combined_deployment_dict_programs
+        return DeploymentRequestDto.from_dict(deployment_dict)
+    else:
+        # Raise Error if no deployment json was found
+        raise QunicornError("No deployment json found for assembler_language: {}".format(assembler_language_list))
 
 
 def get_test_job(provider: ProviderName) -> JobRequestDto:
@@ -139,8 +159,8 @@ def check_if_job_finished(job: JobDataclass):
     assert job.state == JobState.FINISHED
 
 
-def ibm_check_if_job_runner_result_correct(job: JobDataclass):
-    job.type = JobType.RUNNER
+def check_if_job_runner_result_correct(job: JobDataclass):
+    """Iterate over every result and check if the distribution of the measurement is correct"""
     for i in range(len(job.results)):
         result: ResultDataclass = job.results[i]
         check_standard_result_data(i, job, result)
@@ -148,7 +168,9 @@ def ibm_check_if_job_runner_result_correct(job: JobDataclass):
         shots: int = job.shots
         counts: dict = result.result_dict["counts"]
         probabilities: dict = result.result_dict["probabilities"]
-        if i == 0:
+
+        # Check if the first result is distributed correctly: 50% for the qubit zero and 50% for the qubit three
+        if (i % 2) == 0:
             assert compare_values_with_tolerance(shots / 2, counts[QUBIT_0], COUNTS_TOLERANCE)
             assert compare_values_with_tolerance(shots / 2, counts[QUBIT_3], COUNTS_TOLERANCE)
             assert (counts[QUBIT_0] + counts[QUBIT_3]) == shots
@@ -156,6 +178,8 @@ def ibm_check_if_job_runner_result_correct(job: JobDataclass):
             assert compare_values_with_tolerance(PROBABILITY_1 / 2, probabilities[QUBIT_0], PROBABILITY_TOLERANCE)
             assert compare_values_with_tolerance(PROBABILITY_1 / 2, probabilities[QUBIT_3], PROBABILITY_TOLERANCE)
             assert (probabilities[QUBIT_0] + probabilities[QUBIT_3]) > PROBABILITY_1 - PROBABILITY_TOLERANCE
+
+        # Check if the first result is distributed correctly: 100% for the qubit zero
         else:
             assert counts[QUBIT_0] == shots
             assert probabilities[QUBIT_0] == PROBABILITY_1
@@ -169,3 +193,29 @@ def check_standard_result_data(i, job, result):
     assert result.result_type == ResultType.get_result_type(job.type)
     assert result.job_id == job.id
     assert result.circuit == job.deployment.programs[i].quantum_circuit
+
+
+def check_if_job_runner_result_correct_multiple_gates(job: JobDataclass):
+    """Iterate over every result and check if the distribution of the measurement is correct"""
+
+    for i in range(len(job.results)):
+        result: ResultDataclass = job.results[i]
+        check_standard_result_data(i, job, result)
+        assert result.meta_data is not None
+        shots: int = job.shots
+        counts: dict = result.result_dict["counts"]
+        probabilities: dict = result.result_dict["probabilities"]
+        prob_tolerance: float = PROBABILITY_TOLERANCE * 2
+        count_tolerance: float = COUNTS_TOLERANCE * 2
+        if i != 2:
+            qubit = QUBIT_8 if i == 3 else QUBIT_1
+            assert counts[qubit] == shots
+            assert probabilities[qubit] == PROBABILITY_1
+        else:
+            assert compare_values_with_tolerance(7 * (shots / 8), counts[QUBIT_0], count_tolerance)
+            assert compare_values_with_tolerance(shots / 8, counts[QUBIT_1], count_tolerance)
+            assert (counts[QUBIT_0] + counts[QUBIT_1]) == shots
+
+            assert compare_values_with_tolerance(7 * (PROBABILITY_1 / 8), probabilities[QUBIT_0], prob_tolerance)
+            assert compare_values_with_tolerance(PROBABILITY_1 / 8, probabilities[QUBIT_1], prob_tolerance)
+            assert (probabilities[QUBIT_0] + probabilities[QUBIT_1]) > PROBABILITY_1 - PROBABILITY_TOLERANCE

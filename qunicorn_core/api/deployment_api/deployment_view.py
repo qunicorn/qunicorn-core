@@ -22,8 +22,13 @@ from flask import jsonify
 from flask.views import MethodView
 
 from .root import DEPLOYMENT_API
-from ..api_models import JobResponseDtoSchema
-from ..api_models.deployment_dtos import DeploymentDtoSchema, DeploymentRequestDtoSchema, DeploymentRequestDto
+from ..api_models import SimpleJobDtoSchema
+from ..api_models.deployment_dtos import (
+    DeploymentDtoSchema,
+    DeploymentRequestDtoSchema,
+    DeploymentRequestDto,
+    DeploymentResponseDtoSchema,
+)
 from ...core import deployment_service, job_service
 from ...util import logging
 
@@ -32,15 +37,15 @@ from ...util import logging
 class DeploymentIDView(MethodView):
     """Deployments endpoint for collection of all deployed jobs."""
 
-    @DEPLOYMENT_API.response(HTTPStatus.OK, DeploymentDtoSchema(many=True))
+    @DEPLOYMENT_API.response(HTTPStatus.OK, DeploymentResponseDtoSchema(many=True))
     @DEPLOYMENT_API.require_jwt(optional=True)
     def get(self, jwt_subject: Optional[str]):
         """Get the list of deployments."""
         logging.info("Request: get all deployments")
-        return deployment_service.get_all_deployments(user_id=jwt_subject)
+        return deployment_service.get_all_deployment_responses(user_id=jwt_subject)
 
     @DEPLOYMENT_API.arguments(DeploymentRequestDtoSchema(), location="json")
-    @DEPLOYMENT_API.response(HTTPStatus.CREATED, DeploymentDtoSchema())
+    @DEPLOYMENT_API.response(HTTPStatus.CREATED, DeploymentResponseDtoSchema())
     @DEPLOYMENT_API.require_jwt(optional=True)
     def post(self, body, jwt_subject: Optional[str]):
         """Create/Deploy new Job-definition."""
@@ -58,7 +63,7 @@ class DeploymentDetailView(MethodView):
     def get(self, deployment_id: int, jwt_subject: Optional[str]):
         """Get detailed information for single deployed job-definition."""
         logging.info("Request: get deployment by id")
-        return deployment_service.get_deployment_by_id(deployment_id, jwt_subject)
+        return deployment_service.get_deployment_by_id(deployment_id, user_id=jwt_subject)
 
     @DEPLOYMENT_API.response(HTTPStatus.OK, DeploymentDtoSchema)
     @DEPLOYMENT_API.require_jwt(optional=True)
@@ -74,33 +79,33 @@ class DeploymentDetailView(MethodView):
         """Update single deployment by ID."""
         logging.info("Request: update deployment by id")
         deployment_dto: DeploymentRequestDto = DeploymentRequestDto.from_dict(body)
-        return deployment_service.update_deployment(deployment_dto, deployment_id)
+        return deployment_service.update_deployment(deployment_dto, deployment_id, user_id=jwt_subject)
 
 
 @DEPLOYMENT_API.route("/<string:deployment_id>/jobs")
 class JobsByDeploymentView(MethodView):
     """API endpoint for jobs of a specific deployment."""
 
-    @DEPLOYMENT_API.response(HTTPStatus.OK, JobResponseDtoSchema(many=True))
+    @DEPLOYMENT_API.response(HTTPStatus.OK, SimpleJobDtoSchema(many=True))
     @DEPLOYMENT_API.require_jwt(optional=True)
     def get(self, deployment_id: str, jwt_subject: Optional[str]):
         """Get the details of all jobs with a specific deployment id."""
         logging.info("Request: get jobs with deployment id")
-        jobs_by_deployment_id = job_service.get_jobs_by_deployment_id(deployment_id)
+        jobs_by_deployment_id = job_service.get_jobs_by_deployment_id(deployment_id, user_id=jwt_subject)
         return (
             jobs_by_deployment_id
-            if jobs_by_deployment_id is []
+            if len(jobs_by_deployment_id) > 0
             else jsonify({"Warning": "No Jobs can be found for this DeploymentID"})
         )
 
-    @DEPLOYMENT_API.response(HTTPStatus.OK, JobResponseDtoSchema(many=True))
+    @DEPLOYMENT_API.response(HTTPStatus.OK, SimpleJobDtoSchema(many=True))
     @DEPLOYMENT_API.require_jwt(optional=True)
     def delete(self, deployment_id: str, jwt_subject: Optional[str]):
         """Delete all jobs with a specific deployment id."""
         logging.info("Request: delete jobs with deployment id")
-        jobs_by_deployment_id = job_service.delete_jobs_by_deployment_id(deployment_id)
+        jobs_by_deployment_id = job_service.delete_jobs_by_deployment_id(deployment_id, user_id=jwt_subject)
         return (
             jobs_by_deployment_id
-            if jobs_by_deployment_id is []
+            if len(jobs_by_deployment_id) > 0
             else jsonify({"Warning": "No Jobs can be found for this DeploymentID"})
         )

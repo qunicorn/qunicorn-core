@@ -55,15 +55,15 @@ def test_invalid_circuit():
     app = set_up_env()
     job_request_dto: JobRequestDto = JobRequestDto(**get_object_from_json("job_request_dto_ibm_test_data.json"))
     job_request_dto.device_name = "ibmq_qasm_simulator"
-    deployment_dto: DeploymentRequestDto = test_utils.get_test_deployment_request(AssemblerLanguage.QISKIT)
+    deployment_dto: DeploymentRequestDto = test_utils.get_test_deployment_request([AssemblerLanguage.QISKIT])
     deployment_dto.programs[0].quantum_circuit = "invalid circuit"
 
     # WHEN: Executing create and run
     with app.app_context():
         deployment: DeploymentDataclass = deployment_mapper.request_to_dataclass(deployment_dto)
         deployment.deployed_by = None
-        depl_id: int = db_service.save_database_object(deployment).id
-        job_request_dto.deployment_id = depl_id
+        deployment_id: int = db_service.save_database_object(deployment).id
+        job_request_dto.deployment_id = deployment_id
         with pytest.raises(Exception) as exception:
             job_service.create_and_run_job(job_request_dto, IS_ASYNCHRONOUS)
 

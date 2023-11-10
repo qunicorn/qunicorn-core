@@ -29,6 +29,9 @@ from qunicorn_core.core.mapper import job_mapper
 from qunicorn_core.db.database_services import job_db_service
 from qunicorn_core.db.models.job import JobDataclass
 from qunicorn_core.static.enums.job_state import JobState
+from qunicorn_core.static.qunicorn_exception import QunicornError
+from qunicorn_core.util import logging
+from qunicorn_core.util.utils import is_running_asynchronously
 
 """
 This module contains the service layer for jobs. It is used to create and run jobs.
@@ -108,23 +111,9 @@ def get_all_jobs(user_id: Optional[str]) -> list[SimpleJobDto]:
     ]
 
 
-def check_registered_pilots():
-    """get all registered pilots for computing the schedule"""
-    raise NotImplementedError
-
-
-def schedule_jobs():
-    """start the scheduling"""
-    raise NotImplementedError
-
-
-def send_job_to_pilot():
-    """send job to pilot for execution after it is scheduled"""
-    raise NotImplementedError
-
-
-def cancel_job_by_id(job_id, token, user_id: Optional[str] = None):
+def cancel_job_by_id(job_id, token, user_id: Optional[str] = None) -> SimpleJobDto:
     """cancel job execution"""
+    logging.info(f"Cancel execution of job with id:{job_id}")
     job: JobDataclass = job_db_service.get_job_by_id(job_id)
     abort_if_user_unauthorized(job.executed_by, user_id)
     job_core_dto: JobCoreDto = job_mapper.dataclass_to_core(job)
@@ -133,14 +122,49 @@ def cancel_job_by_id(job_id, token, user_id: Optional[str] = None):
     return SimpleJobDto(id=job_core_dto.id, name=job_core_dto.name, state=JobState.CANCELED)
 
 
-def get_jobs_by_deployment_id(deployment_id) -> list[JobResponseDto]:
-    """get all jobs with the id deployment_id"""
+def get_jobs_by_deployment_id(deployment_id, user_id: Optional[str] = None) -> list[SimpleJobDto]:
+    """get all jobs of a deployment that the user is authorized to with the id deployment_id"""
     jobs_by_deployment_id = job_db_service.get_jobs_by_deployment_id(deployment_id)
-    return [job_mapper.dataclass_to_response(job) for job in jobs_by_deployment_id]
+    user_owned_jobs: list[SimpleJobDto] = []
+    for job in jobs_by_deployment_id:
+        if job.executed_by == user_id or job.executed_by is None:
+            user_owned_jobs.append(job_mapper.dataclass_to_simple(job))
+    return user_owned_jobs
 
 
-def delete_jobs_by_deployment_id(deployment_id) -> list[JobResponseDto]:
-    """delete all jobs with the id deployment_id"""
-    jobs = get_jobs_by_deployment_id(deployment_id)
+def delete_jobs_by_deployment_id(deployment_id, user_id: Optional[str] = None) -> list[SimpleJobDto]:
+    """delete all jobs of a deployment that the user is authorized to with the id deployment_id"""
+    jobs = get_jobs_by_deployment_id(deployment_id, user_id=user_id)
     job_db_service.delete_jobs_by_deployment_id(deployment_id)
     return jobs
+
+
+def get_job_queue_items() -> dict:
+    """Get the latest running job and all latest ready jobs"""
+    if not is_running_asynchronously():
+        raise QunicornError("Returning queued jobs is not possible in synchronous mode", status_code=400)
+    all_jobs: list[JobDataclass] = job_db_service.get_all()
+    return {"running_job": get_latest_running_job(all_jobs), "queued_jobs": get_latest_ready_jobs(all_jobs)}
+
+
+def get_latest_ready_jobs(all_jobs: list[JobDataclass]) -> list[SimpleJobDto]:
+    """Get all latest jobs with state ready until reaching the first finished job"""
+    all_jobs.sort(reverse=True, key=lambda j: j.id)
+    latest_jobs: list[SimpleJobDto] = []
+    for job in all_jobs:
+        if job.state == JobState.READY:
+            latest_jobs.append(job_mapper.dataclass_to_simple(job))
+        elif job.state == JobState.FINISHED:
+            break
+    latest_jobs.sort(key=lambda j: j.id)
+    return latest_jobs
+
+
+def get_latest_running_job(all_jobs: list[JobDataclass]) -> SimpleJobDto | None:
+    """Get the latest job with state running, check until reaching the first finished job"""
+    while len(all_jobs) > 0:
+        job = all_jobs.pop()
+        if job.state == JobState.RUNNING:
+            return job_mapper.dataclass_to_simple(job)
+        elif job.state == JobState.FINISHED:
+            return None

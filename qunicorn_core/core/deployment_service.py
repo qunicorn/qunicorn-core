@@ -15,6 +15,7 @@ from datetime import datetime
 from typing import Optional
 
 from qunicorn_core.api.api_models import DeploymentDto, DeploymentRequestDto
+from qunicorn_core.api.api_models.deployment_dtos import DeploymentResponseDto
 from qunicorn_core.api.jwt import abort_if_user_unauthorized
 from qunicorn_core.core.mapper import deployment_mapper, quantum_program_mapper
 from qunicorn_core.db.database_services import deployment_db_service, db_service, job_db_service
@@ -31,11 +32,16 @@ def get_all_deployments(user_id: Optional[str] = None) -> list[DeploymentDto]:
     return deployment_list
 
 
-def get_deployment_by_id(depl_id: int, user_id: Optional[str] = None) -> DeploymentDto:
+def get_deployment_by_id(deployment_id: int, user_id: Optional[str] = None) -> DeploymentDto:
     """Gets one deployment by id if the user is authorized to see it"""
-    deployment = deployment_db_service.get_deployment_by_id(depl_id)
+    deployment = deployment_db_service.get_deployment_by_id(deployment_id)
     abort_if_user_unauthorized(deployment.deployed_by, user_id)
     return deployment_mapper.dataclass_to_dto(deployment)
+
+
+def get_all_deployment_responses(user_id: Optional[str] = None) -> list[DeploymentResponseDto]:
+    """Gets all deployments from a user as responses to clearly arrange them in the frontend"""
+    return [deployment_mapper.dto_to_response(deployment) for deployment in get_all_deployments(user_id)]
 
 
 def update_deployment(
@@ -47,27 +53,26 @@ def update_deployment(
         abort_if_user_unauthorized(db_deployment.deployed_by, user_id)
         db_deployment.deployed_at = datetime.now()
         db_deployment.name = deployment_dto.name
-        programs = [quantum_program_mapper.request_to_dataclass(qc) for qc in deployment_dto.programs]
-        db_deployment.programs = programs
+        db_deployment.programs = [quantum_program_mapper.request_to_dataclass(qc) for qc in deployment_dto.programs]
         return db_service.save_database_object(db_deployment)
     except AttributeError:
         db_service.get_session().rollback()
         raise QunicornError("Error updating deployment with id: " + str(deployment_id))
 
 
-def delete_deployment(id: int, user_id: Optional[str] = None) -> DeploymentDto:
+def delete_deployment(deployment_id: int, user_id: Optional[str] = None) -> DeploymentDto:
     """Remove one deployment by id"""
-    db_deployment = deployment_mapper.dataclass_to_dto(deployment_db_service.get_deployment_by_id(id))
+    db_deployment = deployment_mapper.dataclass_to_dto(deployment_db_service.get_deployment_by_id(deployment_id))
     abort_if_user_unauthorized(db_deployment.deployed_by, user_id)
     if len(job_db_service.get_jobs_by_deployment_id(db_deployment.id)) > 0:
         raise QunicornError("Deployment is in use by a job", 422)
-    deployment_db_service.delete(id)
+    deployment_db_service.delete(deployment_id)
     return db_deployment
 
 
-def create_deployment(deployment_dto: DeploymentRequestDto, user_id: Optional[str] = None) -> DeploymentDto:
+def create_deployment(deployment_dto: DeploymentRequestDto, user_id: Optional[str] = None) -> DeploymentResponseDto:
     """Create a deployment and save it in the database"""
     deployment: DeploymentDataclass = deployment_mapper.request_to_dataclass(deployment_dto)
     deployment.deployed_by = user_id
     deployment = deployment_db_service.create(deployment)
-    return deployment_mapper.dataclass_to_dto(deployment)
+    return deployment_mapper.dataclass_to_response(deployment)
