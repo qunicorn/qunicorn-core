@@ -80,9 +80,8 @@ Installation / Starting Minikube (tested for windows)
 
     kubectl get po --selector=io.kompose.service=server
 
-    kubectl exec {name of server pod}  -- python -m flask create-and-load-db
+15. Now you can access qunicorn using [EXTERNAL-IP]:8080/swagger-ui of the server service (usually you can use localhost)
 
-15. Now you can access qunicorn using [EXTERNAL-IP]:8080/swagger-ui of the server service
 
 
 Other useful commands
@@ -99,3 +98,9 @@ Other useful commands
 .. code-block:: bash
 
     minikube service {service}
+
+* Visual dashboard to view cluster information
+
+.. code-block:: bash
+
+    minikube dashboard
