@@ -55,7 +55,7 @@ Installation / Starting Minikube (tested for windows)
 
     docker build -t qunicorn:local .
 
-11. Start services and pods with configuration
+11. Start services and pods with configuration (Note that starting the whole cluster can take a while (up or more than 8min))
 
 .. code-block:: bash
 
