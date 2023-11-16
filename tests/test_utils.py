@@ -57,10 +57,10 @@ IS_ASYNCHRONOUS: bool = False
 COUNTS_TOLERANCE: int = 100
 PROBABILITY_1: float = 1
 PROBABILITY_TOLERANCE: float = 0.1
-QUBIT_0: str = "0x0"
-QUBIT_1: str = "0x1"
-QUBIT_3: str = "0x3"
-QUBIT_8: str = "0x7"
+BIT_0: str = "0x0"
+BIT_1: str = "0x1"
+BIT_3: str = "0x3"
+BIT_8: str = "0x7"
 
 
 def execute_job_test(
@@ -171,18 +171,18 @@ def check_if_job_runner_result_correct(job: JobDataclass):
 
         # Check if the first result is distributed correctly: 50% for the qubit zero and 50% for the qubit three
         if (i % 2) == 0:
-            assert compare_values_with_tolerance(shots / 2, counts[QUBIT_0], COUNTS_TOLERANCE)
-            assert compare_values_with_tolerance(shots / 2, counts[QUBIT_3], COUNTS_TOLERANCE)
-            assert (counts[QUBIT_0] + counts[QUBIT_3]) == shots
+            assert compare_values_with_tolerance(shots / 2, counts[BIT_0], COUNTS_TOLERANCE)
+            assert compare_values_with_tolerance(shots / 2, counts[BIT_3], COUNTS_TOLERANCE)
+            assert (counts[BIT_0] + counts[BIT_3]) == shots
 
-            assert compare_values_with_tolerance(PROBABILITY_1 / 2, probabilities[QUBIT_0], PROBABILITY_TOLERANCE)
-            assert compare_values_with_tolerance(PROBABILITY_1 / 2, probabilities[QUBIT_3], PROBABILITY_TOLERANCE)
-            assert (probabilities[QUBIT_0] + probabilities[QUBIT_3]) > PROBABILITY_1 - PROBABILITY_TOLERANCE
+            assert compare_values_with_tolerance(PROBABILITY_1 / 2, probabilities[BIT_0], PROBABILITY_TOLERANCE)
+            assert compare_values_with_tolerance(PROBABILITY_1 / 2, probabilities[BIT_3], PROBABILITY_TOLERANCE)
+            assert (probabilities[BIT_0] + probabilities[BIT_3]) > PROBABILITY_1 - PROBABILITY_TOLERANCE
 
         # Check if the first result is distributed correctly: 100% for the qubit zero
         else:
-            assert counts[QUBIT_0] == shots
-            assert probabilities[QUBIT_0] == PROBABILITY_1
+            assert counts[BIT_0] == shots
+            assert probabilities[BIT_0] == PROBABILITY_1
 
 
 def compare_values_with_tolerance(value1, value2, tolerance) -> bool:
@@ -208,14 +208,14 @@ def check_if_job_runner_result_correct_multiple_gates(job: JobDataclass):
         prob_tolerance: float = PROBABILITY_TOLERANCE * 2
         count_tolerance: float = COUNTS_TOLERANCE * 2
         if i != 2:
-            qubit = QUBIT_8 if i == 3 else QUBIT_1
+            qubit = BIT_8 if i == 3 else BIT_1
             assert counts[qubit] == shots
             assert probabilities[qubit] == PROBABILITY_1
         else:
-            assert compare_values_with_tolerance(7 * (shots / 8), counts[QUBIT_0], count_tolerance)
-            assert compare_values_with_tolerance(shots / 8, counts[QUBIT_1], count_tolerance)
-            assert (counts[QUBIT_0] + counts[QUBIT_1]) == shots
+            assert compare_values_with_tolerance(7 * (shots / 8), counts[BIT_0], count_tolerance)
+            assert compare_values_with_tolerance(shots / 8, counts[BIT_1], count_tolerance)
+            assert (counts[BIT_0] + counts[BIT_1]) == shots
 
-            assert compare_values_with_tolerance(7 * (PROBABILITY_1 / 8), probabilities[QUBIT_0], prob_tolerance)
-            assert compare_values_with_tolerance(PROBABILITY_1 / 8, probabilities[QUBIT_1], prob_tolerance)
-            assert (probabilities[QUBIT_0] + probabilities[QUBIT_1]) > PROBABILITY_1 - PROBABILITY_TOLERANCE
+            assert compare_values_with_tolerance(7 * (PROBABILITY_1 / 8), probabilities[BIT_0], prob_tolerance)
+            assert compare_values_with_tolerance(PROBABILITY_1 / 8, probabilities[BIT_1], prob_tolerance)
+            assert (probabilities[BIT_0] + probabilities[BIT_1]) > PROBABILITY_1 - PROBABILITY_TOLERANCE

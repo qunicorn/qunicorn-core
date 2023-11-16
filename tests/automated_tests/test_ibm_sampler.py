@@ -28,8 +28,8 @@ from tests.test_utils import (
     IS_ASYNCHRONOUS,
     PROBABILITY_1,
     PROBABILITY_TOLERANCE,
-    QUBIT_3,
-    QUBIT_0,
+    BIT_3,
+    BIT_0,
     IBM_LOCAL_SIMULATOR,
 )
 
@@ -66,8 +66,8 @@ def check_if_job_sample_result_correct(job: JobDataclass):
         assert result.meta_data is None
         probs: dict = result.result_dict
         if i == 0:
-            assert test_utils.compare_values_with_tolerance(PROBABILITY_1 / 2, probs[QUBIT_0], PROBABILITY_TOLERANCE)
-            assert test_utils.compare_values_with_tolerance(PROBABILITY_1 / 2, probs[QUBIT_3], PROBABILITY_TOLERANCE)
-            assert probs[QUBIT_3] + probs[QUBIT_0] > PROBABILITY_1 - PROBABILITY_TOLERANCE
+            assert test_utils.compare_values_with_tolerance(PROBABILITY_1 / 2, probs[BIT_0], PROBABILITY_TOLERANCE)
+            assert test_utils.compare_values_with_tolerance(PROBABILITY_1 / 2, probs[BIT_3], PROBABILITY_TOLERANCE)
+            assert probs[BIT_3] + probs[BIT_0] > PROBABILITY_1 - PROBABILITY_TOLERANCE
         else:
-            assert probs[QUBIT_0] > PROBABILITY_1 - PROBABILITY_TOLERANCE
+            assert probs[BIT_0] > PROBABILITY_1 - PROBABILITY_TOLERANCE
