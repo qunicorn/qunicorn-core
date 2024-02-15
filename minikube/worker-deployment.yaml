@@ -27,6 +27,7 @@ spec:
             - name: NUMBA_CACHE_DIR
               value: /app/cache
           image: iaasgeorgdl/qunicorn:release.11.23
+          #image: qunicorn:local
           name: worker
           ports:
             - containerPort: 6379
