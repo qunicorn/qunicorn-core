@@ -42,12 +42,19 @@ Installation / Starting Minikube (tested for windows)
     minikube start
 
 9. Set minikube as docker env
-    Minkube needs to be set as docker environment to be able to build images for minikube. Otherwise Minikube would not
+    Minikube needs to be set as docker environment to be able to build images for minikube. Otherwise Minikube would not
     be able to find the images. This needs to be done every time a new terminal is opened.
 
 .. code-block:: bash
 
     minikube docker-env | Invoke-Expression
+   
+  You can also load local images into Minikube with
+
+.. code-block:: bash
+
+    minikube image load {image-name}
+
 
 10. Build qunicorn image
 
@@ -67,6 +74,12 @@ Installation / Starting Minikube (tested for windows)
 .. code-block:: bash
 
     minikube tunnel
+
+   Alternatively, you can access the qunicorn service with the following command.
+
+.. code-block:: bash
+
+    minikube service qunicorn
 
 13. List service information using
 
