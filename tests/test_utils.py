@@ -23,6 +23,7 @@ from qunicorn_core.db.models.job import JobDataclass
 from qunicorn_core.db.models.result import ResultDataclass
 from qunicorn_core.static.enums.assembler_languages import AssemblerLanguage
 from qunicorn_core.static.enums.job_state import JobState
+from qunicorn_core.static.enums.job_type import JobType
 from qunicorn_core.static.enums.provider_name import ProviderName
 from qunicorn_core.static.enums.result_type import ResultType
 from qunicorn_core.static.qunicorn_exception import QunicornError
@@ -141,7 +142,8 @@ def get_test_job(provider: ProviderName) -> JobRequestDto:
     for path in JOB_JSON_PATHS:
         if provider.lower() in path:
             job_dict: dict = get_object_from_json(path)
-            return JobRequestDto(**job_dict)
+            job_type = JobType(job_dict.pop("type"))
+            return JobRequestDto(type=job_type, **job_dict)
 
     raise QunicornError("No job json found for provider: {}".format(provider))
 

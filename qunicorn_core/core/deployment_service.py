@@ -88,7 +88,7 @@ def create_deployment(deployment_dto: DeploymentUpdateDto, user_id: Optional[str
     """Create a deployment and save it in the database"""
     programs = [
         QuantumProgramDataclass(
-            assembler_language=qc.assembler_language.name if qc.assembler_language else None,
+            assembler_language=qc.assembler_language.value if qc.assembler_language else None,
             quantum_circuit=qc.quantum_circuit,
             python_file_path=qc.python_file_path,
             python_file_metadata=qc.python_file_metadata,
