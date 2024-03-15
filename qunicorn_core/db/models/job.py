@@ -84,8 +84,8 @@ class JobDataclass(DbModel):
     @classmethod
     def apply_authentication_filter(cls, query: Select[T], user_id: Optional[str]) -> Select[T]:
         if user_id is None:
-            return query.where(cls.executed_by == None)
-        return query.where(or_(cls.executed_by == None, cls.executed_by == user_id))
+            return query.where(cls.executed_by == None)  # noqa: E711
+        return query.where(or_(cls.executed_by == None, cls.executed_by == user_id))  # noqa: E711
 
     @classmethod
     def get_by_deployment(cls, deployment: Union[int, "deployment_model.DeploymentDataclass"]):

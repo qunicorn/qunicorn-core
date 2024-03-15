@@ -61,5 +61,5 @@ class DeploymentDataclass(DbModel):
     @classmethod
     def apply_authentication_filter(cls, query: Select[T], user_id: Optional[str]) -> Select[T]:
         if user_id is None:
-            return query.where(cls.deployed_by == None)
-        return query.where(or_(cls.deployed_by == None, cls.deployed_by == user_id))
+            return query.where(cls.deployed_by == None)  # noqa: E711
+        return query.where(or_(cls.deployed_by == None, cls.deployed_by == user_id))  # noqa: E711

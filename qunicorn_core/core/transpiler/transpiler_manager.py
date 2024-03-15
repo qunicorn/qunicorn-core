@@ -114,7 +114,7 @@ class TranspileManager:
 
         if steps is None:
             raise QunicornError(
-                f"Could not find a transpilation path from {src_language} to any of the supported languages {', '.join(dest_languages)}!"
+                f"Could not find a transpilation path from {src_language} to any of the supported languages {', '.join(dest_languages)}!"  # noqa: E501, W505
             )
 
         def transpile(circuit) -> Any:
@@ -192,7 +192,7 @@ def qasm2_to_quil(source: str) -> Program:
     # WARNING: the qasm to quil transpilation does not allow for the use of standard gate library.
     if not utils.is_experimental_feature_enabled():
         raise QunicornError(
-            "Experimental transpilation features are disabled, set ENABLE_EXPERIMENTAL_TRANSPILATION to true to enable them.",
+            "Experimental transpilation features are disabled, set ENABLE_EXPERIMENTAL_TRANSPILATION to true to enable them.",  # noqa: E501
             405,
         )
     logging.warn("This function is experimental and could not be fully tested yet. ")

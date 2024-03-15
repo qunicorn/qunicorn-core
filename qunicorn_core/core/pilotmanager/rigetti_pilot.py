@@ -56,7 +56,7 @@ class RigettiPilot(Pilot):
         """Execute the job on a local simulator and saves results in the database"""
         if utils.is_running_in_docker():
             error = QunicornError(
-                "Rigetti Pilot can not be executed in Docker, check the documentation on how to run qunicorn locally to execute jobs on the Rigetti Pilot",
+                "Rigetti Pilot can not be executed in Docker, check the documentation on how to run qunicorn locally to execute jobs on the Rigetti Pilot",  # noqa: E501
                 HTTPStatus.NOT_IMPLEMENTED,
             )
             job.save_error(error)

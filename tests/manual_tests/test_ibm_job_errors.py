@@ -22,7 +22,7 @@ from qiskit_ibm_provider.api.exceptions import RequestsApiError
 
 from qunicorn_core.api.api_models import JobRequestDto, DeploymentUpdateDto
 from qunicorn_core.core import job_service
-from qunicorn_core.core.mapper import deployment_mapper, quantum_program_mapper
+from qunicorn_core.core.mapper import quantum_program_mapper
 from qunicorn_core.db.models.deployment import DeploymentDataclass
 from qunicorn_core.db.models.job import JobDataclass
 from qunicorn_core.static.enums.assembler_languages import AssemblerLanguage

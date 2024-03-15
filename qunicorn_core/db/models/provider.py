@@ -39,7 +39,8 @@ class ProviderDataclass(DbModel):
         id (int): The id of a provider. (set by the database)
         name (str): Name of the cloud service.
         with_token (bool): If authentication is needed and can be done by passing a token this attribute is true.
-        supported_languages (List[str]): The programming languages that are supported by this provider. (WARNING: cannot be set in constructor!)
+        supported_languages (List[str]): The programming languages that are supported by this provider.
+            (WARNING: Cannot be set in constructor!)
     """
 
     # non-default arguments

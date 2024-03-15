@@ -79,14 +79,16 @@ class DbModel:
 
     @classmethod
     def get_by_id_authenticated(cls, id_: int, user_id: Optional[str]):
-        """Get a single database object by its `id` attribute and return None if not found or the user has insufficient rights."""
+        """Get a single database object by its `id` attribute and
+        return None if not found or the user has insufficient rights."""
         q = cls.get_by_id_query(id_)
         q = cls.apply_authentication_filter(q, user_id)
         return DB.session.execute(q).scalar_one_or_none()
 
     @classmethod
     def get_by_id_authenticated_or_404(cls, id_: int, user_id: Optional[str]):
-        """Get a single database object by its `id` attribute and raise 404 error if not found or the user has insufficient rights."""
+        """Get a single database object by its `id` attribute and raise 404 error
+        if not found or the user has insufficient rights."""
         q = cls.get_by_id_query(id_)
         q = cls.apply_authentication_filter(q, user_id)
         db_object = DB.session.execute(q).scalar_one_or_none()
