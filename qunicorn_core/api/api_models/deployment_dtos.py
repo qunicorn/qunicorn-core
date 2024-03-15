@@ -56,12 +56,15 @@ class DeploymentUpdateDto:
     @staticmethod
     def from_dict(body: dict) -> "DeploymentUpdateDto":
         deployment_dto: DeploymentUpdateDto = DeploymentUpdateDto(**body)
-        deployment_dto.programs = [QuantumProgramRequestDto(
-            quantum_circuit=program["quantum_circuit"],
-            assembler_language=AssemblerLanguage(program["assembler_language"]),
-            python_file_path=program.get("python_file_path"),
-            python_file_metadata=program.get("python_file_metadata"),
-        ) for program in body["programs"]]
+        deployment_dto.programs = [
+            QuantumProgramRequestDto(
+                quantum_circuit=program["quantum_circuit"],
+                assembler_language=AssemblerLanguage(program["assembler_language"]),
+                python_file_path=program.get("python_file_path"),
+                python_file_metadata=program.get("python_file_metadata"),
+            )
+            for program in body["programs"]
+        ]
         return deployment_dto
 
 
