@@ -192,8 +192,12 @@ def compare_values_with_tolerance(value1, value2, tolerance) -> bool:
 
 def check_standard_result_data(i, job, result):
     assert result.result_type == ResultType.get_result_type(job.type)
+    assert result.result_type != ResultType.ERROR, result
     assert result.job_id == job.id
-    assert result.circuit == job.deployment.programs[i].quantum_circuit
+    if hasattr(result, "circuit"):  # result is DTO
+        assert result.circuit == job.deployment.programs[i].quantum_circuit
+    if hasattr(result, "program_id"):  # Result is Dataclass
+        assert result.program_id == job.deployment.programs[i].id
 
 
 def check_if_job_runner_result_correct_multiple_gates(job: JobDataclass):
