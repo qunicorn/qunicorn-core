@@ -14,9 +14,8 @@
 
 """"Test class to test the functionality of the job_api"""
 
-from qunicorn_core.api.api_models import DeploymentRequestDto, DeploymentDto, JobRequestDto, SimpleJobDto
+from qunicorn_core.api.api_models import DeploymentUpdateDto, SimpleDeploymentDto, JobRequestDto, SimpleJobDto
 from qunicorn_core.core import deployment_service, job_service
-from qunicorn_core.db.database_services import job_db_service
 from qunicorn_core.db.models.job import JobDataclass
 from qunicorn_core.static.enums.provider_name import ProviderName
 from tests import test_utils
@@ -44,14 +43,14 @@ def create_and_test_multiple_gates_deployment(provider_name: ProviderName):
     # WHEN: create_and_run executed synchronous
     with app.app_context():
         deployment_path: str = "deployment_request_dto_multiple_gates_test_data.json"
-        deployment_request: DeploymentRequestDto = DeploymentRequestDto.from_dict(get_object_from_json(deployment_path))
-        deployment: DeploymentDto = deployment_service.create_deployment(deployment_request)
+        deployment_request: DeploymentUpdateDto = DeploymentUpdateDto.from_dict(get_object_from_json(deployment_path))
+        deployment: SimpleDeploymentDto = deployment_service.create_deployment(deployment_request)
         job_request_dto.deployment_id = deployment.id
         return_dto: SimpleJobDto = job_service.create_and_run_job(job_request_dto, IS_ASYNCHRONOUS)
 
     # THEN: Check if the correct job with its result is saved in the db
     with app.app_context():
         test_utils.check_simple_job_dto(return_dto)
-        job: JobDataclass = job_db_service.get_job_by_id(return_dto.id)
+        job: JobDataclass = JobDataclass.get_by_id_or_404(return_dto.id)
         test_utils.check_if_job_finished(job)
         test_utils.check_if_job_runner_result_correct_multiple_gates(job)

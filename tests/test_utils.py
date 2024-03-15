@@ -17,9 +17,8 @@ import json
 import os
 from typing import Optional
 
-from qunicorn_core.api.api_models import DeploymentRequestDto, JobRequestDto, SimpleJobDto, DeploymentResponseDto
+from qunicorn_core.api.api_models import DeploymentUpdateDto, JobRequestDto, SimpleJobDto, SimpleDeploymentDto
 from qunicorn_core.core import deployment_service, job_service
-from qunicorn_core.db.database_services import job_db_service
 from qunicorn_core.db.models.job import JobDataclass
 from qunicorn_core.db.models.result import ResultDataclass
 from qunicorn_core.static.enums.assembler_languages import AssemblerLanguage
@@ -92,7 +91,7 @@ def execute_job_test(
 
         # THEN: Check if the correct job with its result is saved in the db with results with a RESULT_TOLERANCE
         check_simple_job_dto(return_dto)
-        job: JobDataclass = job_db_service.get_job_by_id(return_dto.id)
+        job: JobDataclass = JobDataclass.get_by_id_or_404(return_dto.id)
         check_if_job_finished(job)
         check_if_job_runner_result_correct(job)
 
@@ -110,14 +109,14 @@ def get_object_from_json(json_file_name: str):
 
 def save_deployment_and_add_id_to_job(job_request_dto: JobRequestDto, assembler_language_list: list[AssemblerLanguage]):
     """Save the deployment and add the id to the job_request_dto"""
-    deployment_request: DeploymentRequestDto = get_test_deployment_request(
+    deployment_request: DeploymentUpdateDto = get_test_deployment_request(
         assembler_language_list=assembler_language_list
     )
-    deployment: DeploymentResponseDto = deployment_service.create_deployment(deployment_request)
+    deployment: SimpleDeploymentDto = deployment_service.create_deployment(deployment_request)
     job_request_dto.deployment_id = deployment.id
 
 
-def get_test_deployment_request(assembler_language_list: list[AssemblerLanguage]) -> DeploymentRequestDto:
+def get_test_deployment_request(assembler_language_list: list[AssemblerLanguage]) -> DeploymentUpdateDto:
     """Search for an assembler_language in the file names to create a DeploymentRequestDto"""
     deployment_dict: Optional[dict] = None
     combined_deployment_dict_programs = []
@@ -131,7 +130,7 @@ def get_test_deployment_request(assembler_language_list: list[AssemblerLanguage]
     if len(combined_deployment_dict_programs) > 0:
         # Return DeploymentDict as DeploymentRequestDto with all combined programs
         deployment_dict["programs"] = combined_deployment_dict_programs
-        return DeploymentRequestDto.from_dict(deployment_dict)
+        return DeploymentUpdateDto.from_dict(deployment_dict)
     else:
         # Raise Error if no deployment json was found
         raise QunicornError("No deployment json found for assembler_language: {}".format(assembler_language_list))

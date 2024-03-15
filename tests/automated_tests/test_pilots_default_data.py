@@ -33,6 +33,7 @@ def test_pilots_default_job_deployment():
         # THEN: The job is created correctly
         assert default_device.provider.name == pilot.provider_name
         assert job.executed_on == default_device
+        assert job.deployment is not None
         assert len(job.deployment.programs) > 0
         assert job.deployment.programs[0].assembler_language == pilot.supported_languages[0]
         assert job.deployment.programs[0].quantum_circuit is not None
@@ -49,6 +50,5 @@ def test_pilots_default_provider():
 
         # THEN: The Provider is created correctly
         assert provider is not None
-        assert len(provider.supported_languages) == len(pilot.supported_languages)
-        assert len(pilot.supported_languages) > 0 and len(provider.supported_languages) > 0
+        assert set(provider.supported_languages) == set(pilot.supported_languages)
         assert provider.name == pilot.provider_name
