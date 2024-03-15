@@ -16,6 +16,7 @@
 """Module containing all API schemas for the root API endpoint."""
 
 import marshmallow as ma
+
 from ..flask_api_utils import MaBaseSchema
 
 __all__ = [

@@ -15,6 +15,7 @@
 
 """Module containing all Dtos and their Schemas for tasks in the Jobmanager API."""
 from dataclasses import dataclass
+from typing import Optional
 
 import marshmallow as ma
 
@@ -31,7 +32,7 @@ from ...static.enums.result_type import ResultType
 @dataclass
 class ResultDto:
     id: int
-    circuit: str
+    circuit: Optional[str]
     result_dict: dict
     meta_data: dict
     result_type: ResultType

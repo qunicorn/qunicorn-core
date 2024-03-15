@@ -17,9 +17,11 @@
 
 """Module containing utilities for flask smorest APIs."""
 from typing import Any
-from .jwt import JWTMixin
-from flask_smorest import Blueprint
+
 import marshmallow as ma
+from flask_smorest import Blueprint
+
+from .jwt import JWTMixin
 
 
 class SecurityBlueprint(Blueprint, JWTMixin):

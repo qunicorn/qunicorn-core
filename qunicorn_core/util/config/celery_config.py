@@ -15,5 +15,5 @@
 CELERY_PRODUCTION_CONFIG = {
     "broker_url": "redis://localhost:6379",
     "result_backend": "redis://localhost:6379",
-    "task_default_queue": "qunicorn_core"
+    "task_default_queue": "qunicorn_core",
 }

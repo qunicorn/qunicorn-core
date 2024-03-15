@@ -15,7 +15,7 @@
 import dataclasses
 from functools import reduce
 from os import path
-from typing import Callable
+from typing import Any, Callable, Dict, Sequence, Union
 
 import qiskit.circuit
 import qiskit.qasm2
@@ -24,7 +24,7 @@ import qrisp.circuit
 from braket.circuits import Circuit
 from braket.circuits.serialization import IRType
 from braket.ir.openqasm import Program as OpenQASMProgram
-from pyquil import get_qc, Program
+from pyquil import Program, get_qc
 from qrisp.interface.circuit_converter import convert_circuit
 from rustworkx import PyDiGraph, digraph_dijkstra_shortest_paths
 from rustworkx.visualization import graphviz_draw
@@ -33,7 +33,6 @@ from qunicorn_core.static.enums.assembler_languages import AssemblerLanguage
 from qunicorn_core.static.qunicorn_exception import QunicornError
 from qunicorn_core.util import logging, utils
 
-
 """
 Data class for each step when transpiling from a source language to the destination language
 """
@@ -41,8 +40,8 @@ Data class for each step when transpiling from a source language to the destinat
 
 @dataclasses.dataclass
 class TranspileStrategyStep:
-    src_language: AssemblerLanguage
-    dest_language: AssemblerLanguage
+    src_language: str
+    dest_language: str
     transpile_method: Callable[[str], str]
 
 
@@ -55,13 +54,20 @@ The different languages are implemented as nodes and the shortest route is used 
 
 class TranspileManager:
     def __init__(self):
-        self._transpile_method_graph = PyDiGraph()
-        self._language_nodes = dict()
+        self._transpile_method_graph: PyDiGraph[str, Callable[[Any], Any]] = PyDiGraph()
+        self._language_nodes: Dict[str, Any] = dict()
 
-    def register_transpile_method(self, src_language: AssemblerLanguage, dest_language: AssemblerLanguage):
+    def register_transpile_method(
+        self, src_language: Union[AssemblerLanguage, str], dest_language: Union[AssemblerLanguage, str]
+    ):
         """Decorator to define the transpile method from a Node A (source language) to Node B (destination language)"""
 
-        def decorator(transpile_method: Callable[[str], str]):
+        if isinstance(src_language, AssemblerLanguage):
+            src_language = src_language.value
+        if isinstance(dest_language, AssemblerLanguage):
+            dest_language = dest_language.value
+
+        def decorator(transpile_method: Callable[[Any], Any]):
             self._transpile_method_graph.add_edge(
                 self._get_or_create_language_node(src_language),
                 self._get_or_create_language_node(dest_language),
@@ -71,16 +77,14 @@ class TranspileManager:
 
         return decorator
 
-    def _get_or_create_language_node(self, language: AssemblerLanguage) -> int:
+    def _get_or_create_language_node(self, language: str) -> int:
         language_node = self._language_nodes.get(language)
         if language_node is None:
             language_node = self._transpile_method_graph.add_node(language)
             self._language_nodes[language] = language_node
         return language_node
 
-    def _find_transpile_strategy(
-        self, src_language: AssemblerLanguage, dest_language: AssemblerLanguage
-    ) -> list[TranspileStrategyStep]:
+    def _find_transpile_strategy(self, src_language: str, dest_language: str) -> list[TranspileStrategyStep]:
         """Transpile strategy is selected from a graph with a node for each language by using the dijkstra algorithm"""
         dest_node = self._language_nodes[dest_language]
         paths = digraph_dijkstra_shortest_paths(
@@ -99,7 +103,7 @@ class TranspileManager:
             for src, dest in zip(path_to_dest, path_to_dest[1:])
         ]
 
-    def get_transpiler(self, src_language: AssemblerLanguage, dest_languages: [AssemblerLanguage]) -> any:
+    def get_transpiler(self, src_language: str, dest_languages: Sequence[str]) -> Any:
         """Main method of the class that returns the method to be used to transpile to the destination language"""
         steps = None
         # in case of multiple supported languages the shortest path is selected by comparing the options
@@ -108,7 +112,12 @@ class TranspileManager:
             if steps is None or len(steps_of_current_run) < len(steps):
                 steps = steps_of_current_run
 
-        def transpile(circuit) -> any:
+        if steps is None:
+            raise QunicornError(
+                f"Could not find a transpilation path from {src_language} to any of the supported languages {', '.join(dest_languages)}!"
+            )
+
+        def transpile(circuit) -> Any:
             """This method transpiles the circuit from the source language to the destination language by using
             intermediate circuits along the discovered shortest path (saved in "steps"). It iteratively applies
             the transpile methods from the selected steps to return one single transpiled circuit.
@@ -183,8 +192,7 @@ def qasm2_to_quil(source: str) -> Program:
     # WARNING: the qasm to quil transpilation does not allow for the use of standard gate library.
     if not utils.is_experimental_feature_enabled():
         raise QunicornError(
-            "Experimental transpilation features are disabled, set ENABLE_EXPERIMENTAL_TRANSPILATION to true to "
-            "enable them. ",
+            "Experimental transpilation features are disabled, set ENABLE_EXPERIMENTAL_TRANSPILATION to true to enable them.",
             405,
         )
     logging.warn("This function is experimental and could not be fully tested yet. ")

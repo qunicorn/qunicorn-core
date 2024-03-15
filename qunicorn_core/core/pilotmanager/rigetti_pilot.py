@@ -13,16 +13,17 @@
 # limitations under the License.
 
 from collections import Counter
+from http import HTTPStatus
+from typing import Any, Optional, Sequence, Tuple, Union
 
 from pyquil.api import get_qc
 
-from qunicorn_core.api.api_models import JobCoreDto, DeviceDto
+from qunicorn_core.api.api_models import DeviceDto
 from qunicorn_core.core.pilotmanager.base_pilot import Pilot
-from qunicorn_core.db.database_services import job_db_service
 from qunicorn_core.db.models.device import DeviceDataclass
 from qunicorn_core.db.models.job import JobDataclass
 from qunicorn_core.db.models.provider import ProviderDataclass
-from qunicorn_core.db.models.provider_assembler_language import ProviderAssemblerLanguageDataclass
+from qunicorn_core.db.models.quantum_program import QuantumProgramDataclass
 from qunicorn_core.db.models.result import ResultDataclass
 from qunicorn_core.static.enums.assembler_languages import AssemblerLanguage
 from qunicorn_core.static.enums.provider_name import ProviderName
@@ -45,60 +46,61 @@ MEASURE(1, (\"ro\", 1)),
 class RigettiPilot(Pilot):
     """The Rigetti Pilot"""
 
-    provider_name: ProviderName = ProviderName.RIGETTI
+    provider_name: str = ProviderName.RIGETTI.value
 
-    supported_languages: list[AssemblerLanguage] = [AssemblerLanguage.QUIL]
+    supported_languages: list[str] = [AssemblerLanguage.QUIL.value]
 
-    def run(self, job_core_dto: JobCoreDto) -> list[ResultDataclass]:
+    def run(
+        self, job: JobDataclass, circuits: Sequence[Tuple[QuantumProgramDataclass, Any]], token: Optional[str] = None
+    ) -> list[ResultDataclass]:
         """Execute the job on a local simulator and saves results in the database"""
         if utils.is_running_in_docker():
-            raise job_db_service.return_exception_and_update_job(
-                job_core_dto.id,
-                QunicornError(
-                    "Rigetti Pilot can not be executed in Docker, check the documentation on how to run "
-                    "qunicorn locally to execute jobs on the Rigetti Pilot",
-                    405,
-                ),
+            error = QunicornError(
+                "Rigetti Pilot can not be executed in Docker, check the documentation on how to run qunicorn locally to execute jobs on the Rigetti Pilot",
+                HTTPStatus.NOT_IMPLEMENTED,
             )
-        if job_core_dto.executed_on.is_local:
+            job.save_error(error)
+            raise error
+        if job.executed_on.is_local:
             results = []
             program_index = 0
-            for program in job_core_dto.transpiled_circuits:
-                program.wrap_in_numshots_loop(job_core_dto.shots)
-                qvm = get_qc(job_core_dto.executed_on.name)
-                qvm_result = qvm.run(qvm.compile(program)).get_register_map().get("ro")
+            for program, circuit in circuits:
+                circuit.wrap_in_numshots_loop(job.shots)
+                qvm = get_qc(job.executed_on.name)
+                qvm_result = qvm.run(qvm.compile(circuit)).get_register_map().get("ro")
                 result_dict = RigettiPilot.result_to_dict(qvm_result)
-                result_dict = RigettiPilot.qubit_binary_to_hex(result_dict, job_core_dto.id)
+                result_dict = RigettiPilot.qubit_binary_to_hex(result_dict, job.id)
                 probabilities_dict = RigettiPilot.calculate_probabilities(result_dict)
                 result = ResultDataclass(
-                    circuit=job_core_dto.deployment.programs[program_index].quantum_circuit,
+                    program=program,
                     result_dict={"counts": result_dict, "probabilities": probabilities_dict},
-                    result_type=ResultType.COUNTS,
+                    result_type=ResultType.COUNTS.name,
                     meta_data="",
                 )
                 program_index += 1
                 results.append(result)
             return results
         else:
-            raise job_db_service.return_exception_and_update_job(
-                job_core_dto.id, QunicornError("Device need to be local for RIGETTI")
-            )
+            error = QunicornError("Device need to be local for RIGETTI")
+            job.save_error(error)
+            raise error
 
     @staticmethod
-    def result_to_dict(results: []) -> dict:
+    def result_to_dict(results: Sequence[Sequence[int]]) -> dict:
         """Converts the result of the qvm to a dictionary"""
-        results_as_strings = ["".join(map(str, row)) for row in results]
+        results_as_strings = ("".join(map(str, row)) for row in results)
         result_counter = Counter(results_as_strings)
         return dict(result_counter)
 
-    def execute_provider_specific(self, job_core_dto: JobCoreDto):
+    def execute_provider_specific(
+        self, job: JobDataclass, circuits: Sequence[Tuple[QuantumProgramDataclass, Any]], token: Optional[str] = None
+    ):
         """Execute a job of a provider specific type on a backend using a Pilot"""
+        error = QunicornError("No valid Job Type specified")
+        job.save_error(error)
+        raise error
 
-        raise job_db_service.return_exception_and_update_job(
-            job_core_dto.id, QunicornError("No valid Job Type specified")
-        )
-
-    def cancel_provider_specific(self, job_dto):
+    def cancel_provider_specific(self, job: JobDataclass, token: Optional[str] = None):
         raise QunicornError("Canceling not implemented for rigetti pilot yet")
 
     def get_standard_job_with_deployment(self, device: DeviceDataclass) -> JobDataclass:
@@ -110,14 +112,16 @@ class RigettiPilot(Pilot):
         )
 
     def get_standard_provider(self):
-        return ProviderDataclass(
-            with_token=False,
-            supported_languages=[
-                ProviderAssemblerLanguageDataclass(supported_language=language) for language in self.supported_languages
-            ],
-            name=self.provider_name,
-        )
+        found_provider = ProviderDataclass.get_by_name(self.provider_name)
+        if not found_provider:
+            found_provider = ProviderDataclass(
+                with_token=False,
+                name=self.provider_name,
+            )
+            found_provider.supported_languages = list(self.supported_languages)
+            found_provider.save()
+        return found_provider
 
-    def is_device_available(self, device: DeviceDto, token: str) -> bool:
+    def is_device_available(self, device: Union[DeviceDataclass, DeviceDto], token: Optional[str]) -> bool:
         logging.info("Rigetti local simulator is always available")
         return True

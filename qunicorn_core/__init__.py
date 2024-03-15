@@ -15,7 +15,7 @@
 """Root module containing the flask app factory."""
 
 from json import load as load_json
-from logging import Logger, Formatter, Handler, WARNING, getLogger
+from logging import WARNING, Formatter, Handler, Logger, getLogger
 from logging.config import dictConfig
 from os import environ, makedirs
 from pathlib import Path
@@ -26,14 +26,11 @@ from flask.app import Flask
 from flask.cli import FlaskGroup
 from flask.logging import default_handler
 from flask_cors import CORS
-from qiskit_ibm_runtime import IBMRuntimeError
-from qunicorn_core.static.qunicorn_exception import QunicornError
 from tomli import load as load_toml
 
-from . import db, api, celery, licenses, core, util
-from .api import jwt
+from . import api, celery, core, db, licenses, util
 from .util import logging
-from .util.config import ProductionConfig, DebugConfig
+from .util.config import DebugConfig, ProductionConfig
 from .util.reverse_proxy_fix import apply_reverse_proxy_fix
 
 # change this to change tha flask app name and the config env var prefix
@@ -165,9 +162,7 @@ def create_app(test_config: Optional[Dict[str, Any]] = None):
     @app.errorhandler(Exception)
     def handle_errors(error):
         logging.error(str(error))
-        if hasattr(error, "status_code"):
-            error_code = error.status_code
-        elif isinstance(error, NotImplementedError):
+        if isinstance(error, NotImplementedError):
             error_code: int = 501
         else:
             error_code: int = 500

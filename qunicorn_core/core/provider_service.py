@@ -14,14 +14,14 @@
 
 from qunicorn_core.api.api_models.provider_dtos import ProviderDto
 from qunicorn_core.core.mapper import provider_mapper
-from qunicorn_core.db.database_services import provider_db_service
+from qunicorn_core.db.models.provider import ProviderDataclass
 
 
 def get_all_providers() -> list[ProviderDto]:
     """Gets all Providers from the DB and maps them"""
-    return [provider_mapper.dataclass_to_dto(provider) for provider in provider_db_service.get_all_providers()]
+    return [provider_mapper.dataclass_to_dto(provider) for provider in ProviderDataclass.get_all()]
 
 
 def get_provider_by_id(provider_id: int) -> ProviderDto:
     """Gets a Provider from the DB by its ID and maps it"""
-    return provider_mapper.dataclass_to_dto(provider_db_service.get_provider_by_id(provider_id))
+    return provider_mapper.dataclass_to_dto(ProviderDataclass.get_by_id_or_404(provider_id))

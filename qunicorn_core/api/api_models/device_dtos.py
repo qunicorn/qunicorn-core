@@ -17,9 +17,11 @@
 from dataclasses import dataclass
 
 import marshmallow as ma
+from marshmallow.validate import OneOf
 
-from .provider_dtos import ProviderDto, ProviderDtoSchema
-from ..flask_api_utils import MaBaseSchema
+from qunicorn_core.api.api_models.provider_dtos import ProviderDto, ProviderDtoSchema
+from qunicorn_core.api.flask_api_utils import MaBaseSchema
+from qunicorn_core.static.enums.provider_name import ProviderName
 
 __all__ = [
     "DeviceDtoSchema",
@@ -29,8 +31,6 @@ __all__ = [
     "DeviceRequestDto",
     "DeviceRequestDtoSchema",
 ]
-
-from ...static.enums.provider_name import ProviderName
 
 
 @dataclass
@@ -59,7 +59,9 @@ class DeviceDtoSchema(MaBaseSchema):
 
 
 class DeviceRequestDtoSchema(MaBaseSchema):
-    provider_name = ma.fields.Enum(required=True, metadata={"example": ProviderName.IBM}, enum=ProviderName)
+    provider_name = ma.fields.String(
+        required=True, metadata={"example": ProviderName.IBM.value}, validate=OneOf([p.value for p in ProviderName])
+    )
     token = ma.fields.String(required=False, metadata={"example": ""})
 
 
@@ -67,13 +69,13 @@ class DeviceRequestDtoSchema(MaBaseSchema):
 class SimpleDeviceDto:
     device_id: int
     device_name: str
-    provider_name: ProviderName
+    provider_name: str
 
 
 class SimpleDeviceDtoSchema(MaBaseSchema):
     device_id = ma.fields.Integer(required=True, dump_only=True)
     device_name = ma.fields.String(required=True, dump_only=True)
-    provider_name = ma.fields.Enum(required=True, dump_only=True, enum=ProviderName)
+    provider_name = ma.fields.String(required=True, dump_only=True, validate=OneOf([p.value for p in ProviderName]))
 
 
 class DevicesResponseSchema(MaBaseSchema):

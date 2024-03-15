@@ -18,7 +18,7 @@ from http import HTTPStatus
 
 from flask.views import MethodView
 
-from .root import PROVIDER_API
+from .blueprint import PROVIDER_API
 from ..api_models.provider_dtos import ProviderDtoSchema
 from ...core import provider_service
 from ...util import logging
@@ -35,7 +35,7 @@ class ProviderView(MethodView):
         return provider_service.get_all_providers()
 
 
-@PROVIDER_API.route("/<string:provider_id>/")
+@PROVIDER_API.route("/<int:provider_id>/")
 class ProviderIDView(MethodView):
     """Provider Endpoint to get properties of a specific provider."""
 

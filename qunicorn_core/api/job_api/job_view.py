@@ -17,22 +17,21 @@
 from http import HTTPStatus
 from typing import Optional
 
-from flask import jsonify
 from flask.views import MethodView
 
-from .root import JOBMANAGER_API
+from .blueprint import JOBMANAGER_API
 from ..api_models.job_dtos import (
-    JobRequestDtoSchema,
-    JobResponseDtoSchema,
-    JobRequestDto,
-    JobResponseDto,
-    TokenSchema,
-    SimpleJobDtoSchema,
-    JobExecutionDtoSchema,
     JobExecutePythonFileDto,
+    JobExecutionDtoSchema,
+    JobRequestDto,
+    JobRequestDtoSchema,
+    JobResponseDto,
+    JobResponseDtoSchema,
+    QueuedJobsDtoSchema,
     SimpleJobDto,
+    SimpleJobDtoSchema,
+    TokenSchema,
 )
-from ..jwt import abort_if_user_unauthorized
 from ...core import job_service
 from ...util import logging
 
@@ -46,7 +45,7 @@ class JobIDView(MethodView):
     def get(self, jwt_subject: Optional[str]):
         """Get all created jobs."""
         logging.info("Request: get all created jobs")
-        return jsonify(job_service.get_all_jobs(user_id=jwt_subject))
+        return job_service.get_all_jobs(user_id=jwt_subject)
 
     @JOBMANAGER_API.arguments(JobRequestDtoSchema(), location="json")
     @JOBMANAGER_API.response(HTTPStatus.CREATED, SimpleJobDtoSchema())
@@ -56,31 +55,31 @@ class JobIDView(MethodView):
         logging.info("Request: create and run new job")
         job_dto: JobRequestDto = JobRequestDto(**body)
         job_response: SimpleJobDto = job_service.create_and_run_job(job_dto, user_id=jwt_subject)
-        return jsonify(job_response)
+        return job_response
 
 
-@JOBMANAGER_API.route("/<string:job_id>/")
+@JOBMANAGER_API.route("/<int:job_id>/")
 class JobDetailView(MethodView):
     """Jobs endpoint for a single job."""
 
     @JOBMANAGER_API.response(HTTPStatus.OK, JobResponseDtoSchema())
     @JOBMANAGER_API.require_jwt(optional=True)
-    def get(self, job_id: str, jwt_subject: Optional[str]):
+    def get(self, job_id: int, jwt_subject: Optional[str]):
         """Get the details/results of a job."""
         logging.info(f"Request: get results of job with id: {job_id}")
-        job_response_dto: JobResponseDto = job_service.get_job_by_id(int(job_id))
-        abort_if_user_unauthorized(job_response_dto.executed_by, jwt_subject)
-        return jsonify(job_response_dto), 200
+        job_response_dto: JobResponseDto = job_service.get_job_by_id(job_id, user_id=jwt_subject)
+        return job_response_dto
 
     @JOBMANAGER_API.response(HTTPStatus.OK, JobResponseDtoSchema())
     @JOBMANAGER_API.require_jwt(optional=True)
-    def delete(self, job_id: str, jwt_subject: Optional[str]):
+    def delete(self, job_id: int, jwt_subject: Optional[str]):
         """Delete job data via id and return the deleted job."""
         logging.info(f"Request: delete job with id: {job_id}")
         return job_service.delete_job_data_by_id(job_id, user_id=jwt_subject)
 
 
-@JOBMANAGER_API.route("/run/<string:job_id>/")
+# FIXME: merge the three following views under /<int:job_id>/ into one post method!
+@JOBMANAGER_API.route("/run/<int:job_id>/")
 class JobRunView(MethodView):
     """Jobs endpoint to run a single job."""
 
@@ -91,10 +90,10 @@ class JobRunView(MethodView):
         """Run job on IBM that was previously uploaded."""
         logging.info(f"Request: run job with id: {job_id}")
         job_execution_dto: JobExecutePythonFileDto = JobExecutePythonFileDto(**body)
-        return jsonify(job_service.run_job_by_id(int(job_id), job_execution_dto, user_id=jwt_subject)), 200
+        return job_service.run_job_by_id(job_id, job_execution_dto, user_id=jwt_subject)
 
 
-@JOBMANAGER_API.route("/rerun/<string:job_id>/")
+@JOBMANAGER_API.route("/rerun/<int:job_id>/")
 class JobReRunView(MethodView):
     """Jobs endpoint to rerun a single job."""
 
@@ -104,28 +103,29 @@ class JobReRunView(MethodView):
     def post(self, body, job_id: int, jwt_subject: Optional[str]):
         """Create a new job on basis of an existing job and execute it."""
         logging.info(f"Request: re run job with id: {job_id}")
-        return jsonify(job_service.re_run_job_by_id(job_id, body["token"], user_id=jwt_subject))
+        return job_service.re_run_job_by_id(job_id, body["token"], user_id=jwt_subject)
 
 
-@JOBMANAGER_API.route("/cancel/<string:job_id>/")
+@JOBMANAGER_API.route("/cancel/<int:job_id>/")
 class JobCancelView(MethodView):
     """Jobs endpoint to cancel a single job."""
 
     @JOBMANAGER_API.arguments(TokenSchema(), location="json")
     @JOBMANAGER_API.response(HTTPStatus.OK, SimpleJobDtoSchema())
     @JOBMANAGER_API.require_jwt(optional=True)
-    def post(self, body, job_id: str, jwt_subject: Optional[str]):
+    def post(self, body, job_id: int, jwt_subject: Optional[str]):
         """Cancel a job execution via id."""
         logging.info(f"Request: cancel job with id: {job_id}")
-        return jsonify(job_service.cancel_job_by_id(job_id, body["token"], user_id=jwt_subject)), 200
+        return job_service.cancel_job_by_id(job_id, body["token"], user_id=jwt_subject)
 
 
 @JOBMANAGER_API.route("/queue/")
 class JobQueueView(MethodView):
     """Jobs endpoint to get the queued jobs."""
 
-    @JOBMANAGER_API.response(HTTPStatus.OK, dict)
-    def get(self):
+    @JOBMANAGER_API.response(HTTPStatus.OK, QueuedJobsDtoSchema())
+    @JOBMANAGER_API.require_jwt(optional=True)
+    def get(self, jwt_subject: Optional[str]):
         """Get the items of the job queue and the running job."""
         logging.info("Request: Get the items of the job queue and the running job")
-        return jsonify(job_service.get_job_queue_items()), 200
+        return job_service.get_job_queue_items(user_id=jwt_subject)

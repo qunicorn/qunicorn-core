@@ -13,12 +13,12 @@
 # limitations under the License.
 
 """Module containing default config values."""
-from logging import WARNING, INFO
+from logging import INFO, WARNING
 from os import urandom
 
 from .celery_config import CELERY_PRODUCTION_CONFIG
-from .smorest_config import SmorestProductionConfig, SmorestDebugConfig
-from .sqlalchemy_config import SQLAchemyProductionConfig, SQLAchemyDebugConfig
+from .smorest_config import SmorestDebugConfig, SmorestProductionConfig
+from .sqlalchemy_config import SQLAchemyDebugConfig, SQLAchemyProductionConfig
 
 
 class ProductionConfig(SQLAchemyProductionConfig, SmorestProductionConfig):
