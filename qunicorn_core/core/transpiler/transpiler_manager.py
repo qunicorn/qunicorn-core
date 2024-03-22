@@ -164,10 +164,13 @@ def qiskit_to_qasm3(circuit: qiskit.circuit.QuantumCircuit) -> str:
 @transpile_manager.register_transpile_method(AssemblerLanguage.QASM3, AssemblerLanguage.QISKIT)
 def qasm3_to_qiskit(source: str) -> qiskit.circuit.QuantumCircuit:
     source = source.replace("cnot", "cx")
-    # only one of the following replace is executed since it can only find either one , but both are valid strings
 
-    source = source.replace("OPENQASM 3;", 'OPENQASM 3; include "stdgates.inc";')
-    source = source.replace("OPENQASM 3.0;", 'OPENQASM 3.0; include "stdgates.inc";')
+    # heuristic to check for missing import
+    if '"stdgates.inc"' not in source:
+        # try to add stdgates import if it is missing
+        # only one of the following replace is executed since it can only find either one , but both are valid strings
+        source = source.replace("OPENQASM 3;", 'OPENQASM 3; include "stdgates.inc";')
+        source = source.replace("OPENQASM 3.0;", 'OPENQASM 3.0; include "stdgates.inc";')
     return qiskit.qasm3.loads(source)
 
 
