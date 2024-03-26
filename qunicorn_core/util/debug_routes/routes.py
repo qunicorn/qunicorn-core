@@ -14,7 +14,7 @@
 
 """Module containing debug routes index page."""
 
-from flask import render_template, current_app
+from flask import current_app, render_template
 
 from .root import DEBUG_BLP
 

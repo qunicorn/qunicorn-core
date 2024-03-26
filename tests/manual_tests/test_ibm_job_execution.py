@@ -16,7 +16,6 @@
 
 from qunicorn_core.api.api_models import JobRequestDto, SimpleJobDto
 from qunicorn_core.core import job_service
-from qunicorn_core.db.database_services import job_db_service
 from qunicorn_core.db.models.job import JobDataclass
 from qunicorn_core.db.models.result import ResultDataclass
 from qunicorn_core.static.enums.assembler_languages import AssemblerLanguage
@@ -29,23 +28,23 @@ from tests.test_utils import IS_ASYNCHRONOUS, PROBABILITY_1, PROBABILITY_TOLERAN
 
 
 def test_create_and_run_runner_with_qiskit():
-    test_utils.execute_job_test(ProviderName.IBM, "ibmq_qasm_simulator", AssemblerLanguage.QISKIT)
+    test_utils.execute_job_test(ProviderName.IBM, "ibmq_qasm_simulator", [AssemblerLanguage.QISKIT])
 
 
 def test_create_and_run_runner_with_qasm2():
-    test_utils.execute_job_test(ProviderName.IBM, "ibmq_qasm_simulator", AssemblerLanguage.QASM2)
+    test_utils.execute_job_test(ProviderName.IBM, "ibmq_qasm_simulator", [AssemblerLanguage.QASM2])
 
 
 def test_create_and_run_runner_with_qasm3():
-    test_utils.execute_job_test(ProviderName.IBM, "ibmq_qasm_simulator", AssemblerLanguage.QASM3)
+    test_utils.execute_job_test(ProviderName.IBM, "ibmq_qasm_simulator", [AssemblerLanguage.QASM3])
 
 
 def test_create_and_run_runner_with_braket():
-    test_utils.execute_job_test(ProviderName.IBM, "ibmq_qasm_simulator", AssemblerLanguage.BRAKET)
+    test_utils.execute_job_test(ProviderName.IBM, "ibmq_qasm_simulator", [AssemblerLanguage.BRAKET])
 
 
 def test_create_and_run_runner_with_qrisp():
-    test_utils.execute_job_test(ProviderName.IBM, "ibmq_qasm_simulator", AssemblerLanguage.QRISP)
+    test_utils.execute_job_test(ProviderName.IBM, "ibmq_qasm_simulator", [AssemblerLanguage.QRISP])
 
 
 def test_create_and_run_sampler():
@@ -62,13 +61,13 @@ def test_create_and_run_estimator():
 
     # WHEN: create_and_run executed synchronous
     with app.app_context():
-        test_utils.save_deployment_and_add_id_to_job(job_request_dto, AssemblerLanguage.QASM2)
+        test_utils.save_deployment_and_add_id_to_job(job_request_dto, [AssemblerLanguage.QASM2])
         return_dto: SimpleJobDto = job_service.create_and_run_job(job_request_dto, IS_ASYNCHRONOUS)
 
     # THEN: Check if the correct job with its result is saved in the db
     with app.app_context():
         test_utils.check_simple_job_dto(return_dto)
-        job: JobDataclass = job_db_service.get_job_by_id(return_dto.id)
+        job: JobDataclass = JobDataclass.get_by_id_or_404(return_dto.id)
         test_utils.check_if_job_finished(job)
         check_if_job_estimator_result_correct(job)
 

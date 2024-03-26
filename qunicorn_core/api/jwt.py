@@ -31,7 +31,7 @@ from apispec.utils import deepupdate
 from flask.app import Flask
 from flask.globals import request
 from flask_smorest import Api, abort
-from jwt import PyJWKClient, InvalidTokenError
+from jwt import InvalidTokenError, PyJWKClient
 
 from qunicorn_core.util import logging
 
@@ -147,12 +147,3 @@ class JWTMixin:
                     warn(f"The schema '{scheme}' is not specified in the available securitySchemes.")
             doc = deepupdate(doc, {"security": operation})
         return doc
-
-
-def abort_if_user_unauthorized(user_from_data_object: Optional[str], logged_in_user_id: str):
-    """
-    If the user_from_data_object is None everybody can access it.
-    If the user_from_data_object is not None, only the correct user can access it -> Otherwise abort.
-    """
-    if user_from_data_object is not None and user_from_data_object != logged_in_user_id:
-        abort(401, message="unauthorized")

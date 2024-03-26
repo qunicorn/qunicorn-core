@@ -18,16 +18,15 @@
 from http import HTTPStatus
 from typing import Optional
 
-from flask import jsonify
 from flask.views import MethodView
 
-from .root import DEPLOYMENT_API
+from .blueprint import DEPLOYMENT_API
 from ..api_models import SimpleJobDtoSchema
 from ..api_models.deployment_dtos import (
     DeploymentDtoSchema,
-    DeploymentRequestDtoSchema,
-    DeploymentRequestDto,
-    DeploymentResponseDtoSchema,
+    DeploymentUpdateDto,
+    DeploymentUpdateDtoSchema,
+    SimpleDeploymentDtoSchema,
 )
 from ...core import deployment_service, job_service
 from ...util import logging
@@ -37,24 +36,24 @@ from ...util import logging
 class DeploymentIDView(MethodView):
     """Deployments endpoint for collection of all deployed jobs."""
 
-    @DEPLOYMENT_API.response(HTTPStatus.OK, DeploymentResponseDtoSchema(many=True))
+    @DEPLOYMENT_API.response(HTTPStatus.OK, SimpleDeploymentDtoSchema(many=True))
     @DEPLOYMENT_API.require_jwt(optional=True)
     def get(self, jwt_subject: Optional[str]):
         """Get the list of deployments."""
         logging.info("Request: get all deployments")
         return deployment_service.get_all_deployment_responses(user_id=jwt_subject)
 
-    @DEPLOYMENT_API.arguments(DeploymentRequestDtoSchema(), location="json")
-    @DEPLOYMENT_API.response(HTTPStatus.CREATED, DeploymentResponseDtoSchema())
+    @DEPLOYMENT_API.arguments(DeploymentUpdateDtoSchema(), location="json")
+    @DEPLOYMENT_API.response(HTTPStatus.CREATED, SimpleDeploymentDtoSchema())
     @DEPLOYMENT_API.require_jwt(optional=True)
     def post(self, body, jwt_subject: Optional[str]):
         """Create/Deploy new Job-definition."""
         logging.info("Request: create new deployment")
-        deployment_dto: DeploymentRequestDto = DeploymentRequestDto.from_dict(body)
+        deployment_dto: DeploymentUpdateDto = DeploymentUpdateDto.from_dict(body)
         return deployment_service.create_deployment(deployment_dto, user_id=jwt_subject)
 
 
-@DEPLOYMENT_API.route("/<string:deployment_id>/")
+@DEPLOYMENT_API.route("/<int:deployment_id>/")
 class DeploymentDetailView(MethodView):
     """API endpoint for single pre-deployments."""
 
@@ -70,19 +69,22 @@ class DeploymentDetailView(MethodView):
     def delete(self, deployment_id: int, jwt_subject: Optional[str]):
         """Delete single deployment by ID."""
         logging.info("Request: delete deployment by id")
-        return deployment_service.delete_deployment(deployment_id, user_id=jwt_subject)
+        deleted_deployment = deployment_service.delete_deployment(deployment_id, user_id=jwt_subject)
+        if deleted_deployment is None:
+            pass  # TODO: treat this differently?
+        return deleted_deployment
 
     @DEPLOYMENT_API.response(HTTPStatus.OK, DeploymentDtoSchema)
-    @DEPLOYMENT_API.arguments(DeploymentRequestDtoSchema(), location="json")
+    @DEPLOYMENT_API.arguments(DeploymentUpdateDtoSchema(), location="json")
     @DEPLOYMENT_API.require_jwt(optional=True)
     def put(self, body, deployment_id: int, jwt_subject: Optional[str]):
         """Update single deployment by ID."""
         logging.info("Request: update deployment by id")
-        deployment_dto: DeploymentRequestDto = DeploymentRequestDto.from_dict(body)
+        deployment_dto: DeploymentUpdateDto = DeploymentUpdateDto.from_dict(body)
         return deployment_service.update_deployment(deployment_dto, deployment_id, user_id=jwt_subject)
 
 
-@DEPLOYMENT_API.route("/<string:deployment_id>/jobs")
+@DEPLOYMENT_API.route("/<int:deployment_id>/jobs")
 class JobsByDeploymentView(MethodView):
     """API endpoint for jobs of a specific deployment."""
 
@@ -92,11 +94,7 @@ class JobsByDeploymentView(MethodView):
         """Get the details of all jobs with a specific deployment id."""
         logging.info("Request: get jobs with deployment id")
         jobs_by_deployment_id = job_service.get_jobs_by_deployment_id(deployment_id, user_id=jwt_subject)
-        return (
-            jobs_by_deployment_id
-            if len(jobs_by_deployment_id) > 0
-            else jsonify({"Warning": "No Jobs can be found for this DeploymentID"})
-        )
+        return jobs_by_deployment_id
 
     @DEPLOYMENT_API.response(HTTPStatus.OK, SimpleJobDtoSchema(many=True))
     @DEPLOYMENT_API.require_jwt(optional=True)
@@ -104,8 +102,4 @@ class JobsByDeploymentView(MethodView):
         """Delete all jobs with a specific deployment id."""
         logging.info("Request: delete jobs with deployment id")
         jobs_by_deployment_id = job_service.delete_jobs_by_deployment_id(deployment_id, user_id=jwt_subject)
-        return (
-            jobs_by_deployment_id
-            if len(jobs_by_deployment_id) > 0
-            else jsonify({"Warning": "No Jobs can be found for this DeploymentID"})
-        )
+        return jobs_by_deployment_id

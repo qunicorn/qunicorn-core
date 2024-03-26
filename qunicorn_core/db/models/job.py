@@ -12,20 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from datetime import datetime
-from typing import Optional, List
+import traceback
+from datetime import datetime, timezone
+from typing import List, Optional, Union
 
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.sql import Select, or_, select
 from sqlalchemy.sql import sqltypes as sql
 
-from .db_model import DbModel
-from .deployment import DeploymentDataclass
+from . import deployment as deployment_model
+from . import quantum_program
+from .db_model import DbModel, T
 from .device import DeviceDataclass
 from .result import ResultDataclass
-from ..db import REGISTRY
+from ..db import DB, REGISTRY
 from ...static.enums.job_state import JobState
-from ...static.enums.job_type import JobType
+from ...static.enums.result_type import ResultType
 
 
 @REGISTRY.mapped_as_dataclass
@@ -33,43 +36,104 @@ class JobDataclass(DbModel):
     """Dataclass for storing Jobs
 
     Attributes:
+        id (int): The id of a job. (set by the database)
         name (str, optional): Optional name for a job.
-        results (ResultDataclass, optional): List of results for each quantum program that was executed.
+        results (List[ResultDataclass], optional): List of results for each quantum program that was executed.
         executed_by(str): A user_id associated to the job, user that wants to execute the job.
-        executed_on (DeviceDataclass): The device where the job is running on.
-        deployment (DeploymentDataclass): The deployment where the program is coming from.
+        executed_on (DeviceDataclass|None): The device where the job is running on.
+        deployment (DeploymentDataclass|None): The deployment where the program is coming from.
         progress (float): The progress of the job.
         state (str): The state of a job, enum JobState.
         shots (int): The number of shots for the job
         type (JobType): The type of the job.
         started_at (datetime, optional): The moment the job was scheduled. (default: datetime.utcnow)
-        id (int): The id of a job.
         provider_specific_id (str, optional): The provider specific id for the job. (Used for canceling)
         celery_id (str, optional): The celery id for the job. (Used for canceling)
-        executed_on_id (int, optional): The device_id of the device where the job is running on.
         finished_at (Optional[datetime], optional): The moment the job finished successfully or with an error.
-        deployment_id (int, optional): A deployment_id associated with the job.
     """
 
     # non-default arguments
+    id: Mapped[int] = mapped_column(sql.INTEGER(), primary_key=True, autoincrement=True, init=False)
     name: Mapped[Optional[str]] = mapped_column(sql.String(50))
-    results: Mapped[Optional[List[ResultDataclass.__name__]]] = relationship(ResultDataclass.__name__)
     executed_by: Mapped[Optional[str]] = mapped_column(sql.String(100))
-    executed_on: Mapped[DeviceDataclass.__name__] = relationship(DeviceDataclass.__name__)
-    deployment: Mapped[DeploymentDataclass.__name__] = relationship(DeploymentDataclass.__name__, cascade="save-update")
-    progress: Mapped[str] = mapped_column(sql.INTEGER())
-    state: Mapped[str] = mapped_column(sql.Enum(JobState))
+    executed_on: Mapped[Optional[DeviceDataclass]] = relationship(DeviceDataclass, lazy="selectin")
+    deployment: Mapped[Optional["deployment_model.DeploymentDataclass"]] = relationship(
+        lambda: deployment_model.DeploymentDataclass, back_populates="jobs", lazy="selectin", cascade="save-update"
+    )
+    progress: Mapped[int] = mapped_column(sql.INTEGER())
+    state: Mapped[str] = mapped_column(sql.String(50))
     shots: Mapped[int] = mapped_column(sql.INTEGER())
-    type: Mapped[str] = mapped_column(sql.Enum(JobType))
-    started_at: Mapped[datetime] = mapped_column(sql.TIMESTAMP(timezone=True))
+    type: Mapped[str] = mapped_column(sql.String(50))
     # default arguments
-    id: Mapped[int] = mapped_column(sql.INTEGER(), primary_key=True, autoincrement=True, default=None)
-    provider_specific_id: Mapped[Optional[str]] = mapped_column(sql.String(50), default=None)
-    celery_id: Mapped[Optional[str]] = mapped_column(sql.String(50), default=None)
+    started_at: Mapped[datetime] = mapped_column(
+        sql.TIMESTAMP(timezone=True), default_factory=lambda: datetime.now(timezone.utc)
+    )
+    provider_specific_id: Mapped[Optional[str]] = mapped_column(sql.String(50), nullable=True, default=None)
+    celery_id: Mapped[Optional[str]] = mapped_column(sql.String(50), nullable=True, default=None)
     executed_on_id: Mapped[int] = mapped_column(
-        ForeignKey(DeviceDataclass.__tablename__ + ".id", ondelete="SET NULL"), default=None, nullable=True
+        ForeignKey(DeviceDataclass.id, ondelete="SET NULL"), default=None, nullable=True, init=False
     )
     deployment_id: Mapped[int] = mapped_column(
-        ForeignKey(DeploymentDataclass.__tablename__ + ".id", ondelete="SET NULL"), default=None, nullable=True
+        ForeignKey("Deployment.id", ondelete="SET NULL"), default=None, nullable=True, init=False
     )
     finished_at: Mapped[Optional[datetime]] = mapped_column(sql.TIMESTAMP(timezone=True), default=None, nullable=True)
+    results: Mapped[List[ResultDataclass]] = relationship(
+        ResultDataclass, back_populates="job", lazy="selectin", default_factory=list
+    )
+
+    @classmethod
+    def apply_authentication_filter(cls, query: Select[T], user_id: Optional[str]) -> Select[T]:
+        if user_id is None:
+            return query.where(cls.executed_by == None)  # noqa: E711
+        return query.where(or_(cls.executed_by == None, cls.executed_by == user_id))  # noqa: E711
+
+    @classmethod
+    def get_by_deployment(cls, deployment: Union[int, "deployment_model.DeploymentDataclass"]):
+        q = select(cls)
+        if isinstance(deployment, int):
+            q = q.where(cls.deployment_id == deployment)
+        elif isinstance(deployment, deployment_model.DeploymentDataclass):
+            q = q.where(cls.deployment == deployment)
+        return DB.session.execute(q).scalars().all()
+
+    @classmethod
+    def get_by_deployment_authenticated(
+        cls, deployment: Union[int, "deployment_model.DeploymentDataclass"], user_id: Optional[str]
+    ):
+        q = cls.apply_authentication_filter(select(cls), user_id)
+        if isinstance(deployment, int):
+            q = q.where(cls.deployment_id == deployment)
+        elif isinstance(deployment, deployment_model.DeploymentDataclass):
+            q = q.where(cls.deployment == deployment)
+        return DB.session.execute(q).scalars().all()
+
+    def save_results(self, results: List[ResultDataclass], job_state: Union[JobState, str] = JobState.FINISHED):
+        """Update the job to include the results and commit everything to the database."""
+        self.finished_at = datetime.now(timezone.utc)
+        self.progress = 100
+        self.results = results
+        self.state = job_state.value if isinstance(job_state, JobState) else job_state
+        for result in results:
+            result.save()  # add nested objects to db session
+        self.save(commit=True)
+
+    def save_error(self, exception: BaseException, program: Optional["quantum_program.QuantumProgramDataclass"] = None):
+        exception_message: str = str(exception)
+        stack_trace: str = "".join(traceback.format_exception(exception))
+
+        error_result = ResultDataclass(
+            result_type=ResultType.ERROR.value,
+            job=self,
+            program=program,
+            result_dict={"exception_message": exception_message},
+            meta_data={"stack_trace": stack_trace},
+        )
+        self.results.append(error_result)
+
+        if self.finished_at is None:
+            self.finished_at = datetime.now(timezone.utc)
+        self.progress = 100
+        self.state = JobState.ERROR.value
+
+        error_result.save()
+        self.save(commit=True)

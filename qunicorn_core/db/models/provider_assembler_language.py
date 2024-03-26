@@ -12,13 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Optional
+
 from sqlalchemy import ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import sqltypes as sql
 
+from . import provider as provider_model
 from .db_model import DbModel
 from ..db import REGISTRY
-from ...static.enums.assembler_languages import AssemblerLanguage
 
 
 @REGISTRY.mapped_as_dataclass
@@ -26,13 +28,16 @@ class ProviderAssemblerLanguageDataclass(DbModel):
     """Dataclass for storing Assembler Languages
 
     Attributes:
-        supported_language (str): The AssemblerLanguage (Enum) which is supported.
-        id (int): The ID of the assembler language.
-        provider_id (int): The ID of the provider that supports this language.
+        id (int): The ID of the assembler language. (set by the database)
+        provider (ProviderDataclass): The provider that supports this language.
+        language (str): The AssemblerLanguage which is supported.
     """
 
     # non-default arguments
-    supported_language: Mapped[str] = mapped_column(sql.Enum(AssemblerLanguage))
+    id: Mapped[int] = mapped_column(sql.INTEGER(), primary_key=True, autoincrement=True, init=False)
+    provider_id: Mapped[int] = mapped_column(ForeignKey("Provider.id"), nullable=True, init=False)
+    language: Mapped[str] = mapped_column(sql.String(50))
     # default arguments
-    id: Mapped[int] = mapped_column(sql.INTEGER(), primary_key=True, autoincrement=True, default=None)
-    provider_id: Mapped[int] = mapped_column(ForeignKey("Provider.id"), default=None, nullable=True)
+    provider: Mapped[Optional["provider_model.ProviderDataclass"]] = relationship(
+        lambda: provider_model.ProviderDataclass, back_populates="_supported_languages", lazy="selectin", default=None
+    )

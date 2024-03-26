@@ -13,14 +13,20 @@
 # limitations under the License.
 
 """File to store all costume exceptions used in qunicorn"""
+from http import HTTPStatus
+
+from werkzeug.exceptions import HTTPException
 
 
-class QunicornError(Exception):
+class QunicornError(HTTPException):
     """General Exception raised for errors in qunicorn"""
 
-    # Status code that will be visible in the swagger api
-    status_code: int
-
-    def __init__(self, msg, status_code=404):
+    def __init__(self, msg, status_code: int = HTTPStatus.INTERNAL_SERVER_ERROR):
+        if not msg:
+            try:  # try to get the status code description instead
+                msg = HTTPStatus(status_code).description
+            except ValueError:
+                pass  # not a valid HTTP status code
         super().__init__(msg)
-        self.status_code = status_code
+        self.code = status_code  # set status code
+        self.data = {"message": msg}  # for compatibility with flask smorest

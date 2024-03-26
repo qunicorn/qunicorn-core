@@ -19,19 +19,21 @@
 import datetime
 
 import click
-from flask import Flask, Blueprint, current_app
+from flask import Blueprint, Flask, current_app
 
 import qunicorn_core.core.pilotmanager.pilot_manager
 
-# make sure all models are imported for CLI to work properly
-from . import models  # noqa
 from .db import DB
 from .models.deployment import DeploymentDataclass
 from .models.job import JobDataclass
+from .models.provider import ProviderDataclass
 from .models.quantum_program import QuantumProgramDataclass
 from ..static.enums.assembler_languages import AssemblerLanguage
 from ..util import utils
 from ..util.logging import get_logger
+
+# make sure all models are imported for CLI to work properly
+from . import models  # noqa
 
 DB_CLI_BLP = Blueprint("db_cli", __name__, cli_group=None)
 DB_CLI = DB_CLI_BLP.cli  # expose as attribute for autodoc generation
@@ -58,6 +60,25 @@ def create_and_load_db():
 def create_db_function(app: Flask):
     DB.create_all()
     get_logger(app, DB_COMMAND_LOGGER).info("Database created.")
+
+
+@DB_CLI.command("load-providers")
+def load_providers():
+    """Load provider data into the database."""
+    load_providers_db_function(current_app, if_not_exists=False)
+    click.echo("Provider Data Loaded.")
+
+
+def load_providers_db_function(app: Flask, if_not_exists=True):
+    db_is_empty = not ProviderDataclass.get_all()
+    if if_not_exists and not db_is_empty:
+        return
+
+    # Save all default data from the pilots
+    qunicorn_core.core.pilotmanager.pilot_manager.save_default_jobs_and_devices_from_provider(
+        include_default_jobs=False
+    )
+    get_logger(app, DB_COMMAND_LOGGER).info("Test Data loaded.")
 
 
 @DB_CLI.command("load-test-data")

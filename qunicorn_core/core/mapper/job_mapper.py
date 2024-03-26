@@ -11,100 +11,32 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from datetime import datetime
 
-from qunicorn_core.api.api_models.job_dtos import (
-    JobCoreDto,
-    JobRequestDto,
-    JobResponseDto,
-    SimpleJobDto,
-)
-from qunicorn_core.core.mapper import deployment_mapper, device_mapper, result_mapper
-from qunicorn_core.core.mapper.general_mapper import map_from_to
-from qunicorn_core.db.database_services import device_db_service, deployment_db_service
-from qunicorn_core.db.models.deployment import DeploymentDataclass
-from qunicorn_core.db.models.device import DeviceDataclass
+from qunicorn_core.api.api_models.job_dtos import JobResponseDto, SimpleJobDto
+from qunicorn_core.core.mapper import device_mapper, result_mapper
 from qunicorn_core.db.models.job import JobDataclass
 from qunicorn_core.static.enums.job_state import JobState
-from qunicorn_core.static.qunicorn_exception import QunicornError
-
-
-def request_to_core(job: JobRequestDto) -> JobCoreDto:
-    # Get the objects from the database by its ids
-    device: DeviceDataclass = device_db_service.get_device_by_name(job.device_name)
-    deployment: DeploymentDataclass = deployment_db_service.get_deployment_by_id(job.deployment_id)
-
-    if device.provider.name != job.provider_name:
-        raise QunicornError("Provider name and the provider of the device are not matching", 409)
-
-    return map_from_to(
-        from_object=job,
-        to_type=JobCoreDto,
-        fields_mapping={
-            "executed_by": None,
-            "executed_on": device_mapper.dataclass_to_dto(device),
-            "deployment": deployment_mapper.dataclass_to_dto(deployment),
-            "progress": 0,
-            "state": JobState.READY,
-            "started_at": datetime.now(),
-            "results": [],
-        },
-    )
-
-
-def core_to_response(job: JobCoreDto) -> JobResponseDto:
-    return map_from_to(job, JobResponseDto)
+from qunicorn_core.static.enums.job_type import JobType
 
 
 def dataclass_to_response(job: JobDataclass) -> JobResponseDto:
-    return map_from_to(
-        from_object=job,
-        to_type=JobResponseDto,
-        fields_mapping={
-            "executed_by": job.executed_by,
-            "executed_on": device_mapper.dataclass_to_dto(job.executed_on),
-            "results": [result_mapper.dataclass_to_dto(result) for result in job.results],
-        },
-    )
-
-
-def core_to_dataclass(job: JobCoreDto) -> JobDataclass:
-    return map_from_to(
-        from_object=job,
-        to_type=JobDataclass,
-        fields_mapping={
-            "executed_by": job.executed_by,
-            "executed_on": device_mapper.dto_to_dataclass(job.executed_on),
-            "deployment": deployment_mapper.dto_to_dataclass(job.deployment),
-        },
-    )
-
-
-def dataclass_to_core(job: JobDataclass) -> JobCoreDto:
-    return map_from_to(
-        from_object=job,
-        to_type=JobCoreDto,
-        fields_mapping={
-            "executed_by": job.executed_by,
-            "executed_on": device_mapper.dataclass_to_dto(job.executed_on),
-            "deployment": deployment_mapper.dataclass_to_dto(job.deployment),
-            "results": [result_mapper.dataclass_to_dto(result) for result in job.results],
-        },
-    )
-
-
-def dataclass_to_request(job: JobDataclass) -> JobRequestDto:
-    return map_from_to(
-        from_object=job,
-        to_type=JobRequestDto,
-        fields_mapping={
-            "provider_name": job.executed_on.provider.name,
-            "token": "",
-            "deployment_id": job.deployment.id,
-            "device_name": job.executed_on.name,
-        },
+    return JobResponseDto(
+        id=job.id,
+        executed_by=job.executed_by,
+        executed_on=device_mapper.dataclass_to_dto(job.executed_on) if job.executed_on else None,
+        progress=job.progress,
+        state=JobState(job.state),
+        type=JobType(job.type),
+        started_at=job.started_at,
+        finished_at=job.finished_at,
+        name=job.name,
+        results=[result_mapper.dataclass_to_dto(result) for result in job.results],
     )
 
 
 def dataclass_to_simple(job: JobDataclass) -> SimpleJobDto:
-    return map_from_to(job, SimpleJobDto)
+    return SimpleJobDto(
+        id=job.id,
+        name=job.name,
+        state=JobState(job.state),
+    )

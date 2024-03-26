@@ -20,7 +20,7 @@ from flask import Flask
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
 
-from . import db, database_services, models, cli
+from . import cli, models
 from .db import DB, MIGRATE
 
 

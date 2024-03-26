@@ -16,7 +16,6 @@
 
 from qunicorn_core.api.api_models import JobRequestDto, SimpleJobDto
 from qunicorn_core.core import job_service
-from qunicorn_core.db.database_services import job_db_service
 from qunicorn_core.db.models.job import JobDataclass
 from qunicorn_core.db.models.result import ResultDataclass
 from qunicorn_core.static.enums.assembler_languages import AssemblerLanguage
@@ -54,7 +53,7 @@ def create_and_run_sampler_with_device(device_name: str):
     # THEN: Check if the correct job with its result is saved in the db
     with app.app_context():
         test_utils.check_simple_job_dto(return_dto)
-        job: JobDataclass = job_db_service.get_job_by_id(return_dto.id)
+        job: JobDataclass = JobDataclass.get_by_id_or_404(return_dto.id)
         test_utils.check_if_job_finished(job)
         check_if_job_sample_result_correct(job)
 

@@ -13,13 +13,22 @@
 # limitations under the License.
 from typing import List
 
+from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.sql import select
 from sqlalchemy.sql import sqltypes as sql
 
+from . import device
 from .db_model import DbModel
 from .provider_assembler_language import ProviderAssemblerLanguageDataclass
-from ..db import REGISTRY
-from ...static.enums.provider_name import ProviderName
+from ..db import DB, REGISTRY
+from ...static.qunicorn_exception import QunicornError
+
+
+def _create_language_from_string(language: str):
+    lang = ProviderAssemblerLanguageDataclass(language=language)
+    lang.save()
+    return lang
 
 
 @REGISTRY.mapped_as_dataclass
@@ -27,17 +36,53 @@ class ProviderDataclass(DbModel):
     """Dataclass for storing Providers
 
     Attributes:
-        name (ProviderName): Name of the cloud service.
+        id (int): The id of a provider. (set by the database)
+        name (str): Name of the cloud service.
         with_token (bool): If authentication is needed and can be done by passing a token this attribute is true.
-        supported_languages (list): The programming language that is supported by this provider.
-        id (int): The id of a provider.
+        supported_languages (List[str]): The programming languages that are supported by this provider.
+            (WARNING: Cannot be set in constructor!)
     """
 
     # non-default arguments
-    name: Mapped[str] = mapped_column(sql.Enum(ProviderName))
+    id: Mapped[int] = mapped_column(sql.INTEGER(), primary_key=True, autoincrement=True, init=False)
+    name: Mapped[str] = mapped_column(sql.String(50))
     with_token: Mapped[bool] = mapped_column(sql.BOOLEAN)
-    supported_languages: Mapped[List[ProviderAssemblerLanguageDataclass.__name__]] = relationship(
-        ProviderAssemblerLanguageDataclass.__name__
-    )
     # default arguments
-    id: Mapped[int] = mapped_column(sql.INTEGER(), primary_key=True, autoincrement=True, default=None)
+    supported_languages: AssociationProxy[List[str]] = association_proxy(
+        # association proxy is not part of constructor as this does not work correctly...
+        "_supported_languages",
+        "language",
+        creator=_create_language_from_string,
+        default_factory=list,
+        init=False,
+    )
+    _supported_languages: Mapped[List[ProviderAssemblerLanguageDataclass]] = relationship(
+        ProviderAssemblerLanguageDataclass,
+        lazy="selectin",
+        back_populates="provider",
+        order_by=ProviderAssemblerLanguageDataclass.id,
+        cascade="all, delete-orphan",
+        default_factory=list,
+        init=False,
+    )
+    devices: Mapped[List["device.DeviceDataclass"]] = relationship(
+        lambda: device.DeviceDataclass,
+        lazy="select",
+        back_populates="provider",
+        cascade="all, delete-orphan",
+        default_factory=list,
+        init=False,
+    )
+
+    @classmethod
+    def get_by_name(cls, name: str):
+        """Returns all providers matching the given name"""
+        q = select(cls).where(cls.name == name)
+        providers = DB.session.execute(q).scalars().all()
+
+        if len(providers) < 1:
+            return None
+        if len(providers) > 1:
+            raise QunicornError(f"Found multiple providers with the same name '{name}'!")
+
+        return providers[0]

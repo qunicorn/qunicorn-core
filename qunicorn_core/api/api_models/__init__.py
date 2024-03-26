@@ -21,6 +21,6 @@ from .deployment_dtos import *
 from .device_dtos import *
 from .job_dtos import *
 from .provider_dtos import *
-from .root import *
 from .quantum_program_dtos import *
 from .result_dtos import *
+from .root import *

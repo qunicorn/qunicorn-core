@@ -16,4 +16,4 @@
 """Module containing the TaskManager API."""
 
 from . import deployment_view
-from .root import DEPLOYMENT_API
+from .blueprint import DEPLOYMENT_API

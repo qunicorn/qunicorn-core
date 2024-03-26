@@ -18,27 +18,25 @@ from dataclasses import dataclass
 
 import marshmallow as ma
 
-from .provider_assembler_language_dtos import ProviderAssemblerLanguageDto, ProviderAssemblerLanguageDtoSchema
 from ..flask_api_utils import MaBaseSchema
+from ...static.enums.assembler_languages import AssemblerLanguage
 
 __all__ = ["ProviderDtoSchema", "ProviderIDSchema", "ProviderDto"]
-
-from ...static.enums.provider_name import ProviderName
 
 
 @dataclass
 class ProviderDto:
     id: int
     with_token: bool
-    supported_languages: list[ProviderAssemblerLanguageDto]
-    name: ProviderName
+    supported_languages: list[AssemblerLanguage]
+    name: str
 
 
 class ProviderDtoSchema(MaBaseSchema):
     id = ma.fields.Integer(required=True, allow_none=False)
     with_token = ma.fields.Boolean(required=False, allow_none=True)
-    supported_languages = ma.fields.Nested(ProviderAssemblerLanguageDtoSchema(), many=True)
-    name = ma.fields.Enum(required=True, allow_none=False, enum=ProviderName)
+    supported_languages = ma.fields.List(ma.fields.Enum(required=True, allow_none=False, enum=AssemblerLanguage))
+    name = ma.fields.Str(required=True, allow_none=False)
 
 
 class ProviderIDSchema(MaBaseSchema):

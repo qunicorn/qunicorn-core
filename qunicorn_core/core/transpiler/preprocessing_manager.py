@@ -12,28 +12,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Callable
+from typing import Any, Callable, Optional, Union
 
-from braket.circuits import Circuit  # noqa
 from pyquil import Program
-from qiskit import QuantumCircuit  # noqa
 from qrisp import QuantumCircuit as QrispQC
 
 from qunicorn_core.static.enums.assembler_languages import AssemblerLanguage
 
-PreProcessor = Callable[[str], any]
+from braket.circuits import Circuit  # noqa
+from qiskit import QuantumCircuit  # noqa
+
+
+PreProcessor = Callable[[str], Union[str, Any]]
 
 """This Class handles all preprocessing that is needed to transform a circuit string into a circuit object"""
 
 
 class PreProcessingManager:
     def __init__(self):
-        self._preprocessing_methods: dict[AssemblerLanguage, PreProcessor] = {}
+        self._preprocessing_methods: dict[str, PreProcessor] = {}
         self._language_nodes = dict()
 
-    def register(self, language: AssemblerLanguage):
+    def register(self, language: Union[AssemblerLanguage, str]):
         """decorator that is used to add new preprocessing options, so the methods can be found dynamically from
         get_preprocessor()"""
+        if isinstance(language, AssemblerLanguage):
+            language = language.value
 
         def decorator(transpile_method: PreProcessor) -> PreProcessor:
             self._preprocessing_methods[language] = transpile_method
@@ -41,18 +45,13 @@ class PreProcessingManager:
 
         return decorator
 
-    def get_preprocessor(self, language: AssemblerLanguage) -> PreProcessor:
+    def get_preprocessor(self, language: Optional[str]) -> PreProcessor:
         """Either returns the registered preprocessing method or a method that returns the input"""
 
-        preprocessor = self._preprocessing_methods.get(language)
+        if language is None:
+            return lambda circuit: circuit
 
-        def return_input(circuit: any) -> any:
-            return circuit
-
-        if preprocessor is None:
-            preprocessor = return_input
-
-        return preprocessor
+        return self._preprocessing_methods.get(language, lambda circuit: circuit)
 
 
 preprocessing_manager = PreProcessingManager()

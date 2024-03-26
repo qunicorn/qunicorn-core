@@ -12,30 +12,37 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from qunicorn_core.api.api_models.device_dtos import DeviceRequestDto, SimpleDeviceDto, DeviceDto
+from typing import Optional
+
+from qunicorn_core.api.api_models.device_dtos import (
+    DeviceDto,
+    DeviceRequestDto,
+    SimpleDeviceDto,
+)
 from qunicorn_core.core.mapper import device_mapper
 from qunicorn_core.core.pilotmanager import pilot_manager
-from qunicorn_core.db.database_services import device_db_service
+from qunicorn_core.db.models.device import DeviceDataclass
 from qunicorn_core.util import logging
 
 
 def update_devices(device_request: DeviceRequestDto) -> list[SimpleDeviceDto]:
     """Update all backends for the provider from device_request"""
     logging.info(f"Update all available devices for {device_request.provider_name} in database.")
-    return pilot_manager.update_and_get_devices_from_provider(device_request)
+    pilot_manager.update_devices_from_provider(device_request)
+    return [device_mapper.dataclass_to_simple(device) for device in DeviceDataclass.get_all()]
 
 
 def get_all_devices() -> list[SimpleDeviceDto]:
     """Gets all Devices from the DB and maps them"""
-    return [device_mapper.dataclass_to_simple(device) for device in device_db_service.get_all_devices()]
+    return [device_mapper.dataclass_to_simple(device) for device in DeviceDataclass.get_all()]
 
 
 def get_device_by_id(device_id: int) -> DeviceDto:
     """Gets a Device from the DB by its ID and maps it"""
-    return device_mapper.dataclass_to_dto(device_db_service.get_device_by_id(device_id))
+    return device_mapper.dataclass_to_dto(DeviceDataclass.get_by_id_or_404(device_id))
 
 
-def check_if_device_available(device_id: int, token: str) -> dict:
+def check_if_device_available(device_id: int, token: Optional[str]) -> dict:
     """Checks if the backend is available at the provider currently"""
     device: DeviceDto = get_device_by_id(device_id)
     if pilot_manager.check_if_device_available_from_provider(device, token):
