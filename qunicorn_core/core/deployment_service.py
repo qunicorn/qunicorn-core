@@ -80,7 +80,7 @@ def delete_deployment(deployment_id: int, user_id: Optional[str] = None) -> Opti
     dto_deployment = deployment_mapper.dataclass_to_dto(db_deployment)
     if len(db_deployment.jobs) > 0:
         raise QunicornError("Deployment is in use by a job", HTTPStatus.BAD_REQUEST)
-    db_deployment.delete()
+    db_deployment.delete(commit=True)
     return dto_deployment
 
 

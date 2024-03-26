@@ -365,7 +365,7 @@ class IBMPilot(Pilot):
                 )
             else:
                 found_device.num_qubits = -1 if ibm_device.name.__contains__("stabilizer") else ibm_device.num_qubits
-                found_device.is_simulator = (ibm_device.name.__contains__("simulator"),)
+                found_device.is_simulator = ibm_device.name.__contains__("simulator")
                 found_device.is_local = False
             found_device.save()
 

@@ -1,7 +1,7 @@
 version: "3"
 services:
   server:
-    image: "ghcr.io/sequenc-consortium/qunicorn-core:main"
+    image: iaasgeorgdl/qunicorn:refactor
     networks:
       - qunicorn
     environment:
@@ -21,7 +21,7 @@ services:
       kompose.service.type: "loadbalancer"
 
   worker:
-    image: "ghcr.io/sequenc-consortium/qunicorn-core:main"
+    image: iaasgeorgdl/qunicorn:refactor
     networks:
       - qunicorn
     environment:
@@ -64,7 +64,6 @@ services:
       POSTGRES_DB: keycloak
     volumes:
       - keycloak_pgdata:/var/lib/postgresql/data \
-
 
   broker:
     image: redis:7.0.12
@@ -111,4 +110,3 @@ networks:
 volumes:
   pgdata:
   keycloak_pgdata:
-
