@@ -268,9 +268,9 @@ Attributes of the Result Dataclass
         - int
         - The job_id that was executed.
 
-    *   - **circuit**
+    *   - **program_id**
         - int
-        - The circuit which was executed by the job.
+        - the ID of the QuantumProgram that was executed
 
     *   - **meta_data**
         - int
