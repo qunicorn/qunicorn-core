@@ -45,9 +45,6 @@ db <Package>:
 
 The db package contains the database models and the database service. It is used to define the database, and to handle communication with it.
 
-* database_services <Package>:
-   * contains services which provide access the database (add, get, update, remove).
-   * Services are called from the core package.
 * models <Package>:
     * contains the definitions of the various database models.
 * cli <.py File>:

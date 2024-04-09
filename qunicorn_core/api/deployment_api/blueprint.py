@@ -13,20 +13,13 @@
 # limitations under the License.
 
 
-"""Module containing the root endpoint of the JobMANAGER API."""
-
-from dataclasses import dataclass
+"""Module containing the root endpoint of the DEPLOYMENT API."""
 
 from ..flask_api_utils import SecurityBlueprint as SmorestBlueprint
 
-JOBMANAGER_API = SmorestBlueprint(
-    "job-api",
-    "JOB API",
-    description="Jobmanager API for the control plane.",
-    url_prefix="/jobs/",
+DEPLOYMENT_API = SmorestBlueprint(
+    "deployment-api",
+    "DEPLOYMENT API",
+    description="Deployment API for the control plane.",
+    url_prefix="/deployments/",
 )
-
-
-@dataclass()
-class RootData:
-    root: str

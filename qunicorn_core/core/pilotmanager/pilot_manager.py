@@ -11,15 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from qunicorn_core.api.api_models import DeviceRequestDto, SimpleDeviceDto
-from qunicorn_core.core.mapper import device_mapper
+
+from http import HTTPStatus
+from typing import Optional, Union
+
+from qunicorn_core.api.api_models import DeviceDto, DeviceRequestDto
 from qunicorn_core.core.pilotmanager.aws_pilot import AWSPilot
 from qunicorn_core.core.pilotmanager.base_pilot import Pilot
 from qunicorn_core.core.pilotmanager.ibm_pilot import IBMPilot
 from qunicorn_core.core.pilotmanager.rigetti_pilot import RigettiPilot
-from qunicorn_core.db.database_services import device_db_service, db_service
+from qunicorn_core.db.db import DB
+from qunicorn_core.db.models.device import DeviceDataclass
 from qunicorn_core.db.models.job import JobDataclass
-from qunicorn_core.static.enums.provider_name import ProviderName
 from qunicorn_core.static.qunicorn_exception import QunicornError
 
 PILOTS: list[Pilot] = [IBMPilot(), AWSPilot(), RigettiPilot()]
@@ -27,37 +30,38 @@ PILOTS: list[Pilot] = [IBMPilot(), AWSPilot(), RigettiPilot()]
 """"This Class is responsible for managing the pilots and their data, all pilots are saved in the PILOTS list"""
 
 
-def save_default_jobs_and_devices_from_provider():
+def save_default_jobs_and_devices_from_provider(include_default_jobs=True):
     """Get all default data from the pilots and save them to the database"""
     for pilot in PILOTS:
-        device_list_without_default, default_device = pilot.get_standard_devices()
-        saved_device = device_db_service.save_device_by_name(default_device)
-        job: JobDataclass = pilot.get_standard_job_with_deployment(saved_device)
-        db_service.get_session().add(job)
-        db_service.get_session().add_all(device_list_without_default)
-        db_service.get_session().commit()
+        _, default_device = pilot.get_standard_devices()
+        if include_default_jobs:
+            job: JobDataclass = pilot.get_standard_job_with_deployment(default_device)
+            job.save()
+    DB.session.commit()
 
 
-def update_and_get_devices_from_provider(device_request: DeviceRequestDto) -> list[SimpleDeviceDto]:
+def update_devices_from_provider(device_request: DeviceRequestDto):
     """Update the devices from the provider and return all devices from the database"""
     pilot: Pilot = get_matching_pilot(device_request.provider_name)
     pilot.save_devices_from_provider(device_request)
-    return [device_mapper.dataclass_to_simple(device) for device in device_db_service.get_all_devices()]
 
 
-def check_if_device_available_from_provider(device, token) -> bool:
+def check_if_device_available_from_provider(device: Union[DeviceDataclass, DeviceDto], token: Optional[str]) -> bool:
     """Checks if a device is currently available at the cloud provider"""
-    pilot: Pilot = get_matching_pilot(device.provider.name)
+    provider_name = device.provider.name if device.provider else None
+    if provider_name is None:
+        raise QunicornError(f"Device '{device.name}' ({device.id}) has no provider!", HTTPStatus.INTERNAL_SERVER_ERROR)
+    pilot: Pilot = get_matching_pilot(provider_name)
     return pilot.is_device_available(device, token)
 
 
-def get_device_data_from_provider(device, token) -> dict:
+def get_device_data_from_provider(device: Union[DeviceDataclass, DeviceDto], token: Optional[str]) -> dict:
     """Gets the data of a single device by requesting it from the cloud provider"""
     pilot: Pilot = get_matching_pilot(device.provider.name)
     return pilot.get_device_data_from_provider(device, token)
 
 
-def get_matching_pilot(provider_name: ProviderName) -> Pilot:
+def get_matching_pilot(provider_name: str) -> Pilot:
     """Get the pilot that matches the provider name, if no pilot matches raise an error"""
     for pilot in PILOTS:
         if pilot.has_same_provider(provider_name):

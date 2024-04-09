@@ -4,7 +4,7 @@ Current Functionality
 To give a brief overview of the current functionality of the application.
 The user currently has one main way to access the application, this is through the defined API Endpoints.
 
-A good way to get an overview, as well as example values, is to access those through the Swagger UI.
+A good way to get an overview, as well as example values, is to access those through the `Swagger UI <http://localhost:5005/swagger-ui>`_.
 
 The Endpoints defined can be found on the api documentation under :doc:`API Documentation <../architecture_documentation/api_documentation/apidocumentation>`.
 
@@ -25,7 +25,7 @@ Currently the following providers are available:
 
 * AWS
     * Base languages:
-        * QASM
+        * QASM3
         * BRAKET
     * Available Functions
         * RUNNER
@@ -46,6 +46,7 @@ Qunicorn supports a vast array of different assembler languages in the context o
 * QASM2
 * QASM3
 * Braket
+* Qiskit
 * Python
 * Qrisp
 * Quil

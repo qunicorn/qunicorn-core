@@ -20,7 +20,6 @@ from typing import Optional
 
 import marshmallow as ma
 
-from .deployment_dtos import DeploymentDto
 from .device_dtos import DeviceDto, DeviceDtoSchema
 from .result_dtos import ResultDto, ResultDtoSchema
 from ..flask_api_utils import MaBaseSchema
@@ -30,12 +29,12 @@ __all__ = [
     "SimpleJobDto",
     "JobResponseDtoSchema",
     "JobRequestDtoSchema",
-    "JobCoreDto",
     "JobResponseDto",
     "JobRequestDto",
     "TokenSchema",
     "JobExecutePythonFileDto",
     "JobExecutionDtoSchema",
+    "QueuedJobsDtoSchema",
 ]
 
 from ...static.enums.job_state import JobState
@@ -57,30 +56,6 @@ class JobRequestDto:
 
 
 @dataclass
-class JobCoreDto:
-    """JobDto that is used for all internal job handling"""
-
-    executed_by: Optional[str]
-    executed_on: DeviceDto
-    deployment: DeploymentDto
-    progress: int
-    state: JobState
-    shots: int
-    type: JobType
-    started_at: datetime
-    name: str
-    results: list[ResultDto]
-    id: int | None = None
-    finished_at: datetime | None = None
-    ibm_file_options: dict | None = None
-    ibm_file_inputs: dict | None = None
-    token: str | None = None
-    transpiled_circuits: Optional[list] = None
-    provider_specific_id: str | None = None
-    celery_id: str | None = None
-
-
-@dataclass
 class JobResponseDto:
     """JobDto that is sent to the user as a response"""
 
@@ -91,15 +66,15 @@ class JobResponseDto:
     state: str
     type: JobType
     started_at: datetime
-    finished_at: datetime
-    name: str
+    finished_at: Optional[datetime]
+    name: Optional[str]
     results: list[ResultDto]
 
 
 @dataclass
 class SimpleJobDto:
-    id: int
-    name: str
+    id: Optional[int]
+    name: Optional[str]
     state: JobState = JobState.RUNNING
 
 
@@ -126,14 +101,14 @@ class JobRequestDtoSchema(MaBaseSchema):
 
 class JobResponseDtoSchema(MaBaseSchema):
     id = ma.fields.Int(required=True, dump_only=True)
-    name = ma.fields.String(required=True, dump_only=True)
+    name = ma.fields.String(required=True, dump_default="", dump_only=True)
     executed_by = ma.fields.String(required=False, dump_only=True)
     executed_on = ma.fields.Nested(DeviceDtoSchema())
     progress = ma.fields.Int(required=True, dump_only=True)
     state = ma.fields.String(required=True, dump_only=True)
     type = ma.fields.String(required=True, dump_only=True)
-    started_at = ma.fields.String(required=True, dump_only=True)
-    finished_at = ma.fields.String(required=True, dump_only=True)
+    started_at = ma.fields.AwareDateTime(required=True, dump_only=True)
+    finished_at = ma.fields.AwareDateTime(required=True, allow_none=True, dump_only=True)
     results = ma.fields.Nested(ResultDtoSchema(), many=True, required=True, dump_only=True)
 
 
@@ -151,3 +126,8 @@ class JobExecutionDtoSchema(MaBaseSchema):
     token = ma.fields.String(required=True, metadata={"example": ""})
     python_file_options = ma.fields.Dict(required=True, metadata={"example": {"backend": "ibmq_qasm_simulator"}})
     python_file_inputs = ma.fields.Dict(required=True)
+
+
+class QueuedJobsDtoSchema(MaBaseSchema):
+    running_job = ma.fields.Nested(SimpleJobDtoSchema)
+    queued_jobs = ma.fields.List(ma.fields.Nested(SimpleJobDtoSchema))

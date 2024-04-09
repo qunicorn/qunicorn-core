@@ -12,11 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import ChainMap
-
-CELERY_DEBUG_CONFIG = ChainMap(
-    {
-        "broker_url": "redis://localhost:6379",
-        "result_backend": "redis://localhost:6379",
-    },
-)
+CELERY_PRODUCTION_CONFIG = {
+    "broker_url": "redis://localhost:6379",
+    "result_backend": "redis://localhost:6379",
+    "task_default_queue": "qunicorn_core",
+}

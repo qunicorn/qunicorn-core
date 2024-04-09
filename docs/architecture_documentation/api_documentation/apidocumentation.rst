@@ -33,7 +33,7 @@ Available endpoints are:
 
 * **DEVICES**
     * **GET /devices/** *(Get all currently saved devices)*
-    * **PUT /devices/** *(Updates the device list from the provider)*
+    * **POST /devices/** *(Updates the device list from the provider)*
     * **GET /devices/{device_id}/** *(Get details about one device)*
     * **POST /devices/{device_id}/status** *(To check if a device is available)*
     * **POST /devices/{device_id}/calibration** *(To get device properties for configuration)*

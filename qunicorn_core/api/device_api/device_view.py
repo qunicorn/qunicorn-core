@@ -18,12 +18,13 @@ from http import HTTPStatus
 
 from flask import jsonify
 from flask.views import MethodView
+from flask_smorest import abort
 
-from .root import DEVICES_API
+from .blueprint import DEVICES_API
 from ..api_models.device_dtos import (
     DeviceDtoSchema,
-    DeviceRequestDtoSchema,
     DeviceRequestDto,
+    DeviceRequestDtoSchema,
     SimpleDeviceDtoSchema,
 )
 from ...core import device_service
@@ -36,7 +37,7 @@ class DeviceView(MethodView):
 
     @DEVICES_API.arguments(DeviceRequestDtoSchema(), location="json")
     @DEVICES_API.response(HTTPStatus.OK, SimpleDeviceDtoSchema(many=True))
-    def put(self, device_request_data):
+    def post(self, device_request_data):
         """Update the devices by retrieving data from the provider and returning the updated devices."""
         logging.info("Request: update the devices")
         device_request: DeviceRequestDto = DeviceRequestDto(**device_request_data)
@@ -49,7 +50,7 @@ class DeviceView(MethodView):
         return device_service.get_all_devices()
 
 
-@DEVICES_API.route("/<string:device_id>/")
+@DEVICES_API.route("/<int:device_id>/")
 class DeviceIdView(MethodView):
     """Devices endpoint to get properties of a specific device."""
 
@@ -60,7 +61,7 @@ class DeviceIdView(MethodView):
         return device_service.get_device_by_id(device_id)
 
 
-@DEVICES_API.route("/<string:device_id>/status")
+@DEVICES_API.route("/<int:device_id>/status")
 class DevicesStatusStatus(MethodView):
     """Devices endpoint to get properties of a specific device."""
 
@@ -70,10 +71,12 @@ class DevicesStatusStatus(MethodView):
         """To check if a specific device is available."""
         logging.info(f"Request: get availability information of the device with id:{device_id}")
         device_request: DeviceRequestDto = DeviceRequestDto(**device_request_data)
+        if not device_request.token:
+            abort(HTTPStatus.BAD_REQUEST, message="Request is missing the device token.")
         return device_service.check_if_device_available(device_id, device_request.token)
 
 
-@DEVICES_API.route("/<string:device_id>/calibration")
+@DEVICES_API.route("/<int:device_id>/calibration")
 class DevicesCalibrationView(MethodView):
     """Devices endpoint to get properties of a specific device."""
 
@@ -83,6 +86,8 @@ class DevicesCalibrationView(MethodView):
         """Get configuration data for a specific device in a uniform way."""
         logging.info(f"Request: get configuration data for device with id:{device_id}")
         device_request: DeviceRequestDto = DeviceRequestDto(**device_request_data)
+        if not device_request.token:
+            abort(HTTPStatus.BAD_REQUEST, message="Request is missing the device token.")
         device = device_service.get_device_data_from_provider(device_id, device_request.token)
 
         return jsonify(device)

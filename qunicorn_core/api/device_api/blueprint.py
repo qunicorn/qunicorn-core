@@ -15,8 +15,6 @@
 
 """Module containing the root endpoint of the DEVICES API."""
 
-from dataclasses import dataclass
-
 from ..flask_api_utils import SecurityBlueprint as SmorestBlueprint
 
 DEVICES_API = SmorestBlueprint(
@@ -25,8 +23,3 @@ DEVICES_API = SmorestBlueprint(
     description="Devices API to list available resources.",
     url_prefix="/devices/",
 )
-
-
-@dataclass()
-class RootData:
-    root: str
