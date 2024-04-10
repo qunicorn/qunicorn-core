@@ -1,7 +1,7 @@
 version: "3"
 services:
   server:
-    image: iaasgeorgdl/qunicorn:refactor
+    image: ghcr.io/qunicorn/qunicorn-core:main
     networks:
       - qunicorn
     environment:
@@ -21,7 +21,7 @@ services:
       kompose.service.type: "loadbalancer"
 
   worker:
-    image: iaasgeorgdl/qunicorn:refactor
+    image: ghcr.io/qunicorn/qunicorn-core:main
     networks:
       - qunicorn
     environment:
