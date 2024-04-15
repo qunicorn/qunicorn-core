@@ -71,9 +71,11 @@ class QMwarePilot(Pilot):
         job_ids = []
         programs = []
 
+        job_name = "Qunicorn request"
+
         for program, qasm_circuit in circuits:
             data = {
-                "name": f"Qunicorn request",
+                "name": f"{job_name}",
                 "maxExecutionTimeInMs": 60_000,
                 "ttlAfterFinishedInMs": 1_200_000,
                 "code": {"type": "qasm2", "code": qasm_circuit},
@@ -100,7 +102,7 @@ class QMwarePilot(Pilot):
 
     @staticmethod
     def _get_job_result(job_id: str, program: QuantumProgramDataclass) -> ResultDataclass:
-        for i in range(100):
+        for _i in range(100):
             response = requests.get(urljoin(QMWARE_URL, f"/v0/jobs/{job_id}"), headers=AUTHORIZATION_HEADERS)
             response.raise_for_status()
             result = response.json()
@@ -128,13 +130,10 @@ class QMwarePilot(Pilot):
             program=program,
             result_dict={
                 "counts": Pilot.qubits_decimal_to_hex(counts),
-                "probabilities": Pilot.qubits_decimal_to_hex(probabilities)},
+                "probabilities": Pilot.qubits_decimal_to_hex(probabilities),
+            },
             result_type=ResultType.COUNTS,
-            meta_data={
-                "data": {
-                    "counts": Pilot.qubits_decimal_to_hex(counts)
-                }
-            },  # TODO: save more metadata
+            meta_data={"data": {"counts": Pilot.qubits_decimal_to_hex(counts)}},  # TODO: save more metadata
         )
 
     def execute_provider_specific(
