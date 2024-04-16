@@ -13,3 +13,8 @@
 # limitations under the License.
 
 from . import preprocessing_manager, transpiler_manager
+
+from .circuit_transpiler import transpile_circuit  # noqa
+
+# load transpile plugins
+from . import qiskit_transpiler  # noqa
