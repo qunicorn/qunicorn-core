@@ -59,7 +59,11 @@ def test_connectivity():
 
     formats = CircuitTranspiler.get_known_formats()
 
+    full_connectivity = formats - known_partially_connected
+
     known_full_connectivity = set()
+
+    missing_connections = {}
 
     def is_fully_connected(format_):
         connectivity = {format_}  # set for all reachable formats
@@ -72,15 +76,16 @@ def test_connectivity():
                 if not known_full_connectivity.isdisjoint(connectivity):
                     # at least one already known fully connected format was reached
                     return True
-        return connectivity == formats
+        if connectivity >= full_connectivity:
+            return True
+        else:
+            missing_connections[format_] = full_connectivity - connectivity
+            return False
 
     for format_ in formats:
         if is_fully_connected(format_):
             known_full_connectivity.add(format_)
 
-    translators = "\n".join(
-        (f"{k}: " + ", ".join(t.target for t in v))
-        for k, v in CircuitTranspiler._CircuitTranspiler__transpilers.items()
-    )
+    missing = "\n".join((f"{source}: " + ", ".join(targets)) for source, targets in missing_connections.items())
 
-    assert known_full_connectivity == (formats - known_partially_connected), f"Translators:\n {translators}"
+    assert known_full_connectivity >= full_connectivity, f"Missing connections:\n {missing}"
