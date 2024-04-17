@@ -48,7 +48,7 @@ class QuantumProgramRequestDtoSchema(MaBaseSchema):
         allow_none=True,
         metadata={
             "example": utils.get_default_qasm2_string()
-            + " // (Note: if you have qrisp/qiskit as your assembler language"
+            + " // (Note: if you have qrisp/qiskit as your assembler language"  # noqa
             " add 'circuit =' to the beginning of your quantumCircuit string)"
         },
     )
