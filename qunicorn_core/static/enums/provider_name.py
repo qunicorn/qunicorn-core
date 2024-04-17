@@ -21,10 +21,11 @@ class ProviderName(StrEnum):
     Values:
         IBM: International Business Machines Corporation
         AWS: Amazon Web Services
-        Rigetti: Rigetti Computing
+        RIGETTI: Rigetti Computing
+        QMWARE: QMware
     """
 
     IBM = "IBM"
     AWS = "AWS"
-    RIGETTI = "Rigetti"
-    QMWARE = "QMware"
+    RIGETTI = "RIGETTI"
+    QMWARE = "QMWARE"
