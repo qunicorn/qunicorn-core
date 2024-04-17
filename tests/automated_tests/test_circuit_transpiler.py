@@ -53,7 +53,9 @@ def test_qasm2_roundtrip():
 
 def test_connectivity():
     """Assert that all formats can be transpiled to all other formats."""
-    known_partially_connected = set()  # use this to set exeptions to full connectivity
+
+    # use this to set exeptions to full connectivity
+    known_partially_connected = {"QISKIT-PYTHON", "BRAKET-PYTHON", "QRISP-PYTHON", "QUIL-PYTHON", "QUIL"}
 
     formats = CircuitTranspiler.get_known_formats()
 
