@@ -40,4 +40,5 @@ Qunicorn supports various pilots for communication with providers. At this momen
    aws_pilot
    ibm_pilot
    rigetti_pilot
+   qmware_pilot
 

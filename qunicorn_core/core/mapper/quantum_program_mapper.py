@@ -33,9 +33,9 @@ def dataclass_to_dto(quantum_program: QuantumProgramDataclass) -> QuantumProgram
     return QuantumProgramDto(
         id=quantum_program.id,
         quantum_circuit=quantum_program.quantum_circuit,
-        assembler_language=AssemblerLanguage(quantum_program.assembler_language)
-        if quantum_program.assembler_language
-        else None,
+        assembler_language=(
+            AssemblerLanguage(quantum_program.assembler_language) if quantum_program.assembler_language else None
+        ),
         python_file_path=quantum_program.python_file_path,
         python_file_metadata=quantum_program.python_file_metadata,
     )

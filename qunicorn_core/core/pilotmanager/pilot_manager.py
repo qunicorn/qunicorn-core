@@ -19,13 +19,14 @@ from qunicorn_core.api.api_models import DeviceDto, DeviceRequestDto
 from qunicorn_core.core.pilotmanager.aws_pilot import AWSPilot
 from qunicorn_core.core.pilotmanager.base_pilot import Pilot
 from qunicorn_core.core.pilotmanager.ibm_pilot import IBMPilot
+from qunicorn_core.core.pilotmanager.qmware_pilot import QMwarePilot
 from qunicorn_core.core.pilotmanager.rigetti_pilot import RigettiPilot
 from qunicorn_core.db.db import DB
 from qunicorn_core.db.models.device import DeviceDataclass
 from qunicorn_core.db.models.job import JobDataclass
 from qunicorn_core.static.qunicorn_exception import QunicornError
 
-PILOTS: list[Pilot] = [IBMPilot(), AWSPilot(), RigettiPilot()]
+PILOTS: list[Pilot] = [IBMPilot(), AWSPilot(), RigettiPilot(), QMwarePilot()]
 
 """"This Class is responsible for managing the pilots and their data, all pilots are saved in the PILOTS list"""
 

@@ -29,6 +29,8 @@ services:
       BROKER_URL: "redis://broker:6379"
       DB_URL: "postgresql://postgres:passwd@postgres/qunicorn"
       NUMBA_CACHE_DIR: "/app/cache"
+      # QMWARE_API_KEY: ""
+      # QMWARE_API_KEY_ID: ""
     depends_on:
       - postgres
       - broker
