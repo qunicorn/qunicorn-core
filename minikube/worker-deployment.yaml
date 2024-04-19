@@ -26,7 +26,7 @@ spec:
               value: postgresql://postgres:passwd@postgres/qunicorn
             - name: NUMBA_CACHE_DIR
               value: /app/cache
-          image: qunicorn:local
+          image: ghcr.io/qunicorn/qunicorn-core:main
           name: worker
           ports:
             - containerPort: 6379

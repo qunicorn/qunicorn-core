@@ -30,7 +30,7 @@ spec:
               value: "8080"
             - name: NUMBA_CACHE_DIR
               value: /app/cache
-          image: qunicorn:local
+          image: ghcr.io/qunicorn/qunicorn-core:main
           name: server
           ports:
             - containerPort: 8080
