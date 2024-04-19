@@ -50,7 +50,7 @@ DEPLOYMENT_JSON_PATHS = [
 
 AWS_LOCAL_SIMULATOR = "local_simulator"
 IBM_LOCAL_SIMULATOR = "aer_simulator"
-EXPECTED_ID: int = 4  # hardcoded ID can be removed if tests for the correct ID are no longer needed
+EXPECTED_ID: int = 5  # hardcoded ID can be removed if tests for the correct ID are no longer needed
 JOB_FINISHED_PROGRESS: int = 100
 STANDARD_JOB_NAME: str = "JobName"
 IS_ASYNCHRONOUS: bool = False
