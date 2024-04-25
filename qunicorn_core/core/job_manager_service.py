@@ -14,12 +14,13 @@
 
 from typing import Any, List, Optional, Sequence, Tuple
 
+from flask import current_app
+
 from qunicorn_core.celery import CELERY
 from qunicorn_core.core.mapper import result_mapper
 from qunicorn_core.core.pilotmanager import pilot_manager
 from qunicorn_core.core.pilotmanager.base_pilot import Pilot
-from qunicorn_core.core.transpiler.preprocessing_manager import preprocessing_manager
-from qunicorn_core.core.transpiler.transpiler_manager import transpile_manager
+from qunicorn_core.core.transpiler import transpile_circuit, TranspilationError
 from qunicorn_core.db.models.job import JobDataclass
 from qunicorn_core.db.models.quantum_program import QuantumProgramDataclass
 from qunicorn_core.db.models.result import ResultDataclass
@@ -76,6 +77,8 @@ def _transpile_circuits(
     if job.deployment is None:
         return []
 
+    config = current_app.config
+
     transpiled_circuits: List[Tuple[QuantumProgramDataclass, Any]] = []
 
     # Transform each circuit into a transpiled circuit for the necessary language
@@ -91,17 +94,27 @@ def _transpile_circuits(
 
         try:
             # Preprocess a string to a circuit object if necessary
-            preprocessor = preprocessing_manager.get_preprocessor(src_language)
-            circuit = preprocessor(program.quantum_circuit)
-
-            # We only need to transpile, when the source language is not compatible with any destination language
-            if src_language in dest_languages:
-                transpiled_circuits.append((program, circuit))
-                continue
-
-            # Transpile the circuit to the destination language
-            transpiler = transpile_manager.get_transpiler(src_language, dest_languages)
-            transpiled_circuits.append((program, transpiler(circuit)))
+            last_error = None
+            for target in dest_languages:
+                try:
+                    circuit = transpile_circuit(
+                        target,
+                        (src_language, program.quantum_circuit),
+                        exclude=config.get("EXCLUDE_TRANSPILERS", None),
+                        exclude_formats=config.get("EXCLUDE_FORMATS", None),
+                        exclude_unsafe=config.get("EXCLUDE_UNSAFE_TRANSPILERS", True),
+                    )
+                    transpiled_circuits.append((program, circuit))
+                    break  # break inner loop after first successfull transpilation
+                except KeyError:
+                    pass  # did not find a valid transpiler chain
+                except TranspilationError as err:
+                    last_error = err.__cause__ if err.__cause__ else err
+            else:
+                if last_error:
+                    raise last_error
+                else:
+                    raise Exception(f"No transpiler chain found from {src_language} to any of {dest_languages}")
         except Exception as exception:
             error_results.extend(result_mapper.exception_to_error_results(exception, program))
 
