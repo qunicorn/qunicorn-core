@@ -57,6 +57,20 @@ class CircuitTranspiler:
         CircuitTranspiler.__known_formats.add(target)
         CircuitTranspiler.__transpilers.setdefault(source, []).append(cls())
 
+    def _is_valid_operand(self, other):
+        return isinstance(other, CircuitTranspiler)
+
+    def __eq__(self, other):
+        if not self._is_valid_operand(other):
+            return NotImplemented
+        return (type(self) == type(other))
+
+    def __lt__(self, other):
+        if not self._is_valid_operand(other):
+            return NotImplemented
+        return ((self.cost, type(self).__name__.lower()) <
+                (other.cost, type(other).__name__.lower()))
+
     def transpile_circuit(self, circuit: Any) -> Any:
         """Transpile the given circuit to the target format."""
         raise NotImplementedError()
