@@ -167,13 +167,14 @@ class Pilot:
             probabilities[key] = value / total_counts
         return probabilities
 
-    def create_default_job_with_circuit_and_device(self, device: DeviceDataclass, circuit: str) -> JobDataclass:
+    def create_default_job_with_circuit_and_device(self, device: DeviceDataclass, circuit: str, assembler_language: Optional[str] = None) -> JobDataclass:
         """
         Method to create a default job for a pilot with one given circuit and device.
         This method always takes the first supported Language of the pilot and assigns it to the program.
         The Deployment and Job Name will be generated from the ProviderName and SupportedLanguage of the Pilot.
         """
-        assembler_language = self.supported_languages[0]
+        if assembler_language is None:
+            assembler_language = self.supported_languages[0]
         program = QuantumProgramDataclass(quantum_circuit=circuit, assembler_language=assembler_language)
         name: str = f"{assembler_language}_Deployment"
         deployment = DeploymentDataclass(deployed_by=None, programs=[program], deployed_at=datetime.now(), name=name)
