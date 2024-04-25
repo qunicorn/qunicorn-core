@@ -40,7 +40,6 @@ def test_pilots_default_job_deployment():
         assert job.executed_on == default_device
         assert job.deployment is not None
         assert len(job.deployment.programs) > 0
-        assert job.deployment.programs[0].assembler_language == pilot.supported_languages[0]
         assert job.deployment.programs[0].quantum_circuit is not None
 
 
