@@ -40,7 +40,7 @@ class QiskitPythonToQiskit(CircuitTranspiler, source="QISKIT-PYTHON", target="QI
         )
 
 
-class BraketPythonToQiskit(CircuitTranspiler, source="BRAKET-PYTHON", target="BRAKET", cost=1):
+class BraketPythonToBraket(CircuitTranspiler, source="BRAKET-PYTHON", target="BRAKET", cost=1):
     unsafe = True
 
     def transpile_circuit(self, circuit: Any) -> Circuit:
@@ -53,7 +53,7 @@ class BraketPythonToQiskit(CircuitTranspiler, source="BRAKET-PYTHON", target="BR
         )
 
 
-class QrispPythonToQiskit(CircuitTranspiler, source="QRISP-PYTHON", target="QRISP", cost=1):
+class QrispPythonToQrisp(CircuitTranspiler, source="QRISP-PYTHON", target="QRISP", cost=1):
     unsafe = True
 
     def transpile_circuit(self, circuit: Any) -> QrispQC:
@@ -70,7 +70,7 @@ class QrispPythonToQiskit(CircuitTranspiler, source="QRISP-PYTHON", target="QRIS
         )
 
 
-class QuilPythonToQiskit(CircuitTranspiler, source="QUIL-PYTHON", target="QUIL", cost=1):
+class QuilPythonToQuil(CircuitTranspiler, source="QUIL-PYTHON", target="QUIL", cost=1):
     unsafe = True
 
     def transpile_circuit(self, circuit: Any) -> Program:
