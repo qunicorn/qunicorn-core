@@ -17,7 +17,7 @@ from json import load
 from os import environ
 from pathlib import Path
 from shutil import copyfile
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union, Set, Type
 
 from tomli import load as load_toml
 
@@ -66,9 +66,31 @@ subprocess.run(
 
 # Update transpile strategy graph
 
-from qunicorn_core.core.transpiler.transpiler_manager import transpile_manager  # noqa
+from qunicorn_core.core.transpiler.circuit_transpiler import CircuitTranspiler  # noqa
 
-transpile_manager.visualize_transpile_strategy(project_root / "docs/resources/images/transpile_strategys.png")
+transpilers: Set[Type[CircuitTranspiler]] = set()
+for f in CircuitTranspiler.get_known_formats():
+    transpilers.update(type(t) for t in CircuitTranspiler.get_transpilers(f))
+
+
+def get_edge_attrs(transpiler: Type[CircuitTranspiler]) -> str:
+    if transpiler.unsafe:
+        return f'[label="{transpiler.cost}; unsafe", style="dashed", color="#555555", fontcolor="#555555"]'
+    else:
+        if transpiler.cost == 1:
+            return ""
+        return f'[label="{transpiler.cost}"]'
+
+
+transpilers_graph = "digraph {\n"
+transpilers_graph += "\n".join(
+    f'"{t.source}" -> "{t.target}" {get_edge_attrs(t)}' 
+    for t in sorted(transpilers, key=lambda t: (t.unsafe, t.cost, t.source, t.target))
+)
+transpilers_graph += "\n}\n"
+
+transpilers_dot = project_root / "docs/pilot_documentation/transpilers.dot"
+transpilers_dot.write_text(transpilers_graph)
 
 api_spec_path = project_root / Path("docs/api.json")
 

@@ -6,4 +6,4 @@ Pilot and Transpilemanager Documentation
    :caption: Contents:
 
    general_pilot
-   transpile_manager
+   transpilation
