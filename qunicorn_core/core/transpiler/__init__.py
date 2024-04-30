@@ -12,4 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from . import preprocessing_manager, transpiler_manager
+from .circuit_transpiler import transpile_circuit, TranspilationError  # noqa
+
+# load transpile plugins
+from . import qiskit_transpiler, braket_transpiler, qrisp_transpiler, unsafe_transpilers  # noqa

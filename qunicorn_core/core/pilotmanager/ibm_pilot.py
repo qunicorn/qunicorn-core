@@ -344,7 +344,7 @@ class IBMPilot(Pilot):
         circuit: str = (
             "circuit = QuantumCircuit(2, 2);circuit.h(0); circuit.cx(0, 1);circuit.measure(0, 0);circuit.measure(1, 1)"
         )
-        return self.create_default_job_with_circuit_and_device(device, circuit)
+        return self.create_default_job_with_circuit_and_device(device, circuit, assembler_language="QISKIT-PYTHON")
 
     def save_devices_from_provider(self, device_request):
         ibm_provider: IBMProvider = IBMPilot.get_ibm_provider_and_login(device_request.token)

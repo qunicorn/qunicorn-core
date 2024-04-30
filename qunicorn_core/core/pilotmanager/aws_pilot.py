@@ -39,7 +39,7 @@ class AWSPilot(Pilot):
     """The AWS Pilot"""
 
     provider_name = ProviderName.AWS.value
-    supported_languages = (AssemblerLanguage.BRAKET.value, AssemblerLanguage.QASM3.value)
+    supported_languages = tuple([AssemblerLanguage.BRAKET.value])
 
     def run(
         self, job: JobDataclass, circuits: Sequence[Tuple[QuantumProgramDataclass, Any]], token: Optional[str] = None

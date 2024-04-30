@@ -87,6 +87,7 @@ enable-autosectionlabel = true
 # documentation for myst: <https://myst-parser.readthedocs.io/en/latest>
 enable-markdown = "myst"
 enable-todo = true
+enable-graphviz = true
 # update gitignore if you want to edit docs/changelog.md manually!
 include-changelog = true
 # update gitignore if you want to edit docs/readme.md manually!

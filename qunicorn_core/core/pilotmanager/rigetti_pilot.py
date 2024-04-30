@@ -104,7 +104,7 @@ class RigettiPilot(Pilot):
         raise QunicornError("Canceling not implemented for rigetti pilot yet")
 
     def get_standard_job_with_deployment(self, device: DeviceDataclass) -> JobDataclass:
-        return self.create_default_job_with_circuit_and_device(device, DEFAULT_QUANTUM_CIRCUIT_1)
+        return self.create_default_job_with_circuit_and_device(device, DEFAULT_QUANTUM_CIRCUIT_1, assembler_language="QUIL-PYTHON")
 
     def save_devices_from_provider(self, device_request):
         raise QunicornError(

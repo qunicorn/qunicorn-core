@@ -2,7 +2,9 @@
 
 .vscode/
 docs/api.json
+docs/others/readme.md
 docs/resources/images/transpile_strategys.png
+docs/pilot_documentation/transpilers.dot
 
 
 
