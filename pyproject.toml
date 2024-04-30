@@ -14,9 +14,9 @@ Flask-JWT-Extended = "^4.6.0"
 Flask-Migrate = "^4.0.4"
 Flask-SQLAlchemy = "^3.0.3"
 SQLAlchemy = "^2.0.29"
-flask = { extras = ["dotenv"], version = "^2.2.3" }
+flask = { extras = ["dotenv"], version = "^3.0.2" }
 flask-babel = "^3.0.0"
-flask-smorest = "^0.40.0"
+flask-smorest = "^0.44.0"
 tomli = "^2.0.1"
 celery = "^5.4.0"
 redis = "^5.0.4"
