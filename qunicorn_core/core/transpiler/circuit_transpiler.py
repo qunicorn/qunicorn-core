@@ -63,13 +63,12 @@ class CircuitTranspiler:
     def __eq__(self, other):
         if not self._is_valid_operand(other):
             return NotImplemented
-        return (type(self) == type(other))
+        return type(self) == type(other)
 
     def __lt__(self, other):
         if not self._is_valid_operand(other):
             return NotImplemented
-        return ((self.cost, type(self).__name__.lower()) <
-                (other.cost, type(other).__name__.lower()))
+        return (self.cost, type(self).__name__.lower()) < (other.cost, type(other).__name__.lower())
 
     def transpile_circuit(self, circuit: Any) -> Any:
         """Transpile the given circuit to the target format."""

@@ -84,7 +84,7 @@ def get_edge_attrs(transpiler: Type[CircuitTranspiler]) -> str:
 
 transpilers_graph = "digraph {\n"
 transpilers_graph += "\n".join(
-    f'"{t.source}" -> "{t.target}" {get_edge_attrs(t)}' 
+    f'"{t.source}" -> "{t.target}" {get_edge_attrs(t)}'
     for t in sorted(transpilers, key=lambda t: (t.unsafe, t.cost, t.source, t.target))
 )
 transpilers_graph += "\n}\n"
