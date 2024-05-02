@@ -157,7 +157,7 @@ def test_qasm3_qiskit_no_gates_roundtrip():
 
 def test_qasm3_braket_custom_gate_roundtrip():
     braket_circuit = Qasm3ToBraket().transpile_circuit(qasm3_circuit_custom_gate)
-    assert len(braket_circuit.instructions) == 3
+    assert len(braket_circuit.instructions) == 6, "3 gates + 3 measurements"
 
     recreated_qasm3_circuit = BraketToQasm3().transpile_circuit(braket_circuit)
     assert recreated_qasm3_circuit
