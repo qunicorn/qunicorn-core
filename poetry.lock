@@ -3204,21 +3204,23 @@ visualization = ["ipywidgets (>=7.3.0)", "matplotlib (>=3.3)", "pillow (>=4.2.1)
 
 [[package]]
 name = "qrisp"
-version = "0.3.0"
+version = "0.4.5"
 description = "Qrisp - A high level language for gate-based quantum computing"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "qrisp-0.3.0-py3-none-any.whl", hash = "sha256:aaddf4a5e8fd303585cb646a19e0a3c62c547d4fa102b5091774411d4dce9520"},
-    {file = "qrisp-0.3.0.tar.gz", hash = "sha256:21fea595c80b51e60cf142bfcd177ebbd10f40ed93ca23e5e684ba2c4f030d80"},
+    {file = "qrisp-0.4.5-py3-none-any.whl", hash = "sha256:86b6f3a300f83f60774b41b894ca316874bfa995b000133dad2764266cfe686a"},
+    {file = "qrisp-0.4.5.tar.gz", hash = "sha256:7de37ea6b3118b887401c1bac2b6cc1e403fe0aaec60a0d9437fec647d46bca1"},
 ]
 
 [package.dependencies]
 connexion = ">=2.12.0"
+dill = "*"
+flask = "*"
 matplotlib = ">=3.5.1"
 networkx = "*"
 numba = "*"
-qiskit = ">=0.34.2"
+qiskit = ">=0.44.0"
 scipy = ">=1.10.0"
 tdqm = "*"
 thrift = ">=0.15.0"
@@ -4575,4 +4577,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11.0, <=3.12"
-content-hash = "a0df34eaf3eaf67b82b53c4bae6a45339f978fe30210deb1477336f6e9e55521"
+content-hash = "e9bc550bc18ccc7640cb5784891e51910a4df9ba3fa8c2a1a68f1885db917397"
