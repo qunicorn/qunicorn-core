@@ -49,8 +49,10 @@ def test_qasm2_roundtrip():
         assert t_gate.operation.name == c_gate.operation.name
         assert len(t_gate.qubits) == len(c_gate.qubits)
         for t_qubit, c_qubit in zip(t_gate.qubits, c_gate.qubits):
-            assert t_qubit.index == c_qubit.index
+            assert repr(t_qubit) == repr(c_qubit)
         assert len(t_gate.clbits) == len(c_gate.clbits)
+        for t_clbit, c_clbit in zip(t_gate.clbits, c_gate.clbits):
+            assert repr(t_clbit) == repr(c_clbit)
 
 
 qasm3_circuit_no_gates = """include "stdgates.inc";
