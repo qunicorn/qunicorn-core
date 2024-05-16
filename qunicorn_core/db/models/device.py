@@ -59,9 +59,10 @@ class DeviceDataclass(DbModel):
             q = q.where(cls.provider == provider)
         elif isinstance(provider, str):
             # TODO test this...
-            q = q.where(
-                cls.provider_id == select(ProviderDataclass.id).where(ProviderDataclass.name == provider).limit(1)
+            provider_id_query = (
+                select(ProviderDataclass.id).where(ProviderDataclass.name == provider).limit(1).scalar_subquery()
             )
+            q = q.where(cls.provider_id == provider_id_query)
 
         devices = DB.session.execute(q).scalars().all()
 
