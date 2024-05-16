@@ -8,7 +8,7 @@ services:
       CONTAINER_MODE: server
       SERVER_PORT: 8080
       BROKER_URL: "redis://broker:6379"
-      DB_URL: "postgresql://postgres:passwd@postgres/qunicorn"
+      DB_URL: "postgresql+psycopg://postgres:passwd@postgres/qunicorn"
       JWKS_URL: "http://keycloak:8080/auth/realms/qunicorn/protocol/openid-connect/certs"
       NUMBA_CACHE_DIR: "/app/cache"
     depends_on:
@@ -27,7 +27,7 @@ services:
     environment:
       CONTAINER_MODE: worker
       BROKER_URL: "redis://broker:6379"
-      DB_URL: "postgresql://postgres:passwd@postgres/qunicorn"
+      DB_URL: "postgresql+psycopg://postgres:passwd@postgres/qunicorn"
       NUMBA_CACHE_DIR: "/app/cache"
       # QMWARE_API_KEY: ""
       # QMWARE_API_KEY_ID: ""

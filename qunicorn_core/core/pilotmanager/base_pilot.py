@@ -167,7 +167,9 @@ class Pilot:
             probabilities[key] = value / total_counts
         return probabilities
 
-    def create_default_job_with_circuit_and_device(self, device: DeviceDataclass, circuit: str, assembler_language: Optional[str] = None) -> JobDataclass:
+    def create_default_job_with_circuit_and_device(
+        self, device: DeviceDataclass, circuit: str, assembler_language: Optional[str] = None
+    ) -> JobDataclass:
         """
         Method to create a default job for a pilot with one given circuit and device.
         This method always takes the first supported Language of the pilot and assigns it to the program.

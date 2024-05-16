@@ -67,7 +67,7 @@ def run_job(job_id: int, token: Optional[str] = None):
     logging.info(f"Run job with id {job_id} and get the result {results}")
 
 
-def _transpile_circuits(
+def _transpile_circuits(  # noqa: C901
     job: JobDataclass, dest_languages: Sequence[str]
 ) -> Sequence[Tuple[QuantumProgramDataclass, Any]]:
     """Transforms all circuits of the deployment into the circuits in the destination language"""

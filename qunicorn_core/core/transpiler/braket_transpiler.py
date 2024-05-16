@@ -34,8 +34,27 @@ class Qasm3ToBraket(CircuitTranspiler, source="QASM3", target="BRAKET", cost=2):
 
         # replace cx with cnot gates and ccx with ccnot gates
         # TODO remove workaround once no longer required!
-        circuit = re.sub(r"^\s*cx(\s+[a-zA-Z0-9_]+(?:\[[0-9]+\])?\s*,\s+[a-zA-Z0-9_]+(?:\[[0-9]+\])?;)", r"cnot\1", circuit, flags=re.MULTILINE)
-        circuit = re.sub(r"^\s*ccx(\s+[a-zA-Z0-9_]+(?:\[[0-9]+\])?\s*,\s+[a-zA-Z0-9_]+(?:\[[0-9]+\])?\s*,\s+[a-zA-Z0-9_]+(?:\[[0-9]+\])?;)", r"ccnot\1", circuit, flags=re.MULTILINE)
+        circuit = re.sub(
+            (
+                r"^\s*cx(\s+"  # cx
+                r"[a-zA-Z0-9_]+(?:\[[0-9]+\])?\s*,\s+"  # control qubit
+                r"[a-zA-Z0-9_]+(?:\[[0-9]+\])?;)"  # target qubit
+            ),
+            r"cnot\1",
+            circuit,
+            flags=re.MULTILINE,
+        )
+        circuit = re.sub(
+            (
+                r"^\s*ccx(\s+"  # ccx
+                r"[a-zA-Z0-9_]+(?:\[[0-9]+\])?\s*,\s+"  # first control qubit
+                r"[a-zA-Z0-9_]+(?:\[[0-9]+\])?\s*,\s+"  # second control qubit
+                r"[a-zA-Z0-9_]+(?:\[[0-9]+\])?;)"  # target qubit
+            ),
+            r"ccnot\1",
+            circuit,
+            flags=re.MULTILINE,
+        )
 
         return Circuit.from_ir(circuit)
 
@@ -55,7 +74,26 @@ class BraketToQasm3(CircuitTranspiler, source="BRAKET", target="QASM3", cost=2):
 
         # replace cnot with cx gates and ccnot with ccx gates
         # TODO remove workaround once no longer required!
-        qasm_str = re.sub(r"^\s*cnot(\s+[a-zA-Z0-9_]+(?:\[[0-9]+\])?\s*,\s+[a-zA-Z0-9_]+(?:\[[0-9]+\])?;)", r"cx\1", qasm_str, flags=re.MULTILINE)
-        qasm_str = re.sub(r"^\s*ccnot(\s+[a-zA-Z0-9_]+(?:\[[0-9]+\])?\s*,\s+[a-zA-Z0-9_]+(?:\[[0-9]+\])?\s*,\s+[a-zA-Z0-9_]+(?:\[[0-9]+\])?;)", r"ccx\1", qasm_str, flags=re.MULTILINE)
+        qasm_str = re.sub(
+            (
+                r"^\s*cnot(\s+"  # cnot
+                r"[a-zA-Z0-9_]+(?:\[[0-9]+\])?\s*,\s+"  # control qubit
+                r"[a-zA-Z0-9_]+(?:\[[0-9]+\])?;)"  # target qubit
+            ),
+            r"cx\1",
+            qasm_str,
+            flags=re.MULTILINE,
+        )
+        qasm_str = re.sub(
+            (
+                r"^\s*ccnot(\s+"  # ccnot
+                r"[a-zA-Z0-9_]+(?:\[[0-9]+\])?\s*,\s+"  # first control qubit
+                r"[a-zA-Z0-9_]+(?:\[[0-9]+\])?\s*,\s+"  # second control qubit
+                r"[a-zA-Z0-9_]+(?:\[[0-9]+\])?;)"  # target qubit
+            ),
+            r"ccx\1",
+            qasm_str,
+            flags=re.MULTILINE,
+        )
 
         return qasm_str

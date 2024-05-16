@@ -36,7 +36,8 @@ class QiskitPythonToQiskit(CircuitTranspiler, source="QISKIT-PYTHON", target="QI
         if isinstance(qiskit_circuit, QuantumCircuit):
             return qiskit_circuit
         raise TypeError(
-            f"The circuit type does not match the expected type. (Expected {QuantumCircuit}, but got {type(qiskit_circuit)})"
+            "The circuit type does not match the expected type. "
+            f"(Expected {QuantumCircuit}, but got {type(qiskit_circuit)})"
         )
 
 

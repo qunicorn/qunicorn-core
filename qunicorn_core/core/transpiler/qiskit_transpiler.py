@@ -17,10 +17,7 @@ from typing import Any
 
 
 from qiskit import QuantumCircuit, qpy
-from qiskit.qasm2 import loads as loads2
-
-# from qiskit.qasm2 import dumps as dumps2 # FIXME use this after upgrading to qiskit 1.0
-
+from qiskit.qasm2 import loads as loads2, dumps as dumps2
 from qiskit.qasm3 import loads as loads3, dumps as dumps3
 
 from .circuit_transpiler import CircuitTranspiler
@@ -37,7 +34,7 @@ class QiskitToQasm2(CircuitTranspiler, source="QISKIT", target="QASM2", cost=1):
 
     def transpile_circuit(self, circuit: Any) -> str:
         assert isinstance(circuit, QuantumCircuit)
-        converted = circuit.qasm()
+        converted = dumps2(circuit)
         assert converted is not None
         return converted
 

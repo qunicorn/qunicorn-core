@@ -28,7 +28,8 @@ class TranspilationError(Exception):
 class CircuitTranspiler:
     """Base class for all circuit transpilers.
 
-    To create a new transpiler, inherit from this class and implement the :py:meth:`CircuitTranspiler.transpile_circuit` method.
+    To create a new transpiler, inherit from this class and implement the
+    :py:meth:`CircuitTranspiler.transpile_circuit` method.
 
     Example:
 
@@ -63,13 +64,12 @@ class CircuitTranspiler:
     def __eq__(self, other):
         if not self._is_valid_operand(other):
             return NotImplemented
-        return (type(self) == type(other))
+        return type(self) is type(other)
 
     def __lt__(self, other):
         if not self._is_valid_operand(other):
             return NotImplemented
-        return ((self.cost, type(self).__name__.lower()) <
-                (other.cost, type(other).__name__.lower()))
+        return (self.cost, type(self).__name__.lower()) < (other.cost, type(other).__name__.lower())
 
     def transpile_circuit(self, circuit: Any) -> Any:
         """Transpile the given circuit to the target format."""
@@ -98,7 +98,7 @@ class CircuitTranspiler:
             raise KeyError(f"'{source}' is an unknown circuit format!")
 
     @staticmethod
-    def _get_transpiler_chain(
+    def _get_transpiler_chain(  # noqa: C901
         source: Union[str, Sequence[str]],
         target: str,
         *,
@@ -206,12 +206,16 @@ def transpile_circuit(
 
     Args:
         target (str): the target format for transpilation
-        exclude (set[str | Type[CircuitTranspiler]], optional): exclude specific transpilers (by class, class name or qualified class name).
-        exclude_formats (set[str], optional): exclude specific formats from transpilation. Applies to both source and target formats!
-        exclude_unsafe (bool, optional): exclude unsafe transpilers from transpilation. Defaults to False.
+        exclude (set[str | Type[CircuitTranspiler]], optional): exclude specific transpilers
+        (by class, class name or qualified class name).
+        exclude_formats (set[str], optional): exclude specific formats from transpilation.
+        Applies to both source and target formats!
+        exclude_unsafe (bool, optional): exclude unsafe transpilers from transpilation.
+        Defaults to False.
 
     Raises:
-        ValueError: If no circuit is provided or either the target format or all source formats are excluded by `exclude_formats`.
+        ValueError: If no circuit is provided or either the target format or all
+        source formats are excluded by `exclude_formats`.
         KeyError: If no transpilation chain could be found to transpile the circuit to the target format.
         TranspilationError: If a transpilation step fails.
 

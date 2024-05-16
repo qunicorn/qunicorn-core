@@ -18,8 +18,8 @@ from os import environ
 from pathlib import Path
 from typing import Any, List, Optional, Sequence, Tuple, Union
 
-import qiskit
 import qiskit_aer
+from qiskit import transpile
 from qiskit.primitives import Estimator as LocalEstimator
 from qiskit.primitives import EstimatorResult
 from qiskit.primitives import Sampler as LocalSampler
@@ -27,7 +27,6 @@ from qiskit.primitives import SamplerResult
 from qiskit.providers import Backend, QiskitBackendNotFoundError
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.result import Result
-from qiskit_ibm_provider import IBMProvider
 from qiskit_ibm_runtime import (
     Estimator,
     IBMRuntimeError,
@@ -90,6 +89,7 @@ class IBMPilot(Pilot):
             job.save_error(error)
             raise error
 
+        backend: Backend
         if device.is_local:
             backend = qiskit_aer.Aer.get_backend("aer_simulator")
         else:
@@ -99,7 +99,8 @@ class IBMPilot(Pilot):
         programs = [p for p, _ in circuits]
         transpiled_circuits = [c for _, c in circuits]
 
-        qiskit_job = qiskit.execute(transpiled_circuits, backend=backend, shots=job.shots)
+        backend_specific_circuits = transpile(transpiled_circuits, backend)
+        qiskit_job = backend.run(backend_specific_circuits, shots=job.shots)
         job.provider_specific_id = qiskit_job.job_id()
         job.save(commit=True)
 
@@ -172,7 +173,7 @@ class IBMPilot(Pilot):
         return service.job(job.provider_specific_id)
 
     @staticmethod
-    def get_ibm_provider_and_login(token: Optional[str]) -> IBMProvider:
+    def get_ibm_provider_and_login(token: Optional[str]) -> QiskitRuntimeService:
         """Save account credentials and get provider"""
 
         # If the token is empty the token is taken from the environment variables.
@@ -180,11 +181,13 @@ class IBMPilot(Pilot):
             token = t
 
         # Try to save the account. Update job_dto to job_state = Error, if it is not possible
-        IBMProvider.save_account(token=token, overwrite=True)
-        return IBMProvider()
+        # FIXME test and use job specific name for saving credentials??
+        QiskitRuntimeService.save_account(channel="ibm_quantum", token=token, overwrite=True, name="TODO")
+
+        return QiskitRuntimeService(channel="ibm_quantum", name="TODO")  # FIXME change name
 
     @staticmethod
-    def __get_provider_login_and_update_job(token: str, job: JobDataclass) -> IBMProvider:
+    def __get_provider_login_and_update_job(token: str, job: JobDataclass) -> QiskitRuntimeService:
         """Save account credentials, get provider and update job_dto to job_state = Error, if it is not possible"""
 
         try:
@@ -288,7 +291,7 @@ class IBMPilot(Pilot):
         ibm_result: EstimatorResult, programs: Sequence[QuantumProgramDataclass], job: JobDataclass, observer: str
     ) -> list[ResultDataclass]:
         result_dtos: list[ResultDataclass] = []
-        for i in range(ibm_result.num_experiments):
+        for i in range(len(ibm_result.metadata)):  # FIXME test this
             value: float = ibm_result.values[i]
             variance: float = ibm_result.metadata[i]["variance"]
             result_dtos.append(
@@ -307,7 +310,7 @@ class IBMPilot(Pilot):
     ) -> list[ResultDataclass]:
         results: list[ResultDataclass] = []
         contains_errors = False
-        for i in range(ibm_result.num_experiments):
+        for i in range(len(ibm_result.quasi_dists)):
             try:
                 results.append(
                     ResultDataclass(
@@ -347,7 +350,7 @@ class IBMPilot(Pilot):
         return self.create_default_job_with_circuit_and_device(device, circuit, assembler_language="QISKIT-PYTHON")
 
     def save_devices_from_provider(self, device_request):
-        ibm_provider: IBMProvider = IBMPilot.get_ibm_provider_and_login(device_request.token)
+        ibm_provider: QiskitRuntimeService = IBMPilot.get_ibm_provider_and_login(device_request.token)
         all_devices = ibm_provider.backends()
 
         provider: Optional[ProviderDataclass] = self.get_standard_provider()
@@ -386,7 +389,7 @@ class IBMPilot(Pilot):
         found_aer_device.save(commit=True)
 
     def is_device_available(self, device: Union[DeviceDataclass, DeviceDto], token: Optional[str]) -> bool:
-        ibm_provider: IBMProvider = IBMPilot.get_ibm_provider_and_login(token)
+        ibm_provider: QiskitRuntimeService = IBMPilot.get_ibm_provider_and_login(token)
         if device.is_simulator:
             return True
         try:
@@ -396,7 +399,7 @@ class IBMPilot(Pilot):
             return False
 
     def get_device_data_from_provider(self, device: Union[DeviceDataclass, DeviceDto], token: Optional[str]) -> dict:
-        ibm_provider: IBMProvider = IBMPilot.get_ibm_provider_and_login(token)
+        ibm_provider: QiskitRuntimeService = IBMPilot.get_ibm_provider_and_login(token)
         backend = ibm_provider.get_backend(device.name)
         config_dict: dict = vars(backend.configuration())
         # Remove some not serializable fields

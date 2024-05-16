@@ -43,18 +43,27 @@ CELERY_WORKER = f"{MODULE_NAME}.celery_worker:CELERY"
 ALLOWED_LICENSES = [
     "3-Clause BSD License",
     "Apache 2.0",
+    "Apache-2.0",
+    "Apache 2.0 License",
+    "Apache License 2.0",
     "Apache License, Version 2.0",
     "Apache Software License",
     "BSD License",
     "BSD",
+    "BSD 3-Clause",
+    "Eclipse Public License 2.0 (EPL-2.0)",
     "GNU Lesser General Public License v2 or later (LGPLv2+)",
     "GNU Library or Lesser General Public License (LGPL)",
+    "GNU Lesser General Public License v3 (LGPLv3)",
     "GPLv3",
+    "Historical Permission Notice and Disclaimer (HPND)",
+    "ISC License (ISCL)",
     "MIT License",
     "MIT",
     "Mozilla Public License 2.0 (MPL 2.0)",
     "new BSD",
     "Python Software Foundation License",
+    "Zope Public License",
 ]
 
 
