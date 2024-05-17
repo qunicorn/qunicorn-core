@@ -194,5 +194,18 @@ class Pilot:
             type=JobType.RUNNER.value,
             started_at=datetime.now(),
             name=job_name,
-            results=[ResultDataclass(result_dict={"counts": counts, "probabilities": probs})],
+            results=[
+                ResultDataclass(
+                    data=counts,
+                    meta={
+                        "format": "hex",
+                        "shots": 4000,
+                        "registers": {
+                            "name": "output",
+                            "size": 2
+                        }
+                    },
+                    result_type="COUNTS",
+                )
+            ],
         )

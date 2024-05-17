@@ -16,10 +16,10 @@ import traceback
 from http import HTTPStatus
 from os import environ
 from pathlib import Path
-from typing import Any, List, Optional, Sequence, Tuple, Union
+from typing import Any, List, Optional, Sequence, Tuple, Union, Dict
 
 import qiskit_aer
-from qiskit import transpile
+from qiskit import transpile, QuantumCircuit
 from qiskit.primitives import Estimator as LocalEstimator
 from qiskit.primitives import EstimatorResult
 from qiskit.primitives import Sampler as LocalSampler
@@ -78,7 +78,7 @@ class IBMPilot(Pilot):
             raise error
 
     def run(
-        self, job: JobDataclass, circuits: Sequence[Tuple[QuantumProgramDataclass, Any]], token: Optional[str] = None
+        self, job: JobDataclass, circuits: Sequence[Tuple[QuantumProgramDataclass, QuantumCircuit]], token: Optional[str] = None
     ) -> Tuple[List[ResultDataclass], JobState]:
         """Execute a job local using aer simulator or a real backend"""
         if job.id is None:
@@ -105,12 +105,12 @@ class IBMPilot(Pilot):
         job.save(commit=True)
 
         result = qiskit_job.result()
-        results: list[ResultDataclass] = IBMPilot.__map_runner_results_to_dataclass(result, job, programs)
+        results: list[ResultDataclass] = IBMPilot.__map_runner_results_to_dataclass(result, job, programs, backend_specific_circuits)
 
         # AerCircuit is not serializable and needs to be removed
         for res in results:
-            if res is not None and "circuit" in res.meta_data:
-                res.meta_data.pop("circuit")
+            if res is not None and "circuit" in res.meta:
+                res.meta.pop("circuit")
 
         return results, JobState.FINISHED
 
@@ -268,20 +268,32 @@ class IBMPilot(Pilot):
 
     @staticmethod
     def __map_runner_results_to_dataclass(
-        ibm_result: Result, job: JobDataclass, programs: Optional[Sequence[QuantumProgramDataclass]] = None
+        ibm_result: Result, job: JobDataclass, programs: Optional[Sequence[QuantumProgramDataclass]] = None, circuits: List[QuantumCircuit] = None
     ) -> list[ResultDataclass]:
         result_dtos: list[ResultDataclass] = []
+        classical_registers_metadata = []
+
+        for circuit in circuits:
+            for reg in circuit.cregs:
+                # FIXME: don't append registers that are not measured
+                classical_registers_metadata.append({
+                    "name": reg.name,
+                    "size": reg.size
+                })
+
         for i, result in enumerate(ibm_result.results):
             metadata = result.to_dict()
+            metadata["format"] = "hex"
+            metadata["registers"] = classical_registers_metadata
+            data: Dict = metadata.pop("data")
             metadata.pop("circuit", None)
-            counts: dict = result.data.counts
-            probabilities: dict = Pilot.calculate_probabilities(counts)
+            # probabilities: dict = Pilot.calculate_probabilities(counts)  # TODO: append as extra result
             result_dtos.append(
                 ResultDataclass(
                     program=programs[i] if programs else None,
-                    result_dict={"counts": counts, "probabilities": probabilities},
                     result_type=ResultType.COUNTS,
-                    meta_data=metadata,
+                    data=data.get("counts", {"": 0}),
+                    meta=metadata,
                 )
             )
         return result_dtos

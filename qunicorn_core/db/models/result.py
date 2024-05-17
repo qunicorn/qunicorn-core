@@ -31,18 +31,15 @@ class ResultDataclass(DbModel):
 
     Attributes:
         id (int): The ID of the result. (set by the database)
-        result_dict (dict): The results of the job, in the given result_type.
-            For the Runner it should have the keys counts and probabilities.
-            The counts and probabilities should be a dict with hexadecimals as quantum-bit-keys.
         job (JobDataclass, optional): The job that was executed.
         program (QuantumProgramDataclass, optional): The specific program that was executed.
+        data (dict): The result of the job, in the given result_type.
         meta_data (dict): Some other data that was given by ibm.
         result_type (Enum): Result type depending on the Job_Type of the job.
     """
 
     # non-default arguments
     id: Mapped[int] = mapped_column(sql.INTEGER(), primary_key=True, autoincrement=True, init=False)
-    result_dict: Mapped[dict] = mapped_column(sql.JSON, nullable=True)
     # default arguments
     job_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("Job.id", ondelete="CASCADE"), default=None, nullable=True, init=False
@@ -56,5 +53,6 @@ class ResultDataclass(DbModel):
     program: Mapped[Optional["quantum_program.QuantumProgramDataclass"]] = relationship(
         lambda: quantum_program.QuantumProgramDataclass, lazy="selectin", default=None
     )
-    meta_data: Mapped[Any] = mapped_column(sql.JSON, default=None, nullable=True)
+    data: Mapped[Any] = mapped_column(sql.JSON, default=None, nullable=True)
+    meta: Mapped[Any] = mapped_column(sql.JSON, default=None, nullable=True)
     result_type: Mapped[str] = mapped_column(sql.String(50), default=ResultType.COUNTS.value)
