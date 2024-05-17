@@ -1,22 +1,21 @@
-UseCases
-========
+Use Cases
+=========
 
-To demo/show and test the application with UseCases, the WorkflowModeler is needed.
-The WorkflowModeler is a web application that can be used to create and edit workflows.
+To demo/show and test the application with use cases, the Workflow Modeler is needed.
+The Workflow Modeler is a web application that can be used to create and edit workflows.
 It can be found in the following repository: https://github.com/PlanQK/workflow-modeler
 
-To create a UseCase you can start the Docker Compose from the UseCase repository:
-https://github.com/SeQuenC-Consortium/SeQuenC-UseCases/
+To create a use case you can start the Docker Compose from the `Use Case repository https://github.com/SeQuenC-Consortium/SeQuenC-UseCases/>`_.
 
-The following services should now be available under:
-- qunicorn: localhost:5005/swagger-ui/
-- workflow-modeler: localhost:8080/
-- camunda: localhost:8078/camunda/app/
+The following services should now be available:
+* qunicorn: localhost:5005/swagger-ui/
+* workflow-modeler: localhost:8080/
+* camunda: localhost:8078/camunda/app/
 
-To create a new UseCase check the README of the UseCase repository.
+To create a new use case check the README of the `Use Case repository https://github.com/SeQuenC-Consortium/SeQuenC-UseCases/>`_.
 
-Example UseCase: Get Devices and Create Job
--------------------------------------------
+Example Use Case: Get Devices and Create Job
+--------------------------------------------
 
 1. Get all devices
 2. UserTask: Let the user evaluate the results, the user can now select a device

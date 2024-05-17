@@ -41,6 +41,6 @@ If a user creates a job or deployment with their token, this job will not be acc
 Connection to Workflow Management
 ---------------------------------
 Qunicorns REST-API can be used to create jobs and deployments.
-Therefor it is possible to access qunicorn from the workflow modeller which uses RestEndpoints. https://github.com/PlanQK/workflow-modeler
-Together with the workflow modeller UseCases can be generated to test qunicorn.
-In this repository one can find some example UseCases and how to generate them: https://github.com/SeQuenC-Consortium/SeQuenC-UseCases
+Therefore, it is possible to access qunicorn from the `Workflow Modeler <https://github.com/PlanQK/workflow-modeler/>`_ which uses RestEndpoints.
+Together with the Workflow Modeler use cases can be generated to test qunicorn.
+In the following repository one can find some example use cases and how to generate them: https://github.com/SeQuenC-Consortium/SeQuenC-UseCases
