@@ -182,7 +182,7 @@ class Pilot:
         deployment = DeploymentDataclass(deployed_by=None, programs=[program], deployed_at=datetime.now(), name=name)
 
         counts: dict = {"0x0": 2007, "0x3": 1993}
-        probs: dict = {"0x0": 0.50175, "0x3": 0.49825}
+        # probs: dict = {"0x0": 0.50175, "0x3": 0.49825}  # TODO: add as additional result
         job_name = device.provider.name + "Job"
         return JobDataclass(
             executed_by=None,
@@ -197,14 +197,7 @@ class Pilot:
             results=[
                 ResultDataclass(
                     data=counts,
-                    meta={
-                        "format": "hex",
-                        "shots": 4000,
-                        "registers": {
-                            "name": "output",
-                            "size": 2
-                        }
-                    },
+                    meta={"format": "hex", "shots": 4000, "registers": {"name": "output", "size": 2}},
                     result_type="COUNTS",
                 )
             ],

@@ -78,8 +78,10 @@ class IBMPilot(Pilot):
             raise error
 
     def run(
-        self, job: JobDataclass, circuits: Sequence[Tuple[QuantumProgramDataclass, QuantumCircuit]],
-        token: Optional[str] = None
+        self,
+        job: JobDataclass,
+        circuits: Sequence[Tuple[QuantumProgramDataclass, QuantumCircuit]],
+        token: Optional[str] = None,
     ) -> Tuple[List[ResultDataclass], JobState]:
         """Execute a job local using aer simulator or a real backend"""
         if job.id is None:
@@ -107,7 +109,8 @@ class IBMPilot(Pilot):
 
         result = qiskit_job.result()
         results: list[ResultDataclass] = IBMPilot.__map_runner_results_to_dataclass(
-            result, job, programs, backend_specific_circuits)
+            result, job, programs, backend_specific_circuits
+        )
 
         # AerCircuit is not serializable and needs to be removed
         for res in results:
@@ -270,8 +273,10 @@ class IBMPilot(Pilot):
 
     @staticmethod
     def __map_runner_results_to_dataclass(
-        ibm_result: Result, job: JobDataclass, programs: Optional[Sequence[QuantumProgramDataclass]] = None,
-        circuits: List[QuantumCircuit] = None
+        ibm_result: Result,
+        job: JobDataclass,
+        programs: Optional[Sequence[QuantumProgramDataclass]] = None,
+        circuits: List[QuantumCircuit] = None,
     ) -> list[ResultDataclass]:
         result_dtos: list[ResultDataclass] = []
         classical_registers_metadata = []
@@ -279,11 +284,7 @@ class IBMPilot(Pilot):
         for circuit in circuits:
             for reg in circuit.cregs:
                 # FIXME: don't append registers that are not measured
-                classical_registers_metadata.append(
-                    {
-                        "name": reg.name,
-                        "size": reg.size
-                    })
+                classical_registers_metadata.append({"name": reg.name, "size": reg.size})
 
         for i, result in enumerate(ibm_result.results):
             metadata = result.to_dict()
