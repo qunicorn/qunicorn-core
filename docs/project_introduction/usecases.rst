@@ -5,14 +5,15 @@ To demo/show and test the application with use cases, the Workflow Modeler is ne
 The Workflow Modeler is a web application that can be used to create and edit workflows.
 It can be found in the following repository: https://github.com/PlanQK/workflow-modeler
 
-To create a use case you can start the Docker Compose from the `Use Case repository https://github.com/SeQuenC-Consortium/SeQuenC-UseCases/>`_.
+To create a use case you can start the Docker Compose from the `Use Case repository <https://github.com/SeQuenC-Consortium/SeQuenC-UseCases/>`_.
 
 The following services should now be available:
-* qunicorn: localhost:5005/swagger-ui/
-* workflow-modeler: localhost:8080/
-* camunda: localhost:8078/camunda/app/
 
-To create a new use case check the README of the `Use Case repository https://github.com/SeQuenC-Consortium/SeQuenC-UseCases/>`_.
+* qunicorn: `localhost:5005/swagger-ui/ <localhost:5005/swagger-ui/>`_
+* workflow-modeler: `localhost:8080/ <localhost:8080/>`_
+* camunda: `localhost:8078/camunda/app/ <localhost:8078/camunda/app/>`_
+
+To create a new use case check the README of the `Use Case repository <https://github.com/SeQuenC-Consortium/SeQuenC-UseCases/>`_.
 
 Example Use Case: Get Devices and Create Job
 --------------------------------------------
