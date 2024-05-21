@@ -215,6 +215,12 @@ def check_if_job_runner_result_correct_multiple_gates(job: JobDataclass):
     for result_index in range(len(job.results)):
         program_index = result_index // 2  # every program is expected to have 2 results
         result: ResultDataclass = job.results[result_index]
+
+        if result_index % 2 == 0:
+            assert result.result_type == ResultType.COUNTS
+        else:
+            assert result.result_type == ResultType.PROBABILITIES
+
         check_standard_result_data(program_index, job, result)
         assert result.meta is not None
         shots: int = job.shots

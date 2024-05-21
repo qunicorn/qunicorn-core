@@ -86,20 +86,27 @@ class AWSPilot(Pilot):
         """Map the results from the aws simulator to a result dataclass object"""
         results = []
         contains_errors = False
-        for i, result in enumerate(results):
+        for i, result in enumerate(aws_results):
             try:
                 results.append(
                     ResultDataclass(
-                        result_dict={
-                            "counts": Pilot.qubit_binary_to_hex(result.measurement_counts),
-                            "probabilities": Pilot.qubit_binary_to_hex(result.measurement_probabilities),
-                        },
+                        data=Pilot.qubit_binary_to_hex(result.measurement_counts, reverse_qubit_order=True),
                         job=job,
                         program=programs[i],
-                        meta_data="",
+                        meta="",
                         result_type=ResultType.COUNTS,
                     )
                 )
+                results.append(
+                    ResultDataclass(
+                        data=Pilot.qubit_binary_to_hex(result.measurement_probabilities, reverse_qubit_order=True),
+                        job=job,
+                        program=programs[i],
+                        meta="",
+                        result_type=ResultType.PROBABILITIES,
+                    )
+                )
+
             except QunicornError as err:
                 exception_message: str = str(err)
                 stack_trace: str = "".join(traceback.format_exception(err))

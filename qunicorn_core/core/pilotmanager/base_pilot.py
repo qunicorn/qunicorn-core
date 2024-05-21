@@ -149,11 +149,20 @@ class Pilot:
             raise QunicornError("Could not convert decimal-results to hex")
 
     @staticmethod
-    def qubit_binary_to_hex(qubits_in_binary: dict) -> dict:
+    def qubit_binary_to_hex(qubits_in_binary: dict, reverse_qubit_order: bool = False) -> dict:
         """To make sure that the qubits in the counts or probabilities are in hex format and not in binary format"""
 
         try:
-            return dict([(hex(int(k, 2)), v) for k, v in qubits_in_binary.items()])
+            hex_result = {}
+
+            for k, v in qubits_in_binary.items():
+                if reverse_qubit_order:
+                    k = "".join(reversed(k))
+
+                hex_result[hex(int(k, 2))] = v
+
+            return hex_result
+
         except Exception:
             raise QunicornError("Could not convert binary-results to hex")
 
