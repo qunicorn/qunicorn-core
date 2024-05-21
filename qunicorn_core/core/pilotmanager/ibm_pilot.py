@@ -292,12 +292,20 @@ class IBMPilot(Pilot):
             metadata["registers"] = classical_registers_metadata
             data: Dict = metadata.pop("data")
             metadata.pop("circuit", None)
-            # probabilities: dict = Pilot.calculate_probabilities(counts)  # TODO: append as extra result
+            probabilities: dict = Pilot.calculate_probabilities(data.get("counts", {}))
             result_dtos.append(
                 ResultDataclass(
                     program=programs[i] if programs else None,
                     result_type=ResultType.COUNTS,
                     data=data.get("counts", {"": 0}),
+                    meta=metadata,
+                )
+            )
+            result_dtos.append(
+                ResultDataclass(
+                    program=programs[i] if programs else None,
+                    result_type=ResultType.PROBABILITIES,
+                    data=probabilities,
                     meta=metadata,
                 )
             )
@@ -332,7 +340,7 @@ class IBMPilot(Pilot):
                 results.append(
                     ResultDataclass(
                         program=programs[i],
-                        result_dict=Pilot.qubits_decimal_to_hex(ibm_result.quasi_dists[i]),
+                        data=Pilot.qubits_decimal_to_hex(ibm_result.quasi_dists[i]),
                         result_type=ResultType.QUASI_DIST,
                     )
                 )
@@ -344,7 +352,7 @@ class IBMPilot(Pilot):
                         result_type=ResultType.ERROR.value,
                         job=job,
                         program=programs[i],
-                        result_dict={"exception_message": exception_message},
+                        data={"exception_message": exception_message},
                         meta_data={"stack_trace": stack_trace},
                     )
                 )
