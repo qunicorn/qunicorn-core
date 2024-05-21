@@ -96,12 +96,12 @@ class QMwarePilot(Pilot):
         results = []
 
         for job_id, program in zip(job_ids, programs):
-            results.append(QMwarePilot._get_job_result(job_id, program))
+            results.extend(QMwarePilot._get_job_results(job_id, program))
 
         return results, JobState.FINISHED
 
     @staticmethod
-    def _get_job_result(job_id: str, program: QuantumProgramDataclass) -> ResultDataclass:
+    def _get_job_results(job_id: str, program: QuantumProgramDataclass) -> List[ResultDataclass]:
         for _i in range(100):
             response = requests.get(urljoin(QMWARE_URL, f"/v0/jobs/{job_id}"), headers=AUTHORIZATION_HEADERS)
             response.raise_for_status()
@@ -126,15 +126,20 @@ class QMwarePilot(Pilot):
         counts = {element["number"]: element["hits"] for element in results}
         probabilities = {element["number"]: element["probability"] for element in results}
 
-        return ResultDataclass(
-            program=program,
-            result_dict={
-                "counts": Pilot.qubits_decimal_to_hex(counts),
-                "probabilities": Pilot.qubits_decimal_to_hex(probabilities),
-            },
-            result_type=ResultType.COUNTS,
-            meta_data={"data": {"counts": Pilot.qubits_decimal_to_hex(counts)}},  # TODO: save more metadata
-        )
+        return [
+            ResultDataclass(
+                program=program,
+                data=Pilot.qubits_decimal_to_hex(counts),
+                result_type=ResultType.COUNTS,
+                meta={},  # TODO: save more metadata
+            ),
+            ResultDataclass(
+                program=program,
+                data=Pilot.qubits_decimal_to_hex(probabilities),
+                result_type=ResultType.PROBABILITIES,
+                meta={},  # TODO: save more metadata
+            ),
+        ]
 
     def execute_provider_specific(
         self, job: JobDataclass, circuits: Sequence[Tuple[QuantumProgramDataclass, Any]], token: Optional[str] = None
