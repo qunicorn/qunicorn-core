@@ -53,6 +53,7 @@ copyright_year = sphinx_config.get("copyright-year", 2023)
 copyright = f"{copyright_year}, {author}"
 version = str(package_config.get("version"))
 release = str(sphinx_config.get("release", version))
+config_theme = str(sphinx_config.get("theme"))
 
 if sphinx_config.get("html-baseurl", None):
     html_baseurl = sphinx_config.get("html-baseurl", None)
@@ -205,7 +206,7 @@ pygments_style = "sphinx"
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = "alabaster"
+html_theme = config_theme if config_theme else "alabaster"
 
 if ON_READTHEDOCS:
     html_theme = "sphinx_rtd_theme"

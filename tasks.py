@@ -481,7 +481,7 @@ def browse_doc(c):
     Args:
         c (Context): task context
     """
-    index_path = Path("./docs/_build/html/index.html")
+    index_path = Path("./docs/_build/index.html")
     if not index_path.exists():
         doc(c)
 
