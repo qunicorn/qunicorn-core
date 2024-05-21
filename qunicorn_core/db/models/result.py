@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, Optional
+from typing import Any, Optional, Dict
 
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -33,8 +33,8 @@ class ResultDataclass(DbModel):
         id (int): The ID of the result. (set by the database)
         job (JobDataclass, optional): The job that was executed.
         program (QuantumProgramDataclass, optional): The specific program that was executed.
-        data (dict): The result of the job, in the given result_type.
-        meta_data (dict): Some other data that was given by ibm.
+        data (Any): The result of the job, in the given result_type.
+        meta (dict): Some other data that was given by ibm.
         result_type (Enum): Result type depending on the Job_Type of the job.
     """
 
@@ -54,5 +54,5 @@ class ResultDataclass(DbModel):
         lambda: quantum_program.QuantumProgramDataclass, lazy="selectin", default=None
     )
     data: Mapped[Any] = mapped_column(sql.JSON, default=None, nullable=True)
-    meta: Mapped[Any] = mapped_column(sql.JSON, default=None, nullable=True)
+    meta: Mapped[Dict[str, Any]] = mapped_column(sql.JSON, default=None, nullable=True)
     result_type: Mapped[str] = mapped_column(sql.String(50), default=ResultType.COUNTS.value)
