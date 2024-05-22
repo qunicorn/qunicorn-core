@@ -53,25 +53,19 @@ How to open the database
 
 1. Double-click on ./instance/qunicorn_core.db to automatically configure a database connection that can be searched and manipulated
 
-
-How to open the database
-------------------------
-
-1. Double-click on ./instance/qunicorn_core.db to automatically configure a database connection that can be searched and manipulated
-
-2. How to display the domain model of the database: rightclick at the database tab on main -> diagrams -> show diagrams
+2. Display the domain model of the database: rightclick at the database tab on main → diagrams → show diagrams
 
 
 How to check if the pipeline will succeed
 -----------------------------------------
 
-1. poetry run invoke check-linting
+1. :code:`poetry run invoke check-linting`
 
-    a. If black fails fix it with: poetry run black .
+    a. If black fails fix it with: :code:`poetry run black .`
 
-    b. If flake8 fails fix it with: poetry run flake8
+    b. If flake8 fails fix it with: :code:`poetry run flake8`
 
-2. poetry run pytest ./tests/automated_tests/
+2. :code:`poetry run pytest ./tests/automated_tests/`
 
 
 How to test the user authentication
