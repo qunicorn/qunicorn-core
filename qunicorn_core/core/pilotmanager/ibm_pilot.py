@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Any, List, Optional, Sequence, Tuple, Union, Dict
 
 import qiskit_aer
-from qiskit import transpile, QuantumCircuit
+from qiskit import transpile, QuantumCircuit, QiskitError
 from qiskit.primitives import Estimator as LocalEstimator
 from qiskit.primitives import EstimatorResult
 from qiskit.primitives import Sampler as LocalSampler
@@ -279,28 +279,41 @@ class IBMPilot(Pilot):
         circuits: List[QuantumCircuit] = None,
     ) -> list[ResultDataclass]:
         result_dtos: list[ResultDataclass] = []
-        classical_registers_metadata = []
 
-        for circuit in circuits:
-            for reg in circuit.cregs:
-                # FIXME: don't append registers that are not measured
-                classical_registers_metadata.append({"name": reg.name, "size": reg.size})
+        try:
+            binary_counts = ibm_result.get_counts()
+        except QiskitError:
+            binary_counts = [None]
+
+        if isinstance(binary_counts, dict):
+            binary_counts = [binary_counts]
 
         for i, result in enumerate(ibm_result.results):
             metadata = result.to_dict()
             metadata["format"] = "hex"
+            classical_registers_metadata = []
+
+            for reg in reversed(circuits[i].cregs):
+                # FIXME: don't append registers that are not measured
+                classical_registers_metadata.append({"name": reg.name, "size": reg.size})
+
             metadata["registers"] = classical_registers_metadata
-            data: Dict = metadata.pop("data")
+            metadata.pop("data")
             metadata.pop("circuit", None)
-            probabilities: dict = Pilot.calculate_probabilities(data.get("counts", {}))
+
+            hex_counts = IBMPilot._binary_counts_to_hex(binary_counts[i])
+
             result_dtos.append(
                 ResultDataclass(
                     program=programs[i] if programs else None,
                     result_type=ResultType.COUNTS,
-                    data=data.get("counts", {"": 0}),
+                    data=hex_counts if hex_counts else {"": 0},
                     meta=metadata,
                 )
             )
+
+            probabilities: dict = Pilot.calculate_probabilities(hex_counts) if hex_counts else {"": 0}
+
             result_dtos.append(
                 ResultDataclass(
                     program=programs[i] if programs else None,
@@ -310,6 +323,25 @@ class IBMPilot(Pilot):
                 )
             )
         return result_dtos
+
+    @staticmethod
+    def _binary_counts_to_hex(binary_counts: Dict[str, int] | None) -> Dict[str, int] | None:
+        if binary_counts is None:
+            return None
+
+        hex_counts = {}
+
+        for k, v in binary_counts.items():
+            hex_registers = []
+
+            for binary_register in k.split():
+                hex_registers.append(f"0x{int(binary_register, 2):x}")
+
+            hex_sample = " ".join(hex_registers)
+
+            hex_counts[hex_sample] = v
+
+        return hex_counts
 
     @staticmethod
     def _map_estimator_results_to_dataclass(
@@ -340,7 +372,7 @@ class IBMPilot(Pilot):
                 results.append(
                     ResultDataclass(
                         program=programs[i],
-                        data=Pilot.qubits_decimal_to_hex(ibm_result.quasi_dists[i]),
+                        data=Pilot.qubits_integer_to_hex(ibm_result.quasi_dists[i]),
                         result_type=ResultType.QUASI_DIST,
                     )
                 )
