@@ -7,7 +7,7 @@ This package uses `Poetry <https://python-poetry.org/docs//>`_.
 VSCode
 ################
 
-For vscode install the python extension and add the poetry venv path to the folders the python extension searches for
+For VSCode, install the python extension and add the poetry venv path to the folders the python extension searches for
 venvs.
 
 On linux:
@@ -24,13 +24,13 @@ On linux:
 Pycharm
 ################
 
-For Pycharm there exists a detailed guide in the documentation: :doc:`Pycharm Docu - Development Guide <./configure_pycharm>`
-With also some hints how to develop qunicorn.
+For Pycharm, there is a detailed guide in the documentation: :doc:`Pycharm Docu - Development Guide <./configure_pycharm>`.
+Including some hints on how to develop qunicorn.
 
 Development
 ################
 
-Run `poetry install` to install dependencies.
+Run :code:`poetry install` to install dependencies.
 
 Environment variables
 #########################
@@ -72,13 +72,13 @@ Create the initial database (If this doesn't work, try to delete the db-file fro
 
 
 If you want to run requests using the rigetti pilot you need to have instances of quilc and qvm running.
-For this first download the forest-sdk on https://qcs.rigetti.com/sdk-downloads and then run the following commands:
+For this, first download the forest-sdk on https://qcs.rigetti.com/sdk-downloads and then run the following commands:
 
 .. code-block:: bash
 
     // Terminal 1
 
-   quilc -S
+    quilc -S
 
     // Terminal 2
 
@@ -98,7 +98,7 @@ Trying out the Template
 
 For a list of all dependencies with their license open http://localhost:5005/licenses.
 The Port for qunicorn_core is set to 5005 to not interfere with other flask default apps.
-Settings can be changed in the .flaskenv.
+Settings can be changed in the `.flaskenv`.
 
 The API:
 **********************
@@ -126,28 +126,28 @@ Debug pages:
 How to check if the pipeline will succeed
 -----------------------------------------
 
-1. poetry run invoke check-linting
+1. :code:`poetry run invoke check-linting`
 
-    a. If black fails fix it with: poetry run black .
+    a. If black fails fix it with: :code:`poetry run black .`
 
-    b. If flake8 fails fix it with: poetry run flake8
+    b. If flake8 fails fix it with: :code:`poetry run flake8`
 
-2. poetry run pytest ./tests/automated_tests/
+2. :code:`poetry run pytest ./tests/automated_tests/`
 
 
 How to test the user authentication
 -----------------------------------
 
-Checkout the Keycloak documentation under ./architecture_documentation/authentication.rst
+Checkout the Keycloak documentation :doc:`here <../architecture_documentation/authentication>`.
 
 
 How to write documentation
 --------------------------
 
-Use Read the docs for that: ./rtd_setup_testing.rst
+Use Read the docs for that: :doc:`ReadTheDocs - Setup and Testing <./rtd_setup_testing>`
 
 
 Other useful commands
 ----------------------
 
-To add some flask or invoke commands checkout the documentation: ./useful_commands.rst
+To add some flask or invoke commands see :doc:`Useful Commands <./useful_commands>` in the documentation.
