@@ -34,7 +34,7 @@ class ResultDto:
     id: int
     circuit: Optional[str]
     data: Any
-    metadata: dict
+    meta: dict
     result_type: ResultType
 
 
@@ -42,5 +42,5 @@ class ResultDtoSchema(MaBaseSchema):
     id = ma.fields.Int(required=True, dump_only=True)
     circuit = ma.fields.String(required=True, dump_only=True)
     data = ma.fields.Raw(required=True, dump_only=True)
-    metadata = ma.fields.Dict(required=True, dump_only=True)
+    meta = ma.fields.Dict(required=True, dump_only=True)
     result_type = ma.fields.Enum(enum=ResultType, required=True, dump_only=True)

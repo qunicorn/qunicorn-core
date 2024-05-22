@@ -24,7 +24,7 @@ def dataclass_to_dto(result: ResultDataclass) -> ResultDto:
         id=result.id,
         circuit=result.program.quantum_circuit if result.program else None,
         data=result.data,
-        metadata=result.meta,
+        meta=result.meta,
         result_type=ResultType(result.result_type),
     )
 
