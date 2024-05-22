@@ -141,23 +141,30 @@ class Pilot:
         return devices_without_default, default_device
 
     @staticmethod
-    def qubits_decimal_to_hex(qubits_in_binary: dict) -> dict:
-        """To make sure that the qubits in the counts or probabilities are in hex format and not in decimal format"""
+    def qubits_integer_to_hex(qubits_as_integers: dict) -> dict:
+        """To make sure that the qubits in the counts or probabilities are in hex string format and not in decimal integer format
+        @param qubits_as_integers: example: { 3: 1234 }
+        @return: example: { "0x3": 1234 }
+        """
         try:
-            return dict([(hex(k), v) for k, v in qubits_in_binary.items()])
+            return dict([(hex(k), v) for k, v in qubits_as_integers.items()])
         except Exception:
             raise QunicornError("Could not convert decimal-results to hex")
 
     @staticmethod
-    def qubit_binary_to_hex(qubits_in_binary: dict, reverse_qubit_order: bool = False) -> dict:
-        """To make sure that the qubits in the counts or probabilities are in hex format and not in binary format"""
+    def qubit_binary_string_to_hex(qubits_in_binary: dict, reverse_qubit_order: bool = False) -> dict:
+        """To make sure that the qubits in the counts or probabilities are in hex format and not in binary string format
+        @param qubits_in_binary: example: { "0101": 1234 }
+        @param reverse_qubit_order: whether to reverse the order of the qubits
+        @return: example: { "0x5": 1234 }
+        """
 
         try:
             hex_result = {}
 
             for k, v in qubits_in_binary.items():
                 if reverse_qubit_order:
-                    k = "".join(reversed(k))
+                    k = k[::-1]
 
                 hex_result[hex(int(k, 2))] = v
 

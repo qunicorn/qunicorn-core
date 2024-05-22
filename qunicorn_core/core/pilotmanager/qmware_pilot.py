@@ -129,13 +129,13 @@ class QMwarePilot(Pilot):
         return [
             ResultDataclass(
                 program=program,
-                data=Pilot.qubits_decimal_to_hex(counts),
+                data=Pilot.qubits_integer_to_hex(counts),
                 result_type=ResultType.COUNTS,
                 meta={},  # TODO: save more metadata
             ),
             ResultDataclass(
                 program=program,
-                data=Pilot.qubits_decimal_to_hex(probabilities),
+                data=Pilot.qubits_integer_to_hex(probabilities),
                 result_type=ResultType.PROBABILITIES,
                 meta={},  # TODO: save more metadata
             ),

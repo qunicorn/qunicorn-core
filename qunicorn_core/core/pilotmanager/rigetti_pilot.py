@@ -69,7 +69,7 @@ class RigettiPilot(Pilot):
                 qvm = get_qc(job.executed_on.name)
                 qvm_result = qvm.run(qvm.compile(circuit)).get_register_map().get("ro")
                 result_dict = RigettiPilot.result_to_dict(qvm_result)
-                result_dict = RigettiPilot.qubit_binary_to_hex(result_dict, job.id)
+                result_dict = RigettiPilot.qubit_binary_string_to_hex(result_dict, job.id)
                 probabilities_dict = RigettiPilot.calculate_probabilities(result_dict)
                 results.append(
                     ResultDataclass(

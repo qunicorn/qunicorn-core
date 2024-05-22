@@ -90,7 +90,7 @@ class AWSPilot(Pilot):
             try:
                 results.append(
                     ResultDataclass(
-                        data=Pilot.qubit_binary_to_hex(result.measurement_counts, reverse_qubit_order=True),
+                        data=Pilot.qubit_binary_string_to_hex(result.measurement_counts, reverse_qubit_order=True),
                         job=job,
                         program=programs[i],
                         meta="",
@@ -99,7 +99,9 @@ class AWSPilot(Pilot):
                 )
                 results.append(
                     ResultDataclass(
-                        data=Pilot.qubit_binary_to_hex(result.measurement_probabilities, reverse_qubit_order=True),
+                        data=Pilot.qubit_binary_string_to_hex(
+                            result.measurement_probabilities, reverse_qubit_order=True
+                        ),
                         job=job,
                         program=programs[i],
                         meta="",
