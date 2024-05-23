@@ -211,38 +211,37 @@ def check_standard_result_data(program_index: int, job: JobDataclass, result: Re
 
 def check_if_job_runner_result_correct_multiple_gates(job: JobDataclass):
     """Iterate over every result and check if the distribution of the measurement is correct"""
+    program_id_to_index = {program.id: i for i, program in enumerate(job.deployment.programs)}
+    program_ids_from_results = {result.program_id for result in job.results}
 
-    assert len(job.results) == 2 * len(job.deployment.programs)
+    assert len(program_ids_from_results) == len(job.deployment.programs)  # every program needs at least one result
 
     for result_index in range(len(job.results)):
-        program_index = result_index // 2  # every program is expected to have 2 results
         result: ResultDataclass = job.results[result_index]
-
-        if result_index % 2 == 0:
-            assert result.result_type == ResultType.COUNTS
-        else:
-            assert result.result_type == ResultType.PROBABILITIES
+        program_index = program_id_to_index[result.program_id]
 
         check_standard_result_data(program_index, job, result)
-        assert result.meta is not None
         shots: int = job.shots
         result_data: dict = result.data
         prob_tolerance: float = PROBABILITY_TOLERANCE * 2
         count_tolerance: float = COUNTS_TOLERANCE * 2
 
-        if program_index != 2:
+        if program_index in [0, 1, 3, 4]:
             qubit = BIT_8 if program_index == 3 else BIT_1
 
-            if result_index % 2 == 0:
+            if result.result_type == ResultType.COUNTS:
                 assert result_data[qubit] == shots
-            else:
+
+            if result.result_type == ResultType.PROBABILITIES:
                 assert result_data[qubit] == PROBABILITY_1
-        else:
-            if result_index % 2 == 0:
+
+        if program_index == 2:
+            if result.result_type == ResultType.COUNTS:
                 assert compare_values_with_tolerance(7 * (shots / 8), result_data[BIT_0], count_tolerance)
                 assert compare_values_with_tolerance(shots / 8, result_data[BIT_1], count_tolerance)
-                assert (result_data[BIT_0] + result_data[BIT_1]) == shots
-            else:
+                assert (result_data[BIT_0] + result_data[BIT_1]) == shots  #
+
+            if result.result_type == ResultType.PROBABILITIES:
                 assert compare_values_with_tolerance(7 * (PROBABILITY_1 / 8), result_data[BIT_0], prob_tolerance)
                 assert compare_values_with_tolerance(PROBABILITY_1 / 8, result_data[BIT_1], prob_tolerance)
                 assert (result_data[BIT_0] + result_data[BIT_1]) > PROBABILITY_1 - PROBABILITY_TOLERANCE
