@@ -162,43 +162,46 @@ def check_if_job_finished(job: JobDataclass):
 
 def check_if_job_runner_result_correct(job: JobDataclass):
     """Iterate over every result and check if the distribution of the measurement is correct"""
+    program_id_to_index = {program.id: i for i, program in enumerate(job.deployment.programs)}
+    program_ids_from_results = {result.program_id for result in job.results}
 
-    assert len(job.results) == 2 * len(job.deployment.programs)
+    assert len(program_ids_from_results) == len(job.deployment.programs)  # every program needs at least one result
 
     for result_index in range(len(job.results)):
-        program_index = result_index // 2  # every program is expected to have 2 results
         result: ResultDataclass = job.results[result_index]
+        program_index = program_id_to_index[result.program_id]
+
         check_standard_result_data(program_index, job, result)
         assert result.meta is not None
         shots: int = job.shots
         data: dict = result.data
 
-        # Check if the first result is distributed correctly: 50% for the qubit zero and 50% for the qubit three
-        if result_index % 4 == 0:
-            assert result.result_type == ResultType.COUNTS
-            assert compare_values_with_tolerance(shots / 2, data[BIT_0], COUNTS_TOLERANCE)
-            assert compare_values_with_tolerance(shots / 2, data[BIT_3], COUNTS_TOLERANCE)
-            assert (data[BIT_0] + data[BIT_3]) == shots
-        elif result_index % 4 == 1:
-            assert result.result_type == ResultType.PROBABILITIES
-            assert compare_values_with_tolerance(PROBABILITY_1 / 2, data[BIT_0], PROBABILITY_TOLERANCE)
-            assert compare_values_with_tolerance(PROBABILITY_1 / 2, data[BIT_3], PROBABILITY_TOLERANCE)
-            assert (data[BIT_0] + data[BIT_3]) > PROBABILITY_1 - PROBABILITY_TOLERANCE
+        if program_index == 0:
+            # Check if the first result is distributed correctly: 50% for the qubit zero and 50% for the qubit three
+            if result.result_type == ResultType.COUNTS:
+                assert compare_values_with_tolerance(shots / 2, data[BIT_0], COUNTS_TOLERANCE)
+                assert compare_values_with_tolerance(shots / 2, data[BIT_3], COUNTS_TOLERANCE)
+                assert (data[BIT_0] + data[BIT_3]) == shots
 
-        # Check if the first result is distributed correctly: 100% for the qubit zero
-        elif result_index % 4 == 2:
-            assert result.result_type == ResultType.COUNTS
-            assert data[BIT_0] == shots
-        elif result_index % 4 == 3:
-            assert result.result_type == ResultType.PROBABILITIES
-            assert data[BIT_0] == PROBABILITY_1
+            if result.result_type == ResultType.PROBABILITIES:
+                assert compare_values_with_tolerance(PROBABILITY_1 / 2, data[BIT_0], PROBABILITY_TOLERANCE)
+                assert compare_values_with_tolerance(PROBABILITY_1 / 2, data[BIT_3], PROBABILITY_TOLERANCE)
+                assert (data[BIT_0] + data[BIT_3]) > PROBABILITY_1 - PROBABILITY_TOLERANCE
+
+        if program_index == 1:
+            # Check if the first result is distributed correctly: 100% for the qubit zero
+            if result.result_type == ResultType.COUNTS:
+                assert data[BIT_0] == shots
+
+            if result.result_type == ResultType.PROBABILITIES:
+                assert data[BIT_0] == PROBABILITY_1
 
 
 def compare_values_with_tolerance(value1, value2, tolerance) -> bool:
     return value1 + tolerance > value2 > value1 - tolerance
 
 
-def check_standard_result_data(program_index: int, job, result):
+def check_standard_result_data(program_index: int, job: JobDataclass, result: ResultDataclass):
     assert result.result_type != ResultType.ERROR, result
     assert result.job_id == job.id
     if hasattr(result, "circuit"):  # result is DTO
