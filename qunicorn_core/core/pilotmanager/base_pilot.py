@@ -154,7 +154,7 @@ class Pilot:
     @staticmethod
     def qubit_binary_string_to_hex(qubits_in_binary: dict, reverse_qubit_order: bool = False) -> dict:
         """To make sure that the qubits in the counts or probabilities are in hex format and not in binary string format
-        @param qubits_in_binary: example: { "0101": 1234 }
+        @param qubits_in_binary: example: { "010 1": 1234 }
         @param reverse_qubit_order: whether to reverse the order of the qubits
         @return: example: { "0x5": 1234 }
         """
@@ -163,10 +163,14 @@ class Pilot:
             hex_result = {}
 
             for k, v in qubits_in_binary.items():
-                if reverse_qubit_order:
-                    k = k[::-1]
+                registers: List[str] = k.split()
 
-                hex_result[hex(int(k, 2))] = v
+                if reverse_qubit_order:
+                    for i in range(len(registers)):
+                        registers[i] = registers[i][::-1]
+
+                bitstring = "".join(registers)
+                hex_result[hex(int(bitstring, 2))] = v
 
             return hex_result
 
