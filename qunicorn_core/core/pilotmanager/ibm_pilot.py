@@ -275,7 +275,7 @@ class IBMPilot(Pilot):
     def __map_runner_results_to_dataclass(
         ibm_result: Result,
         job: JobDataclass,
-        programs: Optional[Sequence[QuantumProgramDataclass]] = None,
+        programs: Sequence[QuantumProgramDataclass] = None,
         circuits: List[QuantumCircuit] = None,
     ) -> list[ResultDataclass]:
         result_dtos: list[ResultDataclass] = []
@@ -303,9 +303,12 @@ class IBMPilot(Pilot):
 
             hex_counts = IBMPilot._binary_counts_to_hex(binary_counts[i])
 
+            if programs is None:
+                raise ValueError("quantum programs missing")
+
             result_dtos.append(
                 ResultDataclass(
-                    program=programs[i] if programs else None,
+                    program=programs[i],
                     result_type=ResultType.COUNTS,
                     data=hex_counts if hex_counts else {"": 0},
                     meta=metadata,
@@ -316,7 +319,7 @@ class IBMPilot(Pilot):
 
             result_dtos.append(
                 ResultDataclass(
-                    program=programs[i] if programs else None,
+                    program=programs[i],
                     result_type=ResultType.PROBABILITIES,
                     data=probabilities,
                     meta=metadata,
