@@ -76,7 +76,7 @@ class RigettiPilot(Pilot):
                         program=program,
                         data=result_dict,
                         result_type=ResultType.COUNTS,
-                        meta="",
+                        meta={},  # FIXME: add register metadata
                     )
                 )
                 results.append(
@@ -84,7 +84,7 @@ class RigettiPilot(Pilot):
                         program=program,
                         data=probabilities_dict,
                         result_type=ResultType.PROBABILITIES,
-                        meta="",
+                        meta={},  # FIXME: add register metadata
                     )
                 )
             return results
