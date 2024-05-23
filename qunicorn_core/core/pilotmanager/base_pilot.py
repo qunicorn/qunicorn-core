@@ -16,7 +16,7 @@ import os
 from datetime import datetime
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any, List, Optional, Sequence, Tuple, Union
+from typing import Any, List, Optional, Sequence, Tuple, Union, Generator
 
 from celery.states import PENDING
 
@@ -153,24 +153,70 @@ class Pilot:
 
     @staticmethod
     def qubit_binary_string_to_hex(qubits_in_binary: dict, reverse_qubit_order: bool = False) -> dict:
-        """To make sure that the qubits in the counts or probabilities are in hex format and not in binary string format
+        """To make sure that the qubits in the counts or probabilities are in hex format with registers and not in
+        binary string format with registers
         @param qubits_in_binary: example: { "010 1": 1234 }
         @param reverse_qubit_order: whether to reverse the order of the qubits
-        @return: example: { "0x5": 1234 }
+        @return: example: { "0x2 0x1": 1234 }
         """
 
         try:
             hex_result = {}
 
-            for k, v in qubits_in_binary.items():
-                registers: List[str] = k.split()
+            for bitstring, v in qubits_in_binary.items():
+                registers: List[str] = bitstring.split()
+                hex_registers = []
 
-                if reverse_qubit_order:
-                    for i in range(len(registers)):
-                        registers[i] = registers[i][::-1]
+                for reg in registers:
+                    if reverse_qubit_order:
+                        reg = reg[::-1]
 
-                bitstring = "".join(registers)
-                hex_result[hex(int(bitstring, 2))] = v
+                    hex_registers.append(f"0x{int(reg, 2):x}")
+
+                hex_string = " ".join(hex_registers)
+                hex_result[hex_string] = v
+
+            return hex_result
+
+        except Exception:
+            raise QunicornError("Could not convert binary-results to hex")
+
+    @staticmethod
+    def qubit_hex_string_to_binary(
+        qubits_in_hex: dict, registers: List[int], reverse_qubit_order: bool = False
+    ) -> dict:
+        """To make sure that the qubits in the counts or probabilities are in binary format with registers and not in
+        hex string format without registers
+        @param qubits_in_hex: example: { "0x5": 1234 }
+        @param registers: size of the registers, example: [3, 1]
+        @param reverse_qubit_order: whether to reverse the order of the qubits
+        @return: example: { "010 1": 1234 }
+        """
+
+        try:
+            hex_result = {}
+
+            for hex_string, v in qubits_in_hex.items():
+                max_len = sum(registers)
+                binary = f"{int(hex_string, 16):0{max_len}b}"
+                binary = binary[-max_len:]
+
+                def sliced() -> Generator[str]:
+                    start = 0
+
+                    for reg in registers:
+                        end = start + reg
+                        bin_register = binary[start:end]
+
+                        if reverse_qubit_order:
+                            bin_register = bin_register[::-1]
+
+                        yield bin_register
+                        start = end
+
+                binary_registers = " ".join(sliced())
+
+                hex_result[binary_registers] = v
 
             return hex_result
 
