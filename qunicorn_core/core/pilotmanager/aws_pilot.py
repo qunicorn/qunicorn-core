@@ -55,6 +55,7 @@ class AWSPilot(Pilot):
 
         # Since QASM is stored as a string, it needs to be converted to a QASM program before execution
         programs = [p for p, _ in circuits]
+        # FIXME: support circuits where not all qubits have gates
         preprocessed_circuits = [(Program(source=c) if isinstance(c, str) else c) for _, c in circuits]
 
         quantum_tasks: LocalQuantumTaskBatch = LocalSimulator().run_batch(preprocessed_circuits, shots=job.shots)
@@ -86,14 +87,23 @@ class AWSPilot(Pilot):
         """Map the results from the aws simulator to a result dataclass object"""
         results = []
         contains_errors = False
+
         for i, result in enumerate(aws_results):
+            metadata = result.additional_metadata.dict()
+            metadata["format"] = "hex"
+
+            most_common_bitstring: str = result.measurement_counts.most_common(1)[0][0]
+            metadata["registers"] = [
+                {"name": "", "size": len(most_common_bitstring)}
+            ]  # FIXME: support multiple registers
+
             try:
                 results.append(
                     ResultDataclass(
                         data=Pilot.qubit_binary_string_to_hex(result.measurement_counts, reverse_qubit_order=True),
                         job=job,
                         program=programs[i],
-                        meta="",
+                        meta=metadata,
                         result_type=ResultType.COUNTS,
                     )
                 )
@@ -104,7 +114,7 @@ class AWSPilot(Pilot):
                         ),
                         job=job,
                         program=programs[i],
-                        meta="",
+                        meta=metadata,
                         result_type=ResultType.PROBABILITIES,
                     )
                 )
@@ -117,8 +127,8 @@ class AWSPilot(Pilot):
                         result_type=ResultType.ERROR.value,
                         job=job,
                         program=programs[i],
-                        result_dict={"exception_message": exception_message},
-                        meta_data={"stack_trace": stack_trace},
+                        data={"exception_message": exception_message},
+                        meta={"stack_trace": stack_trace},
                     )
                 )
                 contains_errors = True
