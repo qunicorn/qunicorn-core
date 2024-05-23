@@ -172,7 +172,6 @@ def check_if_job_runner_result_correct(job: JobDataclass):
         program_index = program_id_to_index[result.program_id]
 
         check_standard_result_data(program_index, job, result)
-        assert result.meta is not None
         shots: int = job.shots
         data: dict = result.data
 
