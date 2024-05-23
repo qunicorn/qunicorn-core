@@ -223,7 +223,7 @@ class IBMPilot(Pilot):
         job.type = JobType.IBM_RUNNER.value
         job.save(commit=True)
         result_type: ResultType = ResultType.UPLOAD_SUCCESSFUL
-        ibm_results = [ResultDataclass(result_dict={"ibm_job_id": ibm_program_ids[0]}, result_type=result_type)]
+        ibm_results = [ResultDataclass(data={"ibm_job_id": ibm_program_ids[0]}, result_type=result_type)]
         return ibm_results, JobState.READY
 
     def __run_ibm_program(self, job: JobDataclass, token: Optional[str]) -> Tuple[List[ResultDataclass], JobState]:
@@ -358,8 +358,8 @@ class IBMPilot(Pilot):
                 ResultDataclass(
                     program=programs[i],
                     result_dict={"value": str(value), "variance": str(variance)},
-                    result_type=ResultType.VALUE_AND_VARIANCE,
-                    meta_data={"observer": f"SparsePauliOp-{observer}"},
+                    data=ResultType.VALUE_AND_VARIANCE,
+                    meta={"observer": f"SparsePauliOp-{observer}"},
                 )
             )
         return result_dtos
@@ -388,7 +388,7 @@ class IBMPilot(Pilot):
                         job=job,
                         program=programs[i],
                         data={"exception_message": exception_message},
-                        meta_data={"stack_trace": stack_trace},
+                        meta={"stack_trace": stack_trace},
                     )
                 )
                 contains_errors = True

@@ -39,7 +39,7 @@ def exception_to_error_results(
             result_type=ResultType.ERROR.value,
             job=None,
             program=program,
-            result_dict={"exception_message": exception_message},
-            meta_data={"stack_trace": stack_trace},
+            data={"exception_message": exception_message},
+            meta={"stack_trace": stack_trace},
         )
     ]
