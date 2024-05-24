@@ -236,12 +236,12 @@ class IBMPilot(Pilot):
         ibm_job_id = job.results[0].result_dict["ibm_job_id"]  # FIXME
 
         try:
-            result = service.run(ibm_job_id, inputs=input_dict, options=options_dict).result()
+            result: RuntimeJob = service.run(ibm_job_id, inputs=input_dict, options=options_dict).result()
         except IBMRuntimeError as exception:
             job.save_error(exception)
             raise QunicornError(type(exception).__name__, HTTPStatus.INTERNAL_SERVER_ERROR)
 
-        ibm_results = IBMPilot.__map_runner_results_to_dataclass(result, job=job)
+        ibm_results = [ResultDataclass()]  # FIXME: map result to list of ResultDataclass
 
         return ibm_results, JobState.FINISHED
 
@@ -275,10 +275,10 @@ class IBMPilot(Pilot):
     def __map_runner_results_to_dataclass(
         ibm_result: Result,
         job: JobDataclass,
-        programs: Sequence[QuantumProgramDataclass] = None,
+        programs: Sequence[QuantumProgramDataclass],
         circuits: List[QuantumCircuit] = None,
     ) -> list[ResultDataclass]:
-        result_dtos: list[ResultDataclass] = []
+        results: list[ResultDataclass] = []
 
         try:
             binary_counts = ibm_result.get_counts()
@@ -303,10 +303,7 @@ class IBMPilot(Pilot):
 
             hex_counts = IBMPilot._binary_counts_to_hex(binary_counts[i])
 
-            if programs is None:
-                raise ValueError("quantum programs missing")
-
-            result_dtos.append(
+            results.append(
                 ResultDataclass(
                     program=programs[i],
                     result_type=ResultType.COUNTS,
@@ -317,7 +314,7 @@ class IBMPilot(Pilot):
 
             probabilities: dict = Pilot.calculate_probabilities(hex_counts) if hex_counts else {"": 0}
 
-            result_dtos.append(
+            results.append(
                 ResultDataclass(
                     program=programs[i],
                     result_type=ResultType.PROBABILITIES,
@@ -325,7 +322,7 @@ class IBMPilot(Pilot):
                     meta=metadata,
                 )
             )
-        return result_dtos
+        return results
 
     @staticmethod
     def _binary_counts_to_hex(binary_counts: Dict[str, int] | None) -> Dict[str, int] | None:
