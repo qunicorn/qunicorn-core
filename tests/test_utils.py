@@ -247,7 +247,7 @@ def check_if_job_runner_result_correct_multiple_gates(job: JobDataclass):
             if result.result_type == ResultType.COUNTS:
                 assert compare_values_with_tolerance(7 * (shots / 8), result_data[BIT_0], count_tolerance)
                 assert compare_values_with_tolerance(shots / 8, result_data[BIT_1], count_tolerance)
-                assert (result_data[BIT_0] + result_data[BIT_1]) == shots  #
+                assert (result_data[BIT_0] + result_data[BIT_1]) == shots
 
             if result.result_type == ResultType.PROBABILITIES:
                 assert compare_values_with_tolerance(7 * (PROBABILITY_1 / 8), result_data[BIT_0], prob_tolerance)

@@ -189,19 +189,19 @@ class Pilot:
         hex string format without registers
         @param qubits_in_hex: example: { "0x5": 1234 }
         @param registers: size of the registers, example: [3, 1]
-        @param reverse_qubit_order: whether to reverse the order of the qubits
+        @param reverse_qubit_order: whether to reverse the order of the qubits in the individual registers
         @return: example: { "010 1": 1234 }
         """
 
         try:
             hex_result = {}
+            max_len = sum(registers)
 
             for hex_string, v in qubits_in_hex.items():
-                max_len = sum(registers)
-                binary = f"{int(hex_string, 16):0{max_len}b}"
-                binary = binary[-max_len:]
+                binary_string = f"{int(hex_string, 16):0{max_len}b}"
+                binary_string = binary_string[-max_len:]
 
-                def sliced() -> Generator[str]:
+                def sliced(binary) -> Generator[str]:
                     start = 0
 
                     for reg in registers:
@@ -214,7 +214,7 @@ class Pilot:
                         yield bin_register
                         start = end
 
-                binary_registers = " ".join(sliced())
+                binary_registers = " ".join(sliced(binary_string))
 
                 hex_result[binary_registers] = v
 
