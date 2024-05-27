@@ -163,15 +163,12 @@ def check_if_job_finished(job: JobDataclass):
 def check_if_job_runner_result_correct(job: JobDataclass):
     """Iterate over every result and check if the distribution of the measurement is correct"""
     program_id_to_index = {program.id: i for i, program in enumerate(job.deployment.programs)}
-    program_ids_from_results = {result.program_id for result in job.results}
-
-    assert len(program_ids_from_results) == len(job.deployment.programs)  # every program needs at least one result
+    check_job_data(job)
 
     for result_index in range(len(job.results)):
         result: ResultDataclass = job.results[result_index]
         program_index = program_id_to_index[result.program_id]
 
-        check_standard_result_data(program_index, job, result)
         shots: int = job.shots
         data: dict = result.data
 
@@ -200,27 +197,38 @@ def compare_values_with_tolerance(value1, value2, tolerance) -> bool:
     return value1 + tolerance > value2 > value1 - tolerance
 
 
-def check_standard_result_data(program_index: int, job: JobDataclass, result: ResultDataclass):
+def check_job_data(job: JobDataclass):
+    program_ids_from_results = {result.program_id for result in job.results}
+    program_ids_from_deployment = {program.id for program in job.deployment.programs}
+
+    assert program_ids_from_results == program_ids_from_deployment  # every program needs at least one result
+
+    result: ResultDataclass
+
+    for result in job.results:
+        assert result.result_type != ResultType.ERROR, result
+        assert result.job_id == job.id
+        check_standard_result_data(job, result)
+
+
+def check_standard_result_data(job: JobDataclass, result: ResultDataclass):
     assert result.result_type != ResultType.ERROR, result
     assert result.job_id == job.id
-    if hasattr(result, "circuit"):  # result is DTO
-        assert result.circuit == job.deployment.programs[program_index].quantum_circuit
-    if hasattr(result, "program_id"):  # Result is Dataclass
-        assert result.program_id == job.deployment.programs[program_index].id
+
+    program_ids = {program.id for program in job.deployment.programs}
+
+    assert result.program_id in program_ids
 
 
 def check_if_job_runner_result_correct_multiple_gates(job: JobDataclass):
     """Iterate over every result and check if the distribution of the measurement is correct"""
     program_id_to_index = {program.id: i for i, program in enumerate(job.deployment.programs)}
-    program_ids_from_results = {result.program_id for result in job.results}
-
-    assert len(program_ids_from_results) == len(job.deployment.programs)  # every program needs at least one result
+    check_job_data(job)
 
     for result_index in range(len(job.results)):
         result: ResultDataclass = job.results[result_index]
         program_index = program_id_to_index[result.program_id]
 
-        check_standard_result_data(program_index, job, result)
         shots: int = job.shots
         result_data: dict = result.data
         prob_tolerance: float = PROBABILITY_TOLERANCE * 2

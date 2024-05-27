@@ -59,9 +59,10 @@ def create_and_run_sampler_with_device(device_name: str):
 
 
 def check_if_job_sample_result_correct(job: JobDataclass):
+    test_utils.check_job_data(job)
+
     for i in range(len(job.results)):
         result: ResultDataclass = job.results[i]
-        test_utils.check_standard_result_data(i, job, result)
         assert result.meta is None
         probs: dict = result.data
 
