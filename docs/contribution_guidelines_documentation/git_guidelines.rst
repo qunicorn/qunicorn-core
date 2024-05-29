@@ -7,18 +7,18 @@ This Section Describes the different columns in the project view, as well as the
 
 * Sprint Backlog
     * Short Description:
-        This item hasn't been started but will be worked on in the current sprint
+        This item hasn't been started but will be worked on in the current sprint.
     * Issue-Status:
         Issues, which are yet to be worked on during the Sprint, but have not been started yet.
     * Next steps:
          Issue is assigned to the person working on it and moved to “In Progress”.
 * In Progress
     * Short Description:
-        This is actively being worked on in the current sprint
+        This is actively being worked on in the current sprint.
     * Issue-Status:
         Issue is not implemented yet, but is already being worked on.
     * Next steps:
-         Editing person implements feature on separate feature branch (see Naming).
+         Editing person implements feature on separate feature branch (see `Naming Conventions`_).
          When the editing person perceives the issue as done, a pull request is created on the dev-main branch and the
          issue is pushed to “Ready to Review”.
 * In Pending
