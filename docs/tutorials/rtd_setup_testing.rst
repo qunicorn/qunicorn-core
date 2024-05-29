@@ -22,7 +22,7 @@ Setting up local testing
 
 .. code-block:: bash
 
-    sphinx-apidoc -o .\docs\source\ .\qunicorn_core\
+    sphinx-apidoc -o ./docs/source/ ./qunicorn_core/
 
 
 Updating Requirements
@@ -38,7 +38,7 @@ Setting up remote
 Initial Setup
 **********************
 
-* Registrierung auf: `ReadTheDocs <https://about.readthedocs.com/?ref=readthedocs.org>`_
+* Register at: `ReadTheDocs <https://about.readthedocs.com/?ref=readthedocs.org>`_
 * Import a Project from GitHub
 * Choose Branch
 * Build the Docs
@@ -52,7 +52,7 @@ Testing
 Setting Up Webhook
 **********************
 
-* Create Webhook in Github (Settings -> Webhooks -> Add Webhook)
+* Create Webhook in Github (Settings → Webhooks → Add Webhook)
     * Data from ReadTheDocs can be found under Admin → Integrations
     * Tutorial: `How to manually configure a Git repository integration <https://docs.readthedocs.io/en/latest/guides/git-integrations.html>`_
 * Webhook automatically appears under Integrations

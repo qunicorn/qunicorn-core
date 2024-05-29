@@ -4,10 +4,10 @@ Useful Commands
 How to create invoke commands
 ##############################
 
-Add a method to qunicorn-core/tasks.py. All underscores in the method name will be transformed into minus.
+Add a method to qunicorn-core/tasks.py. All underscores in the method name will be transformed into minus (-).
 
-To execute something in the terminal use the 'c' that can be given as an argument.
-With 'c.run' a command can be executed.
+To execute something in the terminal use the context :code:`c` that is passed as an argument to the method.
+With :code:`c.run` a command can be executed.
 
 The method 'your_new_command' can be executed via the terminal with:
 
@@ -18,9 +18,9 @@ The method 'your_new_command' can be executed via the terminal with:
 How to create flask commands
 ##############################
 
-Add a method to qunicorn_core.db.cli.py with the annotation '@DB_CLI.command([your-command])'.
+Add a method to qunicorn_core.db.cli.py with the annotation :code:`@DB_CLI.command([your-command])`.
 
-Then this method will be executed via the terminal, with the command
+This method can be executed via the terminal, with the command
 
 .. code-block:: bash
 

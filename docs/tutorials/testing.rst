@@ -1,20 +1,20 @@
 Workflows and Pytest
 =====================
 
-Workflow:
+Workflows:
 ##########
 
-* Configured in .github\workflows
+* Configured in .github/workflows
 * Formatting-linting.yml
     * Executes linting provided by flake8 and black, configured in .flake8
 * run-pytests.yml
-    * Executed tests defined in \tests\automated_tests\
+    * Executed tests defined in /tests/automated_tests/
 
 PyTest
 #########
 
-* General Documentation: pytest: helps you write better programs — pytest documentation
-* Tests can be found in \tests
+* General Documentation: `pytest Documentation <https://docs.pytest.org/en/8.2.x/>`_
+* Tests can be found in /tests
 * Install pytest with
 
 .. code-block:: bash
@@ -25,7 +25,7 @@ PyTest
 
 .. code-block:: bash
 
-    pytest tests\automated_tests\
+    pytest tests/automated_tests/
 
 * pytest finds test methods through the ``test_``  prefix
 
@@ -46,8 +46,8 @@ Make sure to set the Environment, some methods need to be called with app_contex
 Notes:
 ********
 
-* Sometimes DB is not updated when within the same app_context block, try creating another and calling from there.
-* Mocks do not work within async celery task, due to it running on external broker.
+* Sometimes the DB is not updated when within the same app_context block, try creating another block and call from there.
+* Mocks do not work within async celery task, due to it running on an external broker.
 
 Further documentation can be found in the `pytest documentation <https://docs.pytest.org/en/7.1.x/getting-started.html>`_ .
 

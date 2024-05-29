@@ -1,6 +1,6 @@
 How to create a new pilot
 =========================================
-Hint: To see it on a live example:
+For a step-by-step example see:
 :doc:`Create a Qunicorn-Pilot <pilot_tutorial_demo>`
 
 
