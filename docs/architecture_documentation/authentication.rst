@@ -16,7 +16,15 @@ Start Keycloak
 --------------
 The Keycloak Docker Compose: `keycloak-docker-compose.yml` can be started by executing the following command:
 
-``[PathToDocker]\docker-compose.exe -f [PathToDockerCompose]\keycloak-docker-compose.yaml -p qunicorn-core up -d``
+.. code-block:: bash
+
+    docker compose -f keycloak-docker-compose.yaml -p qunicorn-core up -d
+
+Or on Windows:
+
+.. code-block:: bash
+
+    [PathToDocker]\docker-compose.exe -f [PathToDockerCompose]\keycloak-docker-compose.yaml -p qunicorn-core up -d
 
 After it has been started it should be possible to access Keycloak `http://localhost:8081`
 
@@ -68,10 +76,11 @@ Start Qunicorn
 --------------
 
 Before starting qunicorn the following environment variable has to be set:
-`JWKS_URL="http://localhost:8081/auth/realms/qunicorn/protocol/openid-connect/certs"`
+``JWKS_URL="http://localhost:8081/auth/realms/qunicorn/protocol/openid-connect/certs"``
 This can be done by adding the JWKS_URL to the `.env` file which can be found at 'qunicorn-core/.env'.
 After that qunicorn can be started locally.
-After opening the Qunicorn-API: `http://localhost:5005/swagger-ui/` click on the Authorize in the top right corner and enter your access token.
+After opening the Qunicorn-API: http://localhost:5005/swagger-ui/ click on the Authorize in the top right corner and enter your access token.
+
 Now you can test if this works, by creating a deployment and get all deployments (every deployment should be returned).
 Logging out again by clicking the authorize button again and then the logout.
 Now you can again retrieve all deployments and your new deployment should not be returned anymore.
