@@ -241,6 +241,8 @@ class IBMPilot(Pilot):
             job.save_error(exception)
             raise QunicornError(type(exception).__name__, HTTPStatus.INTERNAL_SERVER_ERROR)
 
+        # use assert to pacify linter for now...
+        assert result  # FIXME: actually use result object
         ibm_results = [ResultDataclass()]  # FIXME: map result to list of ResultDataclass
 
         return ibm_results, JobState.FINISHED

@@ -15,7 +15,7 @@
 from typing import Any
 
 from qiskit import QuantumCircuit as QiskitCircuit, QuantumRegister, ClassicalRegister
-from qiskit.circuit import CircuitInstruction, Clbit
+from qiskit.circuit import CircuitInstruction
 from qiskit.circuit.quantumcircuitdata import QuantumCircuitData
 from qrisp.circuit.quantum_circuit import QuantumCircuit as QrispCircuit
 
