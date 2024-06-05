@@ -142,7 +142,9 @@ class Pilot:
 
     @staticmethod
     def qubits_integer_to_hex(qubits_as_integers: dict) -> dict:
-        """To make sure that the qubits in the counts or probabilities are in hex string format and not in decimal integer format
+        """To make sure that the qubits in the counts or probabilities are in
+        hex string format and not in decimal integer format.
+
         @param qubits_as_integers: example: { 3: 1234 }
         @return: example: { "0x3": 1234 }
         """
@@ -155,6 +157,7 @@ class Pilot:
     def qubit_binary_string_to_hex(qubits_in_binary: dict, reverse_qubit_order: bool = False) -> dict:
         """To make sure that the qubits in the counts or probabilities are in hex format with registers and not in
         binary string format with registers
+
         @param qubits_in_binary: example: { "010 1": 1234 }
         @param reverse_qubit_order: whether to reverse the order of the qubits
         @return: example: { "0x2 0x1": 1234 }
@@ -187,6 +190,7 @@ class Pilot:
     ) -> dict:
         """To make sure that the qubits in the counts or probabilities are in binary format with registers and not in
         hex string format without registers
+
         @param qubits_in_hex: example: { "0x5": 1234 }
         @param registers: size of the registers, example: [3, 1]
         @param reverse_qubit_order: whether to reverse the order of the qubits in the individual registers
