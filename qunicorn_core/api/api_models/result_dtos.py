@@ -48,17 +48,8 @@ class ResultDtoSchema(MaBaseSchema):
     data = ma.fields.Raw(required=True, dump_only=True)
     metadata = ma.fields.Dict(required=True, dump_only=True)
     result_type = ma.fields.Enum(enum=ResultType, required=True, dump_only=True)
-    self = ma.fields.Function(
-        lambda obj: url_for(
-            "job-api.JobResultDetailView", result_id=obj.id, job_id=obj.job_id
-        )
-    )
-    job = ma.fields.Function(
-        lambda obj: url_for(
-                "job-api.JobDetailView",
-                job_id=obj.job_id
-            )
-    )
+    self = ma.fields.Function(lambda obj: url_for("job-api.JobResultDetailView", result_id=obj.id, job_id=obj.job_id))
+    job = ma.fields.Function(lambda obj: url_for("job-api.JobDetailView", job_id=obj.job_id))
     program = ma.fields.Function(
         lambda obj: (
             url_for(

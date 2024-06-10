@@ -127,9 +127,7 @@ def get_job_by_id(job_id: int, user_id: Optional[str]) -> JobResponseDto:
 def get_job_result_by_id(result_id: int, job_id: int, user_id: Optional[str]) -> ResultDto:
     result: ResultDataclass = ResultDataclass.get_by_id_authenticated_or_404(result_id, user_id)
     if result.job_id != job_id:
-        raise QunicornError(
-            f"Result with id {result_id} for job with id {job_id} not found.", HTTPStatus.NOT_FOUND
-        )
+        raise QunicornError(f"Result with id {result_id} for job with id {job_id} not found.", HTTPStatus.NOT_FOUND)
     return result_mapper.dataclass_to_dto(result)
 
 
