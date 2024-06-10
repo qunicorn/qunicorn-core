@@ -14,12 +14,12 @@
 
 from typing import Optional
 
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, Select
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.sql import sqltypes as sql
+from sqlalchemy.sql import sqltypes as sql, or_
 
 from . import deployment as deployment_model
-from .db_model import DbModel
+from .db_model import DbModel, T
 from ..db import REGISTRY
 
 
@@ -55,3 +55,15 @@ class QuantumProgramDataclass(DbModel):
     python_file_metadata: Mapped[Optional[str]] = mapped_column(sql.String(500), default=None, nullable=True)
     python_file_options: Mapped[Optional[str]] = mapped_column(sql.String(500), default=None, nullable=True)
     python_file_inputs: Mapped[Optional[str]] = mapped_column(sql.String(500), default=None, nullable=True)
+
+    @classmethod
+    def apply_authentication_filter(cls, query: Select[T], user_id: Optional[str]) -> Select[T]:
+        query = query.join(deployment_model.DeploymentDataclass)
+        if user_id is None:
+            return query.where(deployment_model.DeploymentDataclass.deployed_by == None)  # noqa: E711
+        return query.where(
+            or_(
+                deployment_model.DeploymentDataclass.deployed_by == None,  # noqa: E711
+                deployment_model.DeploymentDataclass.deployed_by == user_id,
+            )
+        )

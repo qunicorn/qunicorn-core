@@ -71,7 +71,7 @@ class DeploymentUpdateDto:
 class DeploymentDtoSchema(MaBaseSchema):
     id = ma.fields.Integer(required=True, metadata={"description": "UID for the deployment_api"})
     deployed_by = ma.fields.String(required=False, metadata={"description": "Optional id of the user who created it"})
-    programs = ma.fields.Nested(QuantumProgramDtoSchema(many=True))
+    programs = ma.fields.Nested(QuantumProgramDtoSchema(many=True, exclude=["deployment"]))
     deployed_at = ma.fields.AwareDateTime(required=True, metadata={"description": "time of deployment"})
     name = ma.fields.String(
         required=False,
