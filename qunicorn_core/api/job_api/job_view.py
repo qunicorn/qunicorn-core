@@ -30,6 +30,8 @@ from ..api_models.job_dtos import (
     QueuedJobsDtoSchema,
     SimpleJobDto,
     SimpleJobDtoSchema,
+    ResultDtoSchema,
+    ResultDto,
     TokenSchema,
 )
 from ...core import job_service
@@ -76,6 +78,32 @@ class JobDetailView(MethodView):
         """Delete job data via id and return the deleted job."""
         logging.info(f"Request: delete job with id: {job_id}")
         return job_service.delete_job_data_by_id(job_id, user_id=jwt_subject)
+
+
+@JOBMANAGER_API.route("/<int:job_id>/results/")
+class JobResultsView(MethodView):
+    """Results endpoint of a single job."""
+
+    @JOBMANAGER_API.response(HTTPStatus.OK, ResultDtoSchema(many=True))
+    @JOBMANAGER_API.require_jwt(optional=True)
+    def get(self, job_id: int, jwt_subject: Optional[str]):
+        """Get the results of a job."""
+        logging.info(f"Request: get results list of job with id: {job_id}")
+        job_response_dto: JobResponseDto = job_service.get_job_by_id(job_id, user_id=jwt_subject)
+        return job_response_dto.results
+
+
+@JOBMANAGER_API.route("/<int:job_id>/results/<int:result_id>/")
+class JobResultDetailView(MethodView):
+    """Single result endpoint of a single job."""
+
+    @JOBMANAGER_API.response(HTTPStatus.OK, ResultDtoSchema())
+    @JOBMANAGER_API.require_jwt(optional=True)
+    def get(self, result_id: int, job_id: int, jwt_subject: Optional[str]):
+        """Get a single result of a job."""
+        logging.info(f"Request: get result with id {result_id} of job with id: {job_id}")
+        job_result_dto: ResultDto = job_service.get_job_result_by_id(result_id, job_id, user_id=jwt_subject)
+        return job_result_dto
 
 
 # FIXME: merge the three following views under /<int:job_id>/ into one post method!

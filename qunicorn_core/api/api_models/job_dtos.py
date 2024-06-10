@@ -109,7 +109,7 @@ class JobResponseDtoSchema(MaBaseSchema):
     type = ma.fields.String(required=True, dump_only=True)
     started_at = ma.fields.AwareDateTime(required=True, dump_only=True)
     finished_at = ma.fields.AwareDateTime(required=True, allow_none=True, dump_only=True)
-    results = ma.fields.Nested(ResultDtoSchema(), many=True, required=True, dump_only=True)
+    results = ma.fields.Nested(ResultDtoSchema(exclude=["job"]), many=True, required=True, dump_only=True)
 
 
 class SimpleJobDtoSchema(MaBaseSchema):

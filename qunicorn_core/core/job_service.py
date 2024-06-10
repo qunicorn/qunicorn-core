@@ -13,6 +13,7 @@
 # limitations under the License.
 from datetime import datetime, timezone
 from os import environ
+from http import HTTPStatus
 from typing import Optional, Sequence
 
 from qunicorn_core.api.api_models.job_dtos import (
@@ -20,13 +21,15 @@ from qunicorn_core.api.api_models.job_dtos import (
     JobRequestDto,
     JobResponseDto,
     SimpleJobDto,
+    ResultDto,
 )
 from qunicorn_core.core import job_manager_service
-from qunicorn_core.core.mapper import job_mapper
+from qunicorn_core.core.mapper import job_mapper, result_mapper
 from qunicorn_core.db.db import DB
 from qunicorn_core.db.models.deployment import DeploymentDataclass
 from qunicorn_core.db.models.device import DeviceDataclass
 from qunicorn_core.db.models.job import JobDataclass
+from qunicorn_core.db.models.result import ResultDataclass
 from qunicorn_core.static.enums.job_state import JobState
 from qunicorn_core.static.enums.job_type import JobType
 from qunicorn_core.static.qunicorn_exception import QunicornError
@@ -119,6 +122,15 @@ def get_job_by_id(job_id: int, user_id: Optional[str]) -> JobResponseDto:
     """Gets the job from the database service with its id"""
     db_job: JobDataclass = JobDataclass.get_by_id_authenticated_or_404(job_id, user_id)
     return job_mapper.dataclass_to_response(db_job)
+
+
+def get_job_result_by_id(result_id: int, job_id: int, user_id: Optional[str]) -> ResultDto:
+    result: ResultDataclass = ResultDataclass.get_by_id_authenticated_or_404(result_id, user_id)
+    if result.job_id != job_id:
+        raise QunicornError(
+            f"Result with id {result_id} for job with id {job_id} not found.", HTTPStatus.NOT_FOUND
+        )
+    return result_mapper.dataclass_to_dto(result)
 
 
 def delete_job_data_by_id(job_id, user_id: Optional[str]) -> JobResponseDto:

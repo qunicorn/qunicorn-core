@@ -17,6 +17,7 @@
 from dataclasses import dataclass
 from typing import Optional, Any
 
+from flask import url_for
 import marshmallow as ma
 
 from ..flask_api_utils import MaBaseSchema
@@ -36,6 +37,9 @@ class ResultDto:
     data: Any
     metadata: dict
     result_type: ResultType
+    job_id: int
+    deployment_id: int
+    program_id: Optional[int]
 
 
 class ResultDtoSchema(MaBaseSchema):
@@ -44,3 +48,25 @@ class ResultDtoSchema(MaBaseSchema):
     data = ma.fields.Raw(required=True, dump_only=True)
     metadata = ma.fields.Dict(required=True, dump_only=True)
     result_type = ma.fields.Enum(enum=ResultType, required=True, dump_only=True)
+    self = ma.fields.Function(
+        lambda obj: url_for(
+            "job-api.JobResultDetailView", result_id=obj.id, job_id=obj.job_id
+        )
+    )
+    job = ma.fields.Function(
+        lambda obj: url_for(
+                "job-api.JobDetailView",
+                job_id=obj.job_id
+            )
+    )
+    program = ma.fields.Function(
+        lambda obj: (
+            url_for(
+                "deployment-api.DeploymentProgramDetailsView",
+                program_id=obj.program_id,
+                deployment_id=obj.deployment_id,
+            )
+            if obj.program_id is not None
+            else None
+        )
+    )
