@@ -24,7 +24,6 @@ def dataclass_to_dto(result: ResultDataclass) -> ResultDto:
     assert job is not None
     return ResultDto(
         id=result.id,
-        circuit=result.program.quantum_circuit if result.program else None,
         data=result.data,
         metadata=result.meta,
         result_type=ResultType(result.result_type),
