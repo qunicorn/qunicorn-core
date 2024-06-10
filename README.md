@@ -2,7 +2,7 @@
 
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-![Python: >= 3.8](https://img.shields.io/badge/python-^3.8-blue)
+![Python: >= 3.11](https://img.shields.io/badge/python-^3.11-blue)
 [![Formatting and linting](https://github.com/SeQuenC-Consortium/qunicorn-core/actions/workflows/formatting-linting.yml/badge.svg)](https://github.com/SeQuenC-Consortium/qunicorn-core/actions/workflows/formatting-linting.yml)
 [![Runs python tests](https://github.com/SeQuenC-Consortium/qunicorn-core/actions/workflows/run-pytests.yml/badge.svg)](https://github.com/SeQuenC-Consortium/qunicorn-core/actions/workflows/run-pytests.yml)
 
@@ -43,30 +43,37 @@ the qasm to quil transpilation, and IBM File_Runner and File_Upload job types.
 ### Available endpoints are:
 
 * **JOBS**
-    * **POST /jobs/** *(Create/Register and run new job)*
-        * Needs a valid token to connect to IBM
-        * Runs asynchronously so the results are not shown in the api response
     * **GET /jobs/** *(Get all jobs)*
+    * **POST /jobs/** *(Create/Register and run new job)*
+        * Needs a valid token to connect to IBM, local simulations from AWS or Rigetti work without a token
+        * Runs asynchronously so the results are not shown in the api response
     * **GET /jobs/{job_id}/** *(Get details/results of a job)*
-    * **DELETE /jobs/{job_id}/** *(Get details/results of a job)*
+    * **DELETE /jobs/{job_id}/** *(Delete a job and return Deleted Job Details)*
     * **POST /jobs/run/{job_id}/** *(Executes an uploaded python file)*
     * **POST /jobs/rerun/{job_id}/** *(Copies and Runs again an existing Job)*
-    * **GET /jobs/{deployment_id}/** *(Get all jobs with the given deploymentId)*
-    * **DELETE /jobs/{deployment_id}/** *(Delete all jobs with the given deploymentId)*
+    * **POST /jobs/cancel/{job_id}/** *(Cancel a job that has be started)*
+    * **GET /jobs/queue/** *(Get all queued and currently running jobs)*
+
+* **DEVICES**
+    * **GET /devices/** *(Get all currently saved devices)*
+    * **POST /devices/** *(Updates the device list from the provider)*
+    * **GET /devices/{device_id}/** *(Get details about one device)*
+    * **POST /devices/{device_id}/status** *(To check if a device is available)*
+    * **POST /devices/{device_id}/calibration** *(To get device properties for configuration)*
 
 * **DEPLOYMENTS**
     * **GET /deployments/** *(Get all Deployments)*
     * **POST /deployments/** *(Create a Deployment)*
-    * **GET /deployments/{deployment_id}/** *(Gets a Deployment)*
+    * **GET /deployments/{deployment_id}/** *(Get a Deployment by ID)*
     * **PUT /deployments/{deployment_id}/** *(Update a Deployment)*
     * **DELETE /deployments/{deployment_id}/** *(Deletes a Deployment)*
+    * **GET /deployments/{deployment_id}/jobs** *(Get the details of all jobs with a specific deployment id)*
+    * **DELETE /deployments/{deployment_id}/jobs** *(Delete all jobs with a specific deployment id)*
 
-* **DEVICES**
-    * **GET /devices/** *(Get all currently saved devices)*
-    * **PUT /devices/** *(Updates the devices, by retrieving them from IBM)*
-    * **PUT /devices/{device_id}/** *(Get details about one device)*
-    * **PUT /devices/{device_id}/status** *(To check if a device is running)*
-    * **PUT /devices/{device_id}/calibration** *(To get some device properties)*
+* **PROVIDER**
+    * **GET /provider/** *(Get all providers from the database)*
+    * **GET /provider/{provider_id}/** *(Get details of a provider)*
+
 
 ### Run manually
 
@@ -163,6 +170,30 @@ To authenticate yourself have a look at the following read the docs chapter: Arc
 #### Remarks
 
 For more detailed information about additional commands see the readme.md in docs.
+
+## Migrations
+
+ℹ️ Try to minimize the number of migrations and only create a new one when your changes are likely final.
+Altenatively merge all your new migration into one before submitting a pull request.
+
+If you have added new mapped dataclasses or modified existing ones, a migration script needs to be added.
+This script updates the tables and columns of the database to match the mapped dataclasses.
+To generate the migration script you need to do the following steps:
+
+```bash
+# delete the database
+rm instance/qhana_plugin_runner.db
+# upgrade the database to the latest migration
+poetry run flask db upgrade
+# generate a new migration script for the changes you made (always manually review the created migration!)
+poetry run flask db migrate -m "changelog message"
+# upgrade the database to reflect your changes
+poetry run flask db upgrade
+# if you need help with the commands
+poetry run flask db --help
+```
+
+The migrations are handled by [flask-migrate](https://flask-migrate.readthedocs.io/en/latest/index.html) which is based on [alembic](https://alembic.sqlalchemy.org/en/latest/index.html)
 
 ## Disclaimer of Warranty
 

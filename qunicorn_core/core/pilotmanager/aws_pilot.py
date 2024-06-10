@@ -12,21 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import traceback
+from typing import Any, List, Optional, Sequence, Tuple, Union
+
 from braket.devices import LocalSimulator
 from braket.ir.openqasm import Program
 from braket.tasks import GateModelQuantumTaskResult
 from braket.tasks.local_quantum_task_batch import LocalQuantumTaskBatch
 
-from qunicorn_core.api.api_models import DeviceDto
-from qunicorn_core.api.api_models.job_dtos import JobCoreDto
+from qunicorn_core.api.api_models.device_dtos import DeviceDto
 from qunicorn_core.core.pilotmanager.base_pilot import Pilot
-from qunicorn_core.db.database_services import job_db_service
 from qunicorn_core.db.models.device import DeviceDataclass
 from qunicorn_core.db.models.job import JobDataclass
 from qunicorn_core.db.models.provider import ProviderDataclass
-from qunicorn_core.db.models.provider_assembler_language import ProviderAssemblerLanguageDataclass
+from qunicorn_core.db.models.quantum_program import QuantumProgramDataclass
 from qunicorn_core.db.models.result import ResultDataclass
 from qunicorn_core.static.enums.assembler_languages import AssemblerLanguage
+from qunicorn_core.static.enums.job_state import JobState
 from qunicorn_core.static.enums.provider_name import ProviderName
 from qunicorn_core.static.enums.result_type import ResultType
 from qunicorn_core.static.qunicorn_exception import QunicornError
@@ -36,32 +38,40 @@ from qunicorn_core.util import logging
 class AWSPilot(Pilot):
     """The AWS Pilot"""
 
-    provider_name: ProviderName = ProviderName.AWS
-    supported_languages: list[AssemblerLanguage] = [AssemblerLanguage.BRAKET, AssemblerLanguage.QASM3]
+    provider_name = ProviderName.AWS.value
+    supported_languages = tuple([AssemblerLanguage.BRAKET.value])
 
-    def run(self, job_core_dto: JobCoreDto) -> list[ResultDataclass]:
+    def run(
+        self, job: JobDataclass, circuits: Sequence[Tuple[QuantumProgramDataclass, Any]], token: Optional[str] = None
+    ) -> Tuple[List[ResultDataclass], JobState]:
         """Execute the job on a local simulator and saves results in the database"""
-        if not job_core_dto.executed_on.is_local:
-            raise job_db_service.return_exception_and_update_job(
-                job_core_dto.id, QunicornError("Device not found, device needs to be local for AWS")
-            )
+        if job.id is None:
+            raise QunicornError("Job has no database ID and cannot be executed!")
+        device = job.executed_on
+        if device and not device.is_local:
+            error: Exception = QunicornError("Device not found, device needs to be local for AWS")
+            job.save_error(error)
+            raise error
 
         # Since QASM is stored as a string, it needs to be converted to a QASM program before execution
-        for index in range(len(job_core_dto.transpiled_circuits)):
-            if type(job_core_dto.transpiled_circuits[index]) is str:
-                job_core_dto.transpiled_circuits[index] = Program(source=job_core_dto.transpiled_circuits[index])
+        programs = [p for p, _ in circuits]
+        # FIXME: support circuits where not all qubits have gates
+        preprocessed_circuits = [(Program(source=c) if isinstance(c, str) else c) for _, c in circuits]
 
-        quantum_tasks: LocalQuantumTaskBatch = LocalSimulator().run_batch(
-            job_core_dto.transpiled_circuits, shots=job_core_dto.shots
-        )
+        quantum_tasks: LocalQuantumTaskBatch = LocalSimulator().run_batch(preprocessed_circuits, shots=job.shots)
 
-        return AWSPilot.__map_aws_results_to_dataclass(quantum_tasks.results(), job_core_dto)
+        results, job_state = AWSPilot.__map_aws_results_to_dataclass(quantum_tasks.results(), programs, job)
+        return results, job_state
 
-    def execute_provider_specific(self, job_core_dto: JobCoreDto):
+    def execute_provider_specific(
+        self, job: JobDataclass, circuits: Sequence[Tuple[QuantumProgramDataclass, Any]], token: Optional[str] = None
+    ) -> Tuple[List[ResultDataclass], JobState]:
         """Execute a job of a provider specific type on a backend using a pilot"""
-        raise job_db_service.return_exception_and_update_job(
-            job_core_dto.id, QunicornError("No valid Job Type specified")
-        )
+        if job.id is None:
+            raise QunicornError("Job has no database ID and cannot be executed!")
+        error = QunicornError("No valid Job Type specified")
+        job.save_error(error)
+        raise error
 
     def cancel_provider_specific(self, job_dto):
         logging.warn(
@@ -72,39 +82,75 @@ class AWSPilot(Pilot):
 
     @staticmethod
     def __map_aws_results_to_dataclass(
-        aws_results: list[GateModelQuantumTaskResult], job_dto: JobCoreDto
-    ) -> list[ResultDataclass]:
+        aws_results: list[GateModelQuantumTaskResult], programs: Sequence[QuantumProgramDataclass], job: JobDataclass
+    ) -> Tuple[List[ResultDataclass], JobState]:
         """Map the results from the aws simulator to a result dataclass object"""
-        job_id: int = job_dto.id
-        return [
-            ResultDataclass(
-                result_dict={
-                    "counts": Pilot.qubit_binary_to_hex(aws_results[i].measurement_counts, job_id),
-                    "probabilities": Pilot.qubit_binary_to_hex(aws_results[i].measurement_probabilities, job_id),
-                },
-                job_id=job_id,
-                circuit=job_dto.deployment.programs[i].quantum_circuit,
-                meta_data="",
-                result_type=ResultType.COUNTS,
-            )
-            for i in range(len(aws_results))
-        ]
+        results = []
+        contains_errors = False
+
+        for i, result in enumerate(aws_results):
+            metadata = result.additional_metadata.dict()
+            metadata["format"] = "hex"
+
+            most_common_bitstring: str = result.measurement_counts.most_common(1)[0][0]
+            metadata["registers"] = [
+                {"name": "", "size": len(most_common_bitstring)}
+            ]  # FIXME: support multiple registers
+
+            try:
+                results.append(
+                    ResultDataclass(
+                        data=Pilot.qubit_binary_string_to_hex(result.measurement_counts, reverse_qubit_order=True),
+                        job=job,
+                        program=programs[i],
+                        meta=metadata,
+                        result_type=ResultType.COUNTS,
+                    )
+                )
+                results.append(
+                    ResultDataclass(
+                        data=Pilot.qubit_binary_string_to_hex(
+                            result.measurement_probabilities, reverse_qubit_order=True
+                        ),
+                        job=job,
+                        program=programs[i],
+                        meta=metadata,
+                        result_type=ResultType.PROBABILITIES,
+                    )
+                )
+
+            except QunicornError as err:
+                exception_message: str = str(err)
+                stack_trace: str = "".join(traceback.format_exception(err))
+                results.append(
+                    ResultDataclass(
+                        result_type=ResultType.ERROR.value,
+                        job=job,
+                        program=programs[i],
+                        data={"exception_message": exception_message},
+                        meta={"stack_trace": stack_trace},
+                    )
+                )
+                contains_errors = True
+        return results, JobState.ERROR if contains_errors else JobState.FINISHED
 
     def get_standard_job_with_deployment(self, device: DeviceDataclass) -> JobDataclass:
-        return self.create_default_job_with_circuit_and_device(device, "qunicorn-circuit")
+        return self.create_default_job_with_circuit_and_device(device, "Circuit().h(0).cnot(0, 1)")
 
     def save_devices_from_provider(self, device_request):
         raise QunicornError("AWS Pilot cannot fetch Devices from AWS API, because there is no Cloud Access.")
 
     def get_standard_provider(self) -> ProviderDataclass:
-        return ProviderDataclass(
-            with_token=False,
-            supported_languages=[
-                ProviderAssemblerLanguageDataclass(supported_language=language) for language in self.supported_languages
-            ],
-            name=self.provider_name,
-        )
+        found_provider = ProviderDataclass.get_by_name(self.provider_name)
+        if not found_provider:
+            found_provider = ProviderDataclass(
+                with_token=False,
+                name=self.provider_name,
+            )
+            found_provider.supported_languages = list(self.supported_languages)
+            found_provider.save()
+        return found_provider
 
-    def is_device_available(self, device: DeviceDto, token: str) -> bool:
+    def is_device_available(self, device: Union[DeviceDataclass, DeviceDto], token: Optional[str]) -> bool:
         logging.info("AWS local simulator is always available")
         return True

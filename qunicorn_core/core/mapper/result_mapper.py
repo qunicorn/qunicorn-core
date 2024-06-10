@@ -14,23 +14,32 @@
 import traceback
 
 from qunicorn_core.api.api_models import ResultDto
-from qunicorn_core.core.mapper.general_mapper import map_from_to
+from qunicorn_core.db.models.quantum_program import QuantumProgramDataclass
 from qunicorn_core.db.models.result import ResultDataclass
 from qunicorn_core.static.enums.result_type import ResultType
 
 
 def dataclass_to_dto(result: ResultDataclass) -> ResultDto:
-    return map_from_to(result, ResultDto)
+    return ResultDto(
+        id=result.id,
+        circuit=result.program.quantum_circuit if result.program else None,
+        data=result.data,
+        metadata=result.meta,
+        result_type=ResultType(result.result_type),
+    )
 
 
-def exception_to_error_results(exception: Exception, circuit: str | None = None) -> list[ResultDataclass]:
+def exception_to_error_results(
+    exception: Exception, program: QuantumProgramDataclass | None = None
+) -> list[ResultDataclass]:
     exception_message: str = str(exception)
-    stack_trace: str = traceback.format_exc()
+    stack_trace: str = "".join(traceback.format_exception(exception))
     return [
         ResultDataclass(
-            result_type=ResultType.ERROR,
-            circuit=circuit,
-            result_dict={"exception_message": exception_message},
-            meta_data={"stack_trace": stack_trace},
+            result_type=ResultType.ERROR.value,
+            job=None,
+            program=program,
+            data={"exception_message": exception_message},
+            meta={"stack_trace": stack_trace},
         )
     ]

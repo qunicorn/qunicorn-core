@@ -14,15 +14,15 @@
 
 # flake8: noqa
 
-from os import environ, execvpe as replace_process
+from os import environ
+from os import execvpe as replace_process
 from pathlib import Path
 from platform import system
 from re import match
-from shutil import copytree
-from typing import List, Optional, cast
+from typing import List, cast
 
 from dotenv import load_dotenv, set_key, unset_key
-from invoke import UnexpectedExit, task
+from invoke import task
 from invoke.context import Context
 from invoke.runners import Result
 
@@ -43,18 +43,27 @@ CELERY_WORKER = f"{MODULE_NAME}.celery_worker:CELERY"
 ALLOWED_LICENSES = [
     "3-Clause BSD License",
     "Apache 2.0",
+    "Apache-2.0",
+    "Apache 2.0 License",
+    "Apache License 2.0",
     "Apache License, Version 2.0",
     "Apache Software License",
     "BSD License",
     "BSD",
+    "BSD 3-Clause",
+    "Eclipse Public License 2.0 (EPL-2.0)",
     "GNU Lesser General Public License v2 or later (LGPLv2+)",
     "GNU Library or Lesser General Public License (LGPL)",
+    "GNU Lesser General Public License v3 (LGPLv3)",
     "GPLv3",
+    "Historical Permission Notice and Disclaimer (HPND)",
+    "ISC License (ISCL)",
     "MIT License",
     "MIT",
     "Mozilla Public License 2.0 (MPL 2.0)",
     "new BSD",
     "Python Software Foundation License",
+    "Zope Public License",
 ]
 
 
@@ -136,115 +145,6 @@ def start_broker(c, port=None):
     if not dot_env_path.exists():
         dot_env_path.touch()
     set_key(dot_env_path, "REDIS_CONTAINER_ID", result_container_id)
-
-
-@task
-def stop_camunda(c):
-    """Stop the previously started camunda container with docker or podman.
-
-    Discovers the container id from the environment variable CAMUNDA_CONTAINER_ID.
-    If the variable is not set ``--latest`` is used (this assumes that the latest
-    created container is the camunda container!).
-
-    To use podman instead of docker set the DOCKER_CMD environment variable to "podman".
-
-    Args:
-        c (Context): task context
-    """
-    c = cast(Context, c)
-    docker_cmd = environ.get("DOCKER_CMD", "docker")
-    container_id = environ.get("CAMUNDA_CONTAINER_ID", "--latest")
-    c.run(join([docker_cmd, "stop", container_id]))
-    if docker_cmd == "podman":
-        reset_camunda(c)
-
-
-@task(stop_broker)
-def reset_camunda(c):
-    """Remove the current camunda container and unset the CAMUNDA_CONTAINER_ID variable.
-
-    Discovers the container id from the environment variable CAMUNDA_CONTAINER_ID.
-    If the variable is not set this task does nothing.
-
-    To use podman instead of docker set the DOCKER_CMD environment variable to "podman".
-
-    Args:
-        c (Context): task context
-    """
-    c = cast(Context, c)
-    docker_cmd = environ.get("DOCKER_CMD", "docker")
-    container_id = environ.get("CAMUNDA_CONTAINER_ID")
-    if not container_id:
-        return
-    c.run(join([docker_cmd, "rm", container_id]), echo=True, warn=True)
-    dot_env_path = Path(".env")
-    unset_key(dot_env_path, "CAMUNDA_CONTAINER_ID")
-
-
-@task
-def start_camunda(c, port=None):
-    """Start the camunda container with docker or podman.
-
-    Resuses an existing container if the environment variable CAMUNDA_CONTAINER_ID is set.
-    The reused container ignores the port option!
-    Sets the environemnt variable in the .env file if a new container is created.
-
-    Camunda port is optionally read from CAMUNDA_PORT environment variable. Use the
-    ``reset-camunda`` task to remove the old container to create a new container
-    with a different port.
-
-    To use podman instead of docker set the DOCKER_CMD environment variable to "podman".
-
-    Args:
-        c (Context): task context
-        port (str, optional): outside port for connections to camunda. Defaults to "8080".
-    """
-    c = cast(Context, c)
-    docker_cmd = environ.get("DOCKER_CMD", "docker")
-    container_id = environ.get("CAMUNDA_CONTAINER_ID", None)
-
-    if container_id and docker_cmd == "podman":
-        reset_camunda(c)
-        container_id = None
-    if container_id:
-        res: Result = c.run(join([docker_cmd, "restart", container_id]), echo=True)
-        if res.failed:
-            print(f"Failed to start container with id {container_id}.")
-        return
-
-    if not port:
-        port = environ.get("CAMUNDA_PORT", "8080")
-    c.run(
-        join(
-            [
-                docker_cmd,
-                "run",
-                "-d",
-                "-p",
-                f"{port}:8080",
-                "camunda/camunda-bpm-platform:run-latest",
-            ]
-        ),
-        echo=True,
-    )
-    result: Result = c.run(join([docker_cmd, "ps", "-q", "--latest"]), hide=True)
-    result_container_id = result.stdout.strip()
-    dot_env_path = Path(".env")
-    if not dot_env_path.exists():
-        dot_env_path.touch()
-    set_key(dot_env_path, "CAMUNDA_CONTAINER_ID", result_container_id)
-
-
-@task(stop_broker, stop_camunda)
-def stop_containers(c):
-    """Stop both the camunda and the redis broker container."""
-    pass
-
-
-@task(start_broker, start_camunda)
-def start_containers(c):
-    """Start both the camunda and the redis broker container."""
-    pass
 
 
 @task
@@ -368,7 +268,7 @@ def celery_inspect(c):
 
 
 @task
-def celery_enabe_events(c):
+def celery_enable_events(c):
     """Enable celery worker events events.
 
     Args:
@@ -397,7 +297,7 @@ def celery_disable_events(c):
     )
 
 
-@task(pre=(celery_enabe_events,), post=(celery_disable_events,))
+@task(pre=(celery_enable_events,), post=(celery_disable_events,))
 def celery_monitor(c):
     """Show current events.
 
@@ -473,105 +373,17 @@ def start_gunicorn(c, workers=1, log_level="info", docker=False):
     replace_process(cmd[0], cmd, environ)
 
 
-def git_url_to_folder(url: str) -> str:
-    """Extract a sensible and stable repository name from a git url"""
-    # roughly matches …[/<organization]/<repository-name>[.git][/]
-    url_match = match(r".*(?:\/(?P<orga>[^\/.]+))?\/(?P<repo>[^\/]+)(?:\.git)\/?$", url)
-    if not url_match:
-        raise QunicornError((f"Url '{url}' could not be parsed!", url_match))
-    if url_match["orga"]:
-        return f"{url_match['orga']}__{url_match['repo']}"
-    else:
-        return url_match["repo"]
-
-
 @task
-def load_git_plugins(c, plugins_path="./git-plugins"):
-    """Load plugins from git repositories (specified via GIT_PLUGINS env var).
-
-    Specify a newline separated list of git repositories to load plugins from
-    in the GIT_PLUGINS environment variable. Each line should contain a git
-    URL following the same format as in requirements.txt used by pip.
-
-    Examples:
-    git+<<url to git repo>[@<branch/tag/commit hash>][#subdirectory=<directory in git repo holding the plugins>]
-    git+https://github.com/UST-QuAntiL/qhana-plugin-runner.git@main#subdirectory=/plugins
-
-    Args:
-        c (Context): task context
-        plugins_path (str, optional): the folder to load plugins into.
-    """
-    git_plugins = environ.get("GIT_PLUGINS")
-    if not git_plugins:
-        return
-
-    repositories_path = Path(plugins_path) / Path(".repositories")
-
-    if not repositories_path.exists():
-        repositories_path.mkdir(parents=True, exist_ok=True)
-
-    for git_plugin in git_plugins.splitlines():
-        plugin_match = match(
-            # roughly matches <vcs=git>+<repo_url>[@<ref>][#…subdirectory=<sub_dir>…]
-            r"^(?P<vcs>git)\+(?P<url>[^@#\n]+)(?:@(?P<ref>[^#\n]+))?(?:#(?:[^&\n]+&)?subdirectory=\/?(?P<dir>["
-            r"^&\n]+)[^\n]*)?$",
-            git_plugin,
-        )
-        if not plugin_match:
-            print(f"Could not recognise git url '{git_plugin}' – skipping")
-            continue
-        if plugin_match["vcs"] != "git":
-            print(f"Only git is supported (got '{plugin_match['vcs']}') – skipping")
-            continue
-        url: str = plugin_match["url"]
-        ref: Optional[str] = plugin_match["ref"]
-        sub_dir: Optional[str] = plugin_match["dir"]
-
-        cmd = [
-            "git",
-            "clone",
-        ]
-
-        shallow_cmd = [*cmd, "--depth=1"]
-
-        if ref:
-            shallow_cmd.append(f"--branch={ref}")
-
-        folder = git_url_to_folder(url)
-        if (Path(plugins_path) / Path(".repositories") / Path(folder)).exists():
-            print(f"Repository '{url}' is already checked out – skipping")
-            continue  # todo better handling for checked out repositories
-
-        with c.cd(str(repositories_path)):
-            try:
-                # try a shallow clone (only branch and tag refs will work)
-                c.run(join(shallow_cmd + [url, folder]))
-            except UnexpectedExit:
-                # fall back to full clone and checkout ref after cloning
-                c.run(join(cmd + [url, folder]), warn=True)
-                if ref:
-                    with c.cd(folder):
-                        c.run(join(["git", "checkout", ref]), warn=True)
-            if sub_dir:
-                plugin_folder = repositories_path / Path(folder) / Path(sub_dir)
-            else:
-                plugin_folder = repositories_path / Path(folder)
-
-            if plugin_folder.exists() and plugin_folder.is_dir():
-                # copy all files into the plugins directory
-                copytree(plugin_folder, Path(plugins_path), dirs_exist_ok=True)
-
-
-@task
-def install_plugin_dependencies(c):
-    """Install all plugin dependencies."""
-    c.run(join(["python", "-m", "flask", "install"]), echo=True, warn=True)
+def await_db(c):
+    """Docker specific task. Do not call."""
+    c.run("/wait", echo=True, warn=False)
 
 
 @task
 def upgrade_db(c):
     """Upgrade the database to the newest migration."""
     c.run(join(["python", "-m", "flask", "db", "upgrade"]), echo=True, warn=True)
+    c.run(join(["python", "-m", "flask", "load-providers"]), echo=True, warn=True)
 
 
 @task
@@ -583,13 +395,20 @@ def ensure_paths(c):
 @task(ensure_paths)
 def start_docker(c):
     """Docker entry point task. Do not call!"""
+
+    def execute_pre_tasks(do_upgrade_db=False):
+        task(await_db)
+        if do_upgrade_db:
+            upgrade_db(c)
+
     log_level = environ.get("DEFAULT_LOG_LEVEL", "INFO")
     concurrency_env = environ.get("CONCURRENCY", "1")
     concurrency = int(concurrency_env) if concurrency_env.isdigit() else 1
     if environ.get("CONTAINER_MODE", "").lower() == "server":
-        c.run("python -m flask create-and-load-db", echo=True)
+        execute_pre_tasks(do_upgrade_db=True)
         start_gunicorn(c, workers=concurrency, log_level=log_level, docker=True)
     elif environ.get("CONTAINER_MODE", "").lower() == "worker":
+        execute_pre_tasks()
         worker_pool = environ.get("CELERY_WORKER_POOL", "threads")
         periodic_scheduler = bool(environ.get("PERIODIC_SCHEDULER", False))
         worker(
@@ -641,7 +460,6 @@ def update_source_doc(c):
         ".",
         "./tasks.py",
         "docs",
-        "plugins",  # TODO exclude all known plugin folders!
         "migrations",
     ]
 
@@ -650,7 +468,7 @@ def update_source_doc(c):
     # remove unwanted files
     for p in (
         Path("docs/source/modules.rst"),
-        Path("docs/source/qhana_plugin_runner.celery_worker.rst"),
+        Path("docs/source/qunicorn_core.celery_worker.rst"),
     ):
         if p.exists():
             p.unlink()

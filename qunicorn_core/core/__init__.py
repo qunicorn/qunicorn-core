@@ -13,12 +13,12 @@
 # limitations under the License.
 
 from . import (
-    pilotmanager,
-    transpiler,
-    mapper,
     deployment_service,
+    device_service,
     job_manager_service,
     job_service,
-    device_service,
+    mapper,
+    pilotmanager,
     provider_service,
+    transpiler,
 )

@@ -14,9 +14,8 @@
 
 """"Test class to test the functionality of the job_api"""
 
-from qunicorn_core.api.api_models import DeploymentRequestDto, DeploymentDto
+from qunicorn_core.api.api_models import DeploymentUpdateDto, DeploymentDto
 from qunicorn_core.core import deployment_service
-from qunicorn_core.db.database_services import deployment_db_service
 from qunicorn_core.db.models.deployment import DeploymentDataclass
 from qunicorn_core.static.enums.assembler_languages import AssemblerLanguage
 from tests import test_utils
@@ -30,15 +29,15 @@ def test_create_deployments():
     """Testing if the creation of deployments works"""
     # GIVEN: Get Deployments from JSON
     app = set_up_env()
-    deployment: DeploymentRequestDto = test_utils.get_test_deployment_request([AssemblerLanguage.QASM2])
+    deployment_dto: DeploymentUpdateDto = test_utils.get_test_deployment_request([AssemblerLanguage.QASM2])
 
     # WHEN: Create deployment and save it in the db
     with app.app_context():
-        deployment_id: int = deployment_service.create_deployment(deployment).id
+        deployment_id: int = deployment_service.create_deployment(deployment_dto).id
 
     # THEN: Test if the name and number of programs is correct
     with app.app_context():
-        deployment: DeploymentDataclass = deployment_db_service.get_deployment_by_id(deployment_id)
+        deployment: DeploymentDataclass = DeploymentDataclass.get_by_id_or_404(deployment_id)
         assert deployment.name == DEPLOYMENT_NAME
         assert len(deployment.programs) == PROGRAM_NUMBER
 

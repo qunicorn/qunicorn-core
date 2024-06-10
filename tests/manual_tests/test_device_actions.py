@@ -15,7 +15,6 @@
 """"Test class to test the functionality of the job_api"""
 
 import pytest
-from qiskit_ibm_provider.api.exceptions import RequestsApiError
 
 from qunicorn_core.api.api_models import DeviceRequestDto
 from qunicorn_core.core import device_service
@@ -34,4 +33,4 @@ def test_get_devices_invalid_token():
             device_service.update_devices(device_request_dto)
 
     with app.app_context():
-        assert RequestsApiError.__name__ in str(exception)
+        assert "IBMNotAuthorizedError" in str(exception)

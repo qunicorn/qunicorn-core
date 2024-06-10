@@ -12,19 +12,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Union
+
 from qunicorn_core.api.api_models import QuantumProgramDto
 from qunicorn_core.api.api_models.quantum_program_dtos import QuantumProgramRequestDto
-from qunicorn_core.core.mapper.general_mapper import map_from_to
 from qunicorn_core.db.models.quantum_program import QuantumProgramDataclass
+from qunicorn_core.static.enums.assembler_languages import AssemblerLanguage
 
 
-def dto_to_dataclass(quantum_program: QuantumProgramDto) -> QuantumProgramDataclass:
-    return map_from_to(quantum_program, QuantumProgramDataclass)
-
-
-def request_to_dataclass(quantum_program: QuantumProgramRequestDto) -> QuantumProgramDataclass:
-    return map_from_to(quantum_program, QuantumProgramDataclass)
+def dto_to_dataclass(quantum_program: Union[QuantumProgramDto, QuantumProgramRequestDto]) -> QuantumProgramDataclass:
+    return QuantumProgramDataclass(
+        assembler_language=quantum_program.assembler_language.name if quantum_program.assembler_language else None,
+        quantum_circuit=quantum_program.quantum_circuit,
+        python_file_path=quantum_program.python_file_path,
+        python_file_metadata=quantum_program.python_file_metadata,
+    )
 
 
 def dataclass_to_dto(quantum_program: QuantumProgramDataclass) -> QuantumProgramDto:
-    return map_from_to(quantum_program, QuantumProgramDto)
+    return QuantumProgramDto(
+        id=quantum_program.id,
+        quantum_circuit=quantum_program.quantum_circuit,
+        assembler_language=(
+            AssemblerLanguage(quantum_program.assembler_language) if quantum_program.assembler_language else None
+        ),
+        python_file_path=quantum_program.python_file_path,
+        python_file_metadata=quantum_program.python_file_metadata,
+    )

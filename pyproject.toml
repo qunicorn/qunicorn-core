@@ -8,29 +8,37 @@ readme = "README.md"
 version = "0.2.0"
 
 [tool.poetry.dependencies]
-Flask-Cors = "^3.0.10"
-Flask-JWT-Extended = "^4.4.4"
+python = ">=3.11.0, <=3.12"
+Flask-Cors = "^4.0.0"
+Flask-JWT-Extended = "^4.6.0"
 Flask-Migrate = "^4.0.4"
 Flask-SQLAlchemy = "^3.0.3"
-SQLAlchemy = "^2.0.4"
-flask = { extras = ["dotenv"], version = "^2.2.3" }
+SQLAlchemy = "^2.0.29"
+flask = { extras = ["dotenv"], version = "^3.0.2" }
 flask-babel = "^3.0.0"
-flask-smorest = "^0.40.0"
-python = ">=3.11.0, <3.13"
-tomli = "^2.0.0"
-celery = "^5.2.7"
-redis = "^4.5.4"
-qiskit = "^0.44.0"
-qiskit-ibm-provider = "^0.7.2"
-qiskit-ibm-runtime = "^0.13.0"
-PyYAML = "^6.0"
-mocker = "^1.1.1"
-gunicorn = "^21.2.0"
-psycopg2 = "^2.9.6"
-amazon-braket-sdk = "^1.49.1"
+flask-smorest = "^0.44.0"
+tomli = "^2.0.1"
+celery = "^5.4.0"
+redis = "^5.0.4"
 invoke = "^2.0.0"
-py-automapper = "^1.2.3"
-sphinx-rtd-theme = "^1.3.0"
+gunicorn = "^22.0.0"
+psycopg = "^3.1.18"
+qiskit = "^1.0.0"
+qiskit-ibm-runtime = "^0.23.0"
+qiskit-aer = "^0.14.0"
+qiskit-qasm3-import = "^0.4.0"
+amazon-braket-sdk = "^1.78.0"
+qrisp = "^0.4.5"
+pyquil = "^4.10.0"
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.0.0"
+flake8 = "^7.0.0"
+flake8-bugbear = "^24.4.0"
+flake8-docstrings = "^1.7.0"
+pip-licenses = "^4.4.0"
+mocker = "^1.1.1"
+sphinx-rtd-theme = "^2.0.0"
 sphinxcontrib-qthelp = "^1.0.6"
 sphinxcontrib-applehelp = "^1.0.7"
 sphinxcontrib-devhelp = "^1.0.5"
@@ -39,39 +47,19 @@ sphinxcontrib-jquery = "^4.1"
 sphinxcontrib-jsmath = "^1.0.1"
 sphinxcontrib-redoc = "^1.6.0"
 sphinxcontrib-serializinghtml = "^1.1.9"
-sphinx-click = "^5.0.1"
-sphinx = "^7.2.2"
-myst-parser = "^2.0.0"
-pytest = "^7.2.0"
-pytest-mock = "^3.11.1"
-qiskit-aer = "^0.13.0"
-qiskit-qasm3-import = "^0.3.0"
-graphviz = "^0.20.1"
-pydot = "^1.4.2"
-pillow = "^10.0.1"
-scipy = "^1.11.3"
-qrisp = "^0.3.0"
-pyquil = "^4.0.1"
-proxy = "^0.0.1"
-lazy-object-proxy = "^1.9.0"
-
-[tool.poetry.dev-dependencies]
-black = "^23.1.0"
-flake8 = "^6.0.0"
-flake8-bugbear = "^23.2.13"
-flake8-docstrings = "^1.7.0"
-pip-licenses = "^4.0.3"
+sphinx-click = "^5.1.0"
+sphinx = "^7.3.7"
+myst-parser = "^3.0.0"
+pytest = "^8.2.0"
+pytest-mock = "^3.14.0"
 
 [tool.poetry.scripts]
 #flask = 'flask.cli:main'
 
-[tool.poetry.group.dev.dependencies]
-pydot = "^1.4.2"
-
 [tool.black]
 include = '\.pyi?$'
 line-length = 120
-target-version = ["py38"]
+target-version = ["py311"]
 
 [tool.isort]
 atomic = true
@@ -88,6 +76,7 @@ enable-autosectionlabel = true
 # documentation for myst: <https://myst-parser.readthedocs.io/en/latest>
 enable-markdown = "myst"
 enable-todo = true
+enable-graphviz = true
 # update gitignore if you want to edit docs/changelog.md manually!
 include-changelog = true
 # update gitignore if you want to edit docs/readme.md manually!

@@ -14,6 +14,7 @@
 import os
 
 from qiskit import QuantumCircuit
+from qiskit.qasm2 import dumps as dumps2
 
 
 def get_default_qasm2_string(hadamard_amount: int = 1) -> str:
@@ -22,7 +23,7 @@ def get_default_qasm2_string(hadamard_amount: int = 1) -> str:
         qc.h(0)
     qc.cx(0, 1)
     qc.measure_all()
-    return qc.qasm()
+    return dumps2(qc)
 
 
 def is_experimental_feature_enabled() -> bool:

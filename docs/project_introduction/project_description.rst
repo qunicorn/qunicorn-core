@@ -12,7 +12,7 @@ The quantum hardware is provided by different providers like AWS and IBM.
 Circuit Transpilation
 ---------------------
 The qunicorn application is used to transpile circuits between different quantum assembler languages.
-For example is it possible to run a braket-circuit on IBM when using the qunicorn application.
+For example, it is possible to run a braket-circuit on IBM when using the qunicorn application.
 Generally it is not possible to directly run a braket-circuit on IBM, the circuit first needs to be transpiled to QISKIT.
 
 

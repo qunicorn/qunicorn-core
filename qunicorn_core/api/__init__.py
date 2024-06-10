@@ -22,14 +22,10 @@ import marshmallow as ma
 from flask import Flask
 from flask.helpers import url_for
 from flask.views import MethodView
-from flask_smorest import Api, Blueprint as SmorestBlueprint
+from flask_smorest import Api
+from flask_smorest import Blueprint as SmorestBlueprint
 
-from .deployment_api import DEPLOYMENT_API
-from .device_api import DEVICES_API
 from .flask_api_utils import MaBaseSchema
-from .job_api import JOBMANAGER_API
-from .jwt import SECURITY_SCHEMES
-from .provider_api import PROVIDER_API
 
 """A single API instance. All api versions should be blueprints."""
 API = Api(spec_kwargs={"title": "QUNICORN_API", "version": "v1"})
@@ -62,6 +58,12 @@ class RootView(MethodView):
 
 def register_root_api(app: Flask):
     """Register the API with the flask app."""
+    from .deployment_api import DEPLOYMENT_API
+    from .device_api import DEVICES_API
+    from .job_api import JOBMANAGER_API
+    from .jwt import SECURITY_SCHEMES
+    from .provider_api import PROVIDER_API
+
     API.init_app(app)
 
     # register security schemes in doc

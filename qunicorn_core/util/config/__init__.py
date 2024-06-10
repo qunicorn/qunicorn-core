@@ -13,12 +13,12 @@
 # limitations under the License.
 
 """Module containing default config values."""
-from logging import WARNING, INFO
+from logging import INFO, WARNING
 from os import urandom
 
-from .celery_config import CELERY_DEBUG_CONFIG
-from .smorest_config import SmorestProductionConfig, SmorestDebugConfig
-from .sqlalchemy_config import SQLAchemyProductionConfig, SQLAchemyDebugConfig
+from .celery_config import CELERY_PRODUCTION_CONFIG
+from .smorest_config import SmorestDebugConfig, SmorestProductionConfig
+from .sqlalchemy_config import SQLAchemyDebugConfig, SQLAchemyProductionConfig
 
 
 class ProductionConfig(SQLAchemyProductionConfig, SmorestProductionConfig):
@@ -42,7 +42,7 @@ class ProductionConfig(SQLAchemyProductionConfig, SmorestProductionConfig):
     )
     DEFAULT_LOG_DATE_FORMAT = None
 
-    CELERY = CELERY_DEBUG_CONFIG
+    CELERY = CELERY_PRODUCTION_CONFIG
 
 
 class DebugConfig(ProductionConfig, SQLAchemyDebugConfig, SmorestDebugConfig):
@@ -50,6 +50,6 @@ class DebugConfig(ProductionConfig, SQLAchemyDebugConfig, SmorestDebugConfig):
     DEBUG = True
     SECRET_KEY = "debug_secret"  # FIXME make sure this NEVER! gets used in production!!!
 
-    CELERY = CELERY_DEBUG_CONFIG
+    CELERY = CELERY_PRODUCTION_CONFIG
 
     DEFAULT_LOG_SEVERITY = INFO

@@ -12,13 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from typing import Optional, Union
+
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.sql import select
 from sqlalchemy.sql import sqltypes as sql
 from sqlalchemy.sql.schema import ForeignKey
 
 from .db_model import DbModel
 from .provider import ProviderDataclass
-from ..db import REGISTRY
+from ..db import DB, REGISTRY
+from ...static.qunicorn_exception import QunicornError
 
 
 @REGISTRY.mapped_as_dataclass
@@ -26,23 +30,45 @@ class DeviceDataclass(DbModel):
     """Dataclass for storing CloudDevices of a provider
 
     Attributes:
+        id (int): The id of the device. (set by the database)
         name (str): The name of the device.
         num_qubits (int): The amount of qubits that is available at this device.
         is_simulator (bool): The information whether the device is a simulator (true) or not (false).
         is_local (bool): The information whether jobs executed on this device are executed local or not.
         provider (ProviderDataclass): The provider of this device.
-        id (int): The id of the device.
-        provider_id (int): provider_id of the provider saved in the provider table.
     """
 
     # non-default arguments
+    id: Mapped[int] = mapped_column(sql.INTEGER(), primary_key=True, autoincrement=True, init=False)
     name: Mapped[str] = mapped_column(sql.String)
     num_qubits: Mapped[int] = mapped_column(sql.INTEGER)
     is_simulator: Mapped[bool] = mapped_column(sql.BOOLEAN)
     is_local: Mapped[bool] = mapped_column(sql.BOOLEAN)
-    provider: Mapped[ProviderDataclass.__name__] = relationship(ProviderDataclass.__name__)
+    provider: Mapped[ProviderDataclass] = relationship(ProviderDataclass, back_populates="devices", lazy="selectin")
     # default arguments
-    id: Mapped[int] = mapped_column(sql.INTEGER(), primary_key=True, autoincrement=True, default=None)
     provider_id: Mapped[int] = mapped_column(
-        ForeignKey(ProviderDataclass.__tablename__ + ".id", ondelete="SET NULL"), default=None
+        ForeignKey(ProviderDataclass.id, ondelete="SET NULL"), nullable=True, default=None, init=False
     )
+
+    @classmethod
+    def get_by_name(cls, name: str, provider: Optional[Union[int, str, ProviderDataclass]] = None):
+        q = select(cls).where(cls.name == name)
+        if isinstance(provider, int):
+            q = q.where(cls.provider_id == provider)
+        elif isinstance(provider, ProviderDataclass):
+            q = q.where(cls.provider == provider)
+        elif isinstance(provider, str):
+            # TODO test this...
+            provider_id_query = (
+                select(ProviderDataclass.id).where(ProviderDataclass.name == provider).limit(1).scalar_subquery()
+            )
+            q = q.where(cls.provider_id == provider_id_query)
+
+        devices = DB.session.execute(q).scalars().all()
+
+        if len(devices) < 1:
+            return None  # no device found
+        if len(devices) > 1:
+            raise QunicornError(f"Found multiple devices with the same name '{name}'!")
+
+        return devices[0]

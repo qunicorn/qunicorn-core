@@ -23,11 +23,10 @@ spec:
             - name: CONTAINER_MODE
               value: worker
             - name: DB_URL
-              value: postgresql://postgres:passwd@postgres/qunicorn
+              value: postgresql+psycopg://postgres:passwd@postgres/qunicorn
             - name: NUMBA_CACHE_DIR
               value: /app/cache
-          image: iaasgeorgdl/qunicorn:release.11.23
-          #image: qunicorn:local
+          image: ghcr.io/qunicorn/qunicorn-core:main
           name: worker
           ports:
             - containerPort: 6379

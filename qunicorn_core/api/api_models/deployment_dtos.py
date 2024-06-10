@@ -22,19 +22,20 @@ import marshmallow as ma
 
 from .quantum_program_dtos import (
     QuantumProgramDto,
-    QuantumProgramRequestDtoSchema,
-    QuantumProgramRequestDto,
     QuantumProgramDtoSchema,
+    QuantumProgramRequestDto,
+    QuantumProgramRequestDtoSchema,
 )
+from ...static.enums.assembler_languages import AssemblerLanguage
 from ..flask_api_utils import MaBaseSchema
 
 __all__ = [
     "DeploymentDtoSchema",
-    "DeploymentRequestDtoSchema",
+    "DeploymentUpdateDtoSchema",
     "DeploymentDto",
-    "DeploymentRequestDto",
-    "DeploymentResponseDto",
-    "DeploymentResponseDtoSchema",
+    "DeploymentUpdateDto",
+    "SimpleDeploymentDto",
+    "SimpleDeploymentDtoSchema",
 ]
 
 
@@ -44,18 +45,26 @@ class DeploymentDto:
     programs: list[QuantumProgramDto]
     deployed_by: Optional[str]
     deployed_at: datetime
-    name: str
+    name: Optional[str]
 
 
 @dataclass
-class DeploymentRequestDto:
+class DeploymentUpdateDto:
     programs: list[QuantumProgramRequestDto]
     name: str
 
     @staticmethod
-    def from_dict(body: dict) -> "DeploymentRequestDto":
-        deployment_dto: DeploymentRequestDto = DeploymentRequestDto(**body)
-        deployment_dto.programs = [QuantumProgramRequestDto(**program) for program in body["programs"]]
+    def from_dict(body: dict) -> "DeploymentUpdateDto":
+        deployment_dto: DeploymentUpdateDto = DeploymentUpdateDto(**body)
+        deployment_dto.programs = [
+            QuantumProgramRequestDto(
+                quantum_circuit=program["quantum_circuit"],
+                assembler_language=AssemblerLanguage(program["assembler_language"]),
+                python_file_path=program.get("python_file_path"),
+                python_file_metadata=program.get("python_file_metadata"),
+            )
+            for program in body["programs"]
+        ]
         return deployment_dto
 
 
@@ -63,14 +72,14 @@ class DeploymentDtoSchema(MaBaseSchema):
     id = ma.fields.Integer(required=True, metadata={"description": "UID for the deployment_api"})
     deployed_by = ma.fields.String(required=False, metadata={"description": "Optional id of the user who created it"})
     programs = ma.fields.Nested(QuantumProgramDtoSchema(many=True))
-    deployed_at = ma.fields.Date(required=True, metadata={"description": "time of deployment"})
+    deployed_at = ma.fields.AwareDateTime(required=True, metadata={"description": "time of deployment"})
     name = ma.fields.String(
         required=False,
         metadata={"description": "an optional name for the deployment_api."},
     )
 
 
-class DeploymentRequestDtoSchema(MaBaseSchema):
+class DeploymentUpdateDtoSchema(MaBaseSchema):
     programs = ma.fields.Nested(QuantumProgramRequestDtoSchema(many=True))
     name = ma.fields.String(
         required=True,
@@ -79,13 +88,13 @@ class DeploymentRequestDtoSchema(MaBaseSchema):
 
 
 @dataclass
-class DeploymentResponseDto:
+class SimpleDeploymentDto:
     id: int
     programs: str
-    name: str
+    name: Optional[str]
 
 
-class DeploymentResponseDtoSchema(MaBaseSchema):
+class SimpleDeploymentDtoSchema(MaBaseSchema):
     id = ma.fields.Integer(dump_only=True)
     programs = ma.fields.String(dump_only=True)
     name = ma.fields.String(dump_only=True)

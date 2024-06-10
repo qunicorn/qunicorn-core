@@ -2,13 +2,13 @@
   "name": "DeploymentName",
   "programs": [
     {
-      "quantum_circuit": "OPENQASM 3.0; bit[2] bits; qubit[2] qubits; h qubits[0]; cnot qubits[0], qubits[1]; bits[0] = measure qubits[0]; bits[1] = measure qubits[1];",
+      "quantum_circuit": "OPENQASM 3.0;\ninclude \"stdgates.inc\";\nbit[2] meas;\nqubit[2] q;\nh q[0];\ncx q[0], q[1];\nbarrier q[0], q[1];\nmeas[0] = measure q[0];\nmeas[1] = measure q[1];",
       "assembler_language": "QASM3",
       "python_file_metadata": "",
       "python_file_path": ""
     },
     {
-      "quantum_circuit": "OPENQASM 3.0; bit[2] bits; qubit[2] qubits; h qubits[0]; h qubits[0]; cnot qubits[0], qubits[1]; bits[0] = measure qubits[0]; bits[1] = measure qubits[1];",
+      "quantum_circuit": "OPENQASM 3.0;\ninclude \"stdgates.inc\";\nbit[2] meas;\nqubit[2] q;\nh q[0];\nh q[0];\ncx q[0], q[1];\nbarrier q[0], q[1];\nmeas[0] = measure q[0];\nmeas[1] = measure q[1];",
       "assembler_language": "QASM3",
       "python_file_metadata": "",
       "python_file_path": ""

@@ -17,13 +17,13 @@ import json
 import os
 from typing import Optional
 
-from qunicorn_core.api.api_models import DeploymentRequestDto, JobRequestDto, SimpleJobDto, DeploymentResponseDto
+from qunicorn_core.api.api_models import DeploymentUpdateDto, JobRequestDto, SimpleJobDto, SimpleDeploymentDto
 from qunicorn_core.core import deployment_service, job_service
-from qunicorn_core.db.database_services import job_db_service
 from qunicorn_core.db.models.job import JobDataclass
 from qunicorn_core.db.models.result import ResultDataclass
 from qunicorn_core.static.enums.assembler_languages import AssemblerLanguage
 from qunicorn_core.static.enums.job_state import JobState
+from qunicorn_core.static.enums.job_type import JobType
 from qunicorn_core.static.enums.provider_name import ProviderName
 from qunicorn_core.static.enums.result_type import ResultType
 from qunicorn_core.static.qunicorn_exception import QunicornError
@@ -50,7 +50,7 @@ DEPLOYMENT_JSON_PATHS = [
 
 AWS_LOCAL_SIMULATOR = "local_simulator"
 IBM_LOCAL_SIMULATOR = "aer_simulator"
-EXPECTED_ID: int = 4  # hardcoded ID can be removed if tests for the correct ID are no longer needed
+EXPECTED_ID: int = 5  # hardcoded ID can be removed if tests for the correct ID are no longer needed
 JOB_FINISHED_PROGRESS: int = 100
 STANDARD_JOB_NAME: str = "JobName"
 IS_ASYNCHRONOUS: bool = False
@@ -92,7 +92,7 @@ def execute_job_test(
 
         # THEN: Check if the correct job with its result is saved in the db with results with a RESULT_TOLERANCE
         check_simple_job_dto(return_dto)
-        job: JobDataclass = job_db_service.get_job_by_id(return_dto.id)
+        job: JobDataclass = JobDataclass.get_by_id_or_404(return_dto.id)
         check_if_job_finished(job)
         check_if_job_runner_result_correct(job)
 
@@ -110,14 +110,14 @@ def get_object_from_json(json_file_name: str):
 
 def save_deployment_and_add_id_to_job(job_request_dto: JobRequestDto, assembler_language_list: list[AssemblerLanguage]):
     """Save the deployment and add the id to the job_request_dto"""
-    deployment_request: DeploymentRequestDto = get_test_deployment_request(
+    deployment_request: DeploymentUpdateDto = get_test_deployment_request(
         assembler_language_list=assembler_language_list
     )
-    deployment: DeploymentResponseDto = deployment_service.create_deployment(deployment_request)
+    deployment: SimpleDeploymentDto = deployment_service.create_deployment(deployment_request)
     job_request_dto.deployment_id = deployment.id
 
 
-def get_test_deployment_request(assembler_language_list: list[AssemblerLanguage]) -> DeploymentRequestDto:
+def get_test_deployment_request(assembler_language_list: list[AssemblerLanguage]) -> DeploymentUpdateDto:
     """Search for an assembler_language in the file names to create a DeploymentRequestDto"""
     deployment_dict: Optional[dict] = None
     combined_deployment_dict_programs = []
@@ -131,7 +131,7 @@ def get_test_deployment_request(assembler_language_list: list[AssemblerLanguage]
     if len(combined_deployment_dict_programs) > 0:
         # Return DeploymentDict as DeploymentRequestDto with all combined programs
         deployment_dict["programs"] = combined_deployment_dict_programs
-        return DeploymentRequestDto.from_dict(deployment_dict)
+        return DeploymentUpdateDto.from_dict(deployment_dict)
     else:
         # Raise Error if no deployment json was found
         raise QunicornError("No deployment json found for assembler_language: {}".format(assembler_language_list))
@@ -142,7 +142,8 @@ def get_test_job(provider: ProviderName) -> JobRequestDto:
     for path in JOB_JSON_PATHS:
         if provider.lower() in path:
             job_dict: dict = get_object_from_json(path)
-            return JobRequestDto(**job_dict)
+            job_type = JobType(job_dict.pop("type"))
+            return JobRequestDto(type=job_type, **job_dict)
 
     raise QunicornError("No job json found for provider: {}".format(provider))
 
@@ -161,61 +162,94 @@ def check_if_job_finished(job: JobDataclass):
 
 def check_if_job_runner_result_correct(job: JobDataclass):
     """Iterate over every result and check if the distribution of the measurement is correct"""
-    for i in range(len(job.results)):
-        result: ResultDataclass = job.results[i]
-        check_standard_result_data(i, job, result)
-        assert result.meta_data is not None
+    program_id_to_index = {program.id: i for i, program in enumerate(job.deployment.programs)}
+    check_job_data(job)
+
+    for result_index in range(len(job.results)):
+        result: ResultDataclass = job.results[result_index]
+        program_index = program_id_to_index[result.program_id]
+
         shots: int = job.shots
-        counts: dict = result.result_dict["counts"]
-        probabilities: dict = result.result_dict["probabilities"]
+        data: dict = result.data
 
-        # Check if the first result is distributed correctly: 50% for the qubit zero and 50% for the qubit three
-        if (i % 2) == 0:
-            assert compare_values_with_tolerance(shots / 2, counts[BIT_0], COUNTS_TOLERANCE)
-            assert compare_values_with_tolerance(shots / 2, counts[BIT_3], COUNTS_TOLERANCE)
-            assert (counts[BIT_0] + counts[BIT_3]) == shots
+        if program_index == 0:
+            # Check if the first result is distributed correctly: 50% for the qubit zero and 50% for the qubit three
+            if result.result_type == ResultType.COUNTS:
+                assert compare_values_with_tolerance(shots / 2, data[BIT_0], COUNTS_TOLERANCE)
+                assert compare_values_with_tolerance(shots / 2, data[BIT_3], COUNTS_TOLERANCE)
+                assert (data[BIT_0] + data[BIT_3]) == shots
 
-            assert compare_values_with_tolerance(PROBABILITY_1 / 2, probabilities[BIT_0], PROBABILITY_TOLERANCE)
-            assert compare_values_with_tolerance(PROBABILITY_1 / 2, probabilities[BIT_3], PROBABILITY_TOLERANCE)
-            assert (probabilities[BIT_0] + probabilities[BIT_3]) > PROBABILITY_1 - PROBABILITY_TOLERANCE
+            if result.result_type == ResultType.PROBABILITIES:
+                assert compare_values_with_tolerance(PROBABILITY_1 / 2, data[BIT_0], PROBABILITY_TOLERANCE)
+                assert compare_values_with_tolerance(PROBABILITY_1 / 2, data[BIT_3], PROBABILITY_TOLERANCE)
+                assert (data[BIT_0] + data[BIT_3]) > PROBABILITY_1 - PROBABILITY_TOLERANCE
 
-        # Check if the first result is distributed correctly: 100% for the qubit zero
-        else:
-            assert counts[BIT_0] == shots
-            assert probabilities[BIT_0] == PROBABILITY_1
+        if program_index == 1:
+            # Check if the first result is distributed correctly: 100% for the qubit zero
+            if result.result_type == ResultType.COUNTS:
+                assert data[BIT_0] == shots
+
+            if result.result_type == ResultType.PROBABILITIES:
+                assert data[BIT_0] == PROBABILITY_1
 
 
 def compare_values_with_tolerance(value1, value2, tolerance) -> bool:
     return value1 + tolerance > value2 > value1 - tolerance
 
 
-def check_standard_result_data(i, job, result):
-    assert result.result_type == ResultType.get_result_type(job.type)
+def check_job_data(job: JobDataclass):
+    program_ids_from_results = {result.program_id for result in job.results}
+    program_ids_from_deployment = {program.id for program in job.deployment.programs}
+
+    assert program_ids_from_results == program_ids_from_deployment  # every program needs at least one result
+
+    result: ResultDataclass
+
+    for result in job.results:
+        assert result.result_type != ResultType.ERROR, result
+        assert result.job_id == job.id
+        check_standard_result_data(job, result)
+
+
+def check_standard_result_data(job: JobDataclass, result: ResultDataclass):
+    assert result.result_type != ResultType.ERROR, result
     assert result.job_id == job.id
-    assert result.circuit == job.deployment.programs[i].quantum_circuit
+
+    program_ids = {program.id for program in job.deployment.programs}
+
+    assert result.program_id in program_ids
 
 
 def check_if_job_runner_result_correct_multiple_gates(job: JobDataclass):
     """Iterate over every result and check if the distribution of the measurement is correct"""
+    program_id_to_index = {program.id: i for i, program in enumerate(job.deployment.programs)}
+    check_job_data(job)
 
-    for i in range(len(job.results)):
-        result: ResultDataclass = job.results[i]
-        check_standard_result_data(i, job, result)
-        assert result.meta_data is not None
+    for result_index in range(len(job.results)):
+        result: ResultDataclass = job.results[result_index]
+        program_index = program_id_to_index[result.program_id]
+
         shots: int = job.shots
-        counts: dict = result.result_dict["counts"]
-        probabilities: dict = result.result_dict["probabilities"]
+        result_data: dict = result.data
         prob_tolerance: float = PROBABILITY_TOLERANCE * 2
         count_tolerance: float = COUNTS_TOLERANCE * 2
-        if i != 2:
-            qubit = BIT_8 if i == 3 else BIT_1
-            assert counts[qubit] == shots
-            assert probabilities[qubit] == PROBABILITY_1
-        else:
-            assert compare_values_with_tolerance(7 * (shots / 8), counts[BIT_0], count_tolerance)
-            assert compare_values_with_tolerance(shots / 8, counts[BIT_1], count_tolerance)
-            assert (counts[BIT_0] + counts[BIT_1]) == shots
 
-            assert compare_values_with_tolerance(7 * (PROBABILITY_1 / 8), probabilities[BIT_0], prob_tolerance)
-            assert compare_values_with_tolerance(PROBABILITY_1 / 8, probabilities[BIT_1], prob_tolerance)
-            assert (probabilities[BIT_0] + probabilities[BIT_1]) > PROBABILITY_1 - PROBABILITY_TOLERANCE
+        if program_index in [0, 1, 3, 4]:
+            qubit = BIT_8 if program_index == 3 else BIT_1
+
+            if result.result_type == ResultType.COUNTS:
+                assert result_data[qubit] == shots
+
+            if result.result_type == ResultType.PROBABILITIES:
+                assert result_data[qubit] == PROBABILITY_1
+
+        if program_index == 2:
+            if result.result_type == ResultType.COUNTS:
+                assert compare_values_with_tolerance(7 * (shots / 8), result_data[BIT_0], count_tolerance)
+                assert compare_values_with_tolerance(shots / 8, result_data[BIT_1], count_tolerance)
+                assert (result_data[BIT_0] + result_data[BIT_1]) == shots
+
+            if result.result_type == ResultType.PROBABILITIES:
+                assert compare_values_with_tolerance(7 * (PROBABILITY_1 / 8), result_data[BIT_0], prob_tolerance)
+                assert compare_values_with_tolerance(PROBABILITY_1 / 8, result_data[BIT_1], prob_tolerance)
+                assert (result_data[BIT_0] + result_data[BIT_1]) > PROBABILITY_1 - PROBABILITY_TOLERANCE

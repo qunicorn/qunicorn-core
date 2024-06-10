@@ -18,12 +18,12 @@
 """Module to hold DB constant to avoid circular imports."""
 
 from typing import Type, cast
+
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from flask_sqlalchemy.model import Model
 from sqlalchemy.orm import DeclarativeBase, registry
 from sqlalchemy.schema import MetaData
-
 
 DB: SQLAlchemy = SQLAlchemy(
     metadata=MetaData(

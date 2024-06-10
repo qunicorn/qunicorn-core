@@ -16,4 +16,4 @@
 """Module containing the JobManager API."""
 
 from . import job_view
-from .root import JOBMANAGER_API
+from .blueprint import JOBMANAGER_API

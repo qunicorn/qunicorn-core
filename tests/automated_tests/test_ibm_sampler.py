@@ -16,7 +16,6 @@
 
 from qunicorn_core.api.api_models import JobRequestDto, SimpleJobDto
 from qunicorn_core.core import job_service
-from qunicorn_core.db.database_services import job_db_service
 from qunicorn_core.db.models.job import JobDataclass
 from qunicorn_core.db.models.result import ResultDataclass
 from qunicorn_core.static.enums.assembler_languages import AssemblerLanguage
@@ -54,17 +53,19 @@ def create_and_run_sampler_with_device(device_name: str):
     # THEN: Check if the correct job with its result is saved in the db
     with app.app_context():
         test_utils.check_simple_job_dto(return_dto)
-        job: JobDataclass = job_db_service.get_job_by_id(return_dto.id)
+        job: JobDataclass = JobDataclass.get_by_id_or_404(return_dto.id)
         test_utils.check_if_job_finished(job)
         check_if_job_sample_result_correct(job)
 
 
 def check_if_job_sample_result_correct(job: JobDataclass):
+    test_utils.check_job_data(job)
+
     for i in range(len(job.results)):
         result: ResultDataclass = job.results[i]
-        test_utils.check_standard_result_data(i, job, result)
-        assert result.meta_data is None
-        probs: dict = result.result_dict
+        assert result.meta is None
+        probs: dict = result.data
+
         if i == 0:
             assert test_utils.compare_values_with_tolerance(PROBABILITY_1 / 2, probs[BIT_0], PROBABILITY_TOLERANCE)
             assert test_utils.compare_values_with_tolerance(PROBABILITY_1 / 2, probs[BIT_3], PROBABILITY_TOLERANCE)
