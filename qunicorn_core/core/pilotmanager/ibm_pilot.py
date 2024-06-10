@@ -16,10 +16,10 @@ import traceback
 from http import HTTPStatus
 from os import environ
 from pathlib import Path
-from typing import Any, List, Optional, Sequence, Tuple, Union
+from typing import Any, List, Optional, Sequence, Tuple, Union, Dict
 
 import qiskit_aer
-from qiskit import transpile
+from qiskit import transpile, QuantumCircuit, QiskitError
 from qiskit.primitives import Estimator as LocalEstimator
 from qiskit.primitives import EstimatorResult
 from qiskit.primitives import Sampler as LocalSampler
@@ -78,7 +78,10 @@ class IBMPilot(Pilot):
             raise error
 
     def run(
-        self, job: JobDataclass, circuits: Sequence[Tuple[QuantumProgramDataclass, Any]], token: Optional[str] = None
+        self,
+        job: JobDataclass,
+        circuits: Sequence[Tuple[QuantumProgramDataclass, QuantumCircuit]],
+        token: Optional[str] = None,
     ) -> Tuple[List[ResultDataclass], JobState]:
         """Execute a job local using aer simulator or a real backend"""
         if job.id is None:
@@ -105,12 +108,14 @@ class IBMPilot(Pilot):
         job.save(commit=True)
 
         result = qiskit_job.result()
-        results: list[ResultDataclass] = IBMPilot.__map_runner_results_to_dataclass(result, job, programs)
+        results: list[ResultDataclass] = IBMPilot.__map_runner_results_to_dataclass(
+            result, job, programs, backend_specific_circuits
+        )
 
         # AerCircuit is not serializable and needs to be removed
         for res in results:
-            if res is not None and "circuit" in res.meta_data:
-                res.meta_data.pop("circuit")
+            if res is not None and "circuit" in res.meta:
+                res.meta.pop("circuit")
 
         return results, JobState.FINISHED
 
@@ -218,7 +223,7 @@ class IBMPilot(Pilot):
         job.type = JobType.IBM_RUNNER.value
         job.save(commit=True)
         result_type: ResultType = ResultType.UPLOAD_SUCCESSFUL
-        ibm_results = [ResultDataclass(result_dict={"ibm_job_id": ibm_program_ids[0]}, result_type=result_type)]
+        ibm_results = [ResultDataclass(data={"ibm_job_id": ibm_program_ids[0]}, result_type=result_type)]
         return ibm_results, JobState.READY
 
     def __run_ibm_program(self, job: JobDataclass, token: Optional[str]) -> Tuple[List[ResultDataclass], JobState]:
@@ -231,12 +236,14 @@ class IBMPilot(Pilot):
         ibm_job_id = job.results[0].result_dict["ibm_job_id"]  # FIXME
 
         try:
-            result = service.run(ibm_job_id, inputs=input_dict, options=options_dict).result()
+            result: RuntimeJob = service.run(ibm_job_id, inputs=input_dict, options=options_dict).result()
         except IBMRuntimeError as exception:
             job.save_error(exception)
             raise QunicornError(type(exception).__name__, HTTPStatus.INTERNAL_SERVER_ERROR)
 
-        ibm_results = IBMPilot.__map_runner_results_to_dataclass(result, job=job)
+        # use assert to pacify linter for now...
+        assert result  # FIXME: actually use result object
+        ibm_results = [ResultDataclass()]  # FIXME: map result to list of ResultDataclass
 
         return ibm_results, JobState.FINISHED
 
@@ -268,23 +275,75 @@ class IBMPilot(Pilot):
 
     @staticmethod
     def __map_runner_results_to_dataclass(
-        ibm_result: Result, job: JobDataclass, programs: Optional[Sequence[QuantumProgramDataclass]] = None
+        ibm_result: Result,
+        job: JobDataclass,
+        programs: Sequence[QuantumProgramDataclass],
+        circuits: List[QuantumCircuit] = None,
     ) -> list[ResultDataclass]:
-        result_dtos: list[ResultDataclass] = []
+        results: list[ResultDataclass] = []
+
+        try:
+            binary_counts = ibm_result.get_counts()
+        except QiskitError:
+            binary_counts = [None]
+
+        if isinstance(binary_counts, dict):
+            binary_counts = [binary_counts]
+
         for i, result in enumerate(ibm_result.results):
             metadata = result.to_dict()
+            metadata["format"] = "hex"
+            classical_registers_metadata = []
+
+            for reg in reversed(circuits[i].cregs):
+                # FIXME: don't append registers that are not measured
+                classical_registers_metadata.append({"name": reg.name, "size": reg.size})
+
+            metadata["registers"] = classical_registers_metadata
+            metadata.pop("data")
             metadata.pop("circuit", None)
-            counts: dict = result.data.counts
-            probabilities: dict = Pilot.calculate_probabilities(counts)
-            result_dtos.append(
+
+            hex_counts = IBMPilot._binary_counts_to_hex(binary_counts[i])
+
+            results.append(
                 ResultDataclass(
-                    program=programs[i] if programs else None,
-                    result_dict={"counts": counts, "probabilities": probabilities},
+                    program=programs[i],
                     result_type=ResultType.COUNTS,
-                    meta_data=metadata,
+                    data=hex_counts if hex_counts else {"": 0},
+                    meta=metadata,
                 )
             )
-        return result_dtos
+
+            probabilities: dict = Pilot.calculate_probabilities(hex_counts) if hex_counts else {"": 0}
+
+            results.append(
+                ResultDataclass(
+                    program=programs[i],
+                    result_type=ResultType.PROBABILITIES,
+                    data=probabilities,
+                    meta=metadata,
+                )
+            )
+        return results
+
+    @staticmethod
+    def _binary_counts_to_hex(binary_counts: Dict[str, int] | None) -> Dict[str, int] | None:
+        if binary_counts is None:
+            return None
+
+        hex_counts = {}
+
+        for k, v in binary_counts.items():
+            hex_registers = []
+
+            for binary_register in k.split():
+                hex_registers.append(f"0x{int(binary_register, 2):x}")
+
+            hex_sample = " ".join(hex_registers)
+
+            hex_counts[hex_sample] = v
+
+        return hex_counts
 
     @staticmethod
     def _map_estimator_results_to_dataclass(
@@ -298,8 +357,8 @@ class IBMPilot(Pilot):
                 ResultDataclass(
                     program=programs[i],
                     result_dict={"value": str(value), "variance": str(variance)},
-                    result_type=ResultType.VALUE_AND_VARIANCE,
-                    meta_data={"observer": f"SparsePauliOp-{observer}"},
+                    data=ResultType.VALUE_AND_VARIANCE,
+                    meta={"observer": f"SparsePauliOp-{observer}"},
                 )
             )
         return result_dtos
@@ -315,7 +374,7 @@ class IBMPilot(Pilot):
                 results.append(
                     ResultDataclass(
                         program=programs[i],
-                        result_dict=Pilot.qubits_decimal_to_hex(ibm_result.quasi_dists[i]),
+                        data=Pilot.qubits_integer_to_hex(ibm_result.quasi_dists[i]),
                         result_type=ResultType.QUASI_DIST,
                     )
                 )
@@ -327,8 +386,8 @@ class IBMPilot(Pilot):
                         result_type=ResultType.ERROR.value,
                         job=job,
                         program=programs[i],
-                        result_dict={"exception_message": exception_message},
-                        meta_data={"stack_trace": stack_trace},
+                        data={"exception_message": exception_message},
+                        meta={"stack_trace": stack_trace},
                     )
                 )
                 contains_errors = True

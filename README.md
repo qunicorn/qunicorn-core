@@ -171,6 +171,30 @@ To authenticate yourself have a look at the following read the docs chapter: Arc
 
 For more detailed information about additional commands see the readme.md in docs.
 
+## Migrations
+
+ℹ️ Try to minimize the number of migrations and only create a new one when your changes are likely final.
+Altenatively merge all your new migration into one before submitting a pull request.
+
+If you have added new mapped dataclasses or modified existing ones, a migration script needs to be added.
+This script updates the tables and columns of the database to match the mapped dataclasses.
+To generate the migration script you need to do the following steps:
+
+```bash
+# delete the database
+rm instance/qhana_plugin_runner.db
+# upgrade the database to the latest migration
+poetry run flask db upgrade
+# generate a new migration script for the changes you made (always manually review the created migration!)
+poetry run flask db migrate -m "changelog message"
+# upgrade the database to reflect your changes
+poetry run flask db upgrade
+# if you need help with the commands
+poetry run flask db --help
+```
+
+The migrations are handled by [flask-migrate](https://flask-migrate.readthedocs.io/en/latest/index.html) which is based on [alembic](https://alembic.sqlalchemy.org/en/latest/index.html)
+
 ## Disclaimer of Warranty
 
 Unless required by applicable law or agreed to in writing, Licensor provides the Work (and each Contributor provides its

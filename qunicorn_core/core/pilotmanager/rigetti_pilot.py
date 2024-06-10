@@ -63,22 +63,30 @@ class RigettiPilot(Pilot):
             raise error
         if job.executed_on.is_local:
             results = []
-            program_index = 0
+
             for program, circuit in circuits:
                 circuit.wrap_in_numshots_loop(job.shots)
                 qvm = get_qc(job.executed_on.name)
                 qvm_result = qvm.run(qvm.compile(circuit)).get_register_map().get("ro")
                 result_dict = RigettiPilot.result_to_dict(qvm_result)
-                result_dict = RigettiPilot.qubit_binary_to_hex(result_dict, job.id)
+                result_dict = RigettiPilot.qubit_binary_string_to_hex(result_dict, job.id)
                 probabilities_dict = RigettiPilot.calculate_probabilities(result_dict)
-                result = ResultDataclass(
-                    program=program,
-                    result_dict={"counts": result_dict, "probabilities": probabilities_dict},
-                    result_type=ResultType.COUNTS.name,
-                    meta_data="",
+                results.append(
+                    ResultDataclass(
+                        program=program,
+                        data=result_dict,
+                        result_type=ResultType.COUNTS,
+                        meta={},  # FIXME: add register metadata
+                    )
                 )
-                program_index += 1
-                results.append(result)
+                results.append(
+                    ResultDataclass(
+                        program=program,
+                        data=probabilities_dict,
+                        result_type=ResultType.PROBABILITIES,
+                        meta={},  # FIXME: add register metadata
+                    )
+                )
             return results
         else:
             error = QunicornError("Device need to be local for RIGETTI")

@@ -23,8 +23,8 @@ def dataclass_to_dto(result: ResultDataclass) -> ResultDto:
     return ResultDto(
         id=result.id,
         circuit=result.program.quantum_circuit if result.program else None,
-        result_dict=result.result_dict,
-        meta_data=result.meta_data,
+        data=result.data,
+        metadata=result.meta,
         result_type=ResultType(result.result_type),
     )
 
@@ -39,7 +39,7 @@ def exception_to_error_results(
             result_type=ResultType.ERROR.value,
             job=None,
             program=program,
-            result_dict={"exception_message": exception_message},
-            meta_data={"stack_trace": stack_trace},
+            data={"exception_message": exception_message},
+            meta={"stack_trace": stack_trace},
         )
     ]

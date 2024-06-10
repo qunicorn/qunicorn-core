@@ -15,7 +15,7 @@
 
 """Module containing all Dtos and their Schemas for tasks in the Jobmanager API."""
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Any
 
 import marshmallow as ma
 
@@ -33,14 +33,14 @@ from ...static.enums.result_type import ResultType
 class ResultDto:
     id: int
     circuit: Optional[str]
-    result_dict: dict
-    meta_data: dict
+    data: Any
+    metadata: dict
     result_type: ResultType
 
 
 class ResultDtoSchema(MaBaseSchema):
     id = ma.fields.Int(required=True, dump_only=True)
     circuit = ma.fields.String(required=True, dump_only=True)
-    results = ma.fields.Dict(required=True, dump_only=True)
+    data = ma.fields.Raw(required=True, dump_only=True)
+    metadata = ma.fields.Dict(required=True, dump_only=True)
     result_type = ma.fields.Enum(enum=ResultType, required=True, dump_only=True)
-    meta_data = ma.fields.Dict(required=True, dump_only=True)

@@ -59,11 +59,13 @@ def create_and_run_sampler_with_device(device_name: str):
 
 
 def check_if_job_sample_result_correct(job: JobDataclass):
+    test_utils.check_job_data(job)
+
     for i in range(len(job.results)):
         result: ResultDataclass = job.results[i]
-        test_utils.check_standard_result_data(i, job, result)
-        assert result.meta_data is None
-        probs: dict = result.result_dict
+        assert result.meta is None
+        probs: dict = result.data
+
         if i == 0:
             assert test_utils.compare_values_with_tolerance(PROBABILITY_1 / 2, probs[BIT_0], PROBABILITY_TOLERANCE)
             assert test_utils.compare_values_with_tolerance(PROBABILITY_1 / 2, probs[BIT_3], PROBABILITY_TOLERANCE)

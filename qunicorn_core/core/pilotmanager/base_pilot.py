@@ -16,7 +16,7 @@ import os
 from datetime import datetime
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any, List, Optional, Sequence, Tuple, Union
+from typing import Any, List, Optional, Sequence, Tuple, Union, Generator
 
 from celery.states import PENDING
 
@@ -141,19 +141,89 @@ class Pilot:
         return devices_without_default, default_device
 
     @staticmethod
-    def qubits_decimal_to_hex(qubits_in_binary: dict) -> dict:
-        """To make sure that the qubits in the counts or probabilities are in hex format and not in decimal format"""
+    def qubits_integer_to_hex(qubits_as_integers: dict) -> dict:
+        """To make sure that the qubits in the counts or probabilities are in
+        hex string format and not in decimal integer format.
+
+        @param qubits_as_integers: example: { 3: 1234 }
+        @return: example: { "0x3": 1234 }
+        """
         try:
-            return dict([(hex(k), v) for k, v in qubits_in_binary.items()])
+            return dict([(hex(k), v) for k, v in qubits_as_integers.items()])
         except Exception:
             raise QunicornError("Could not convert decimal-results to hex")
 
     @staticmethod
-    def qubit_binary_to_hex(qubits_in_binary: dict) -> dict:
-        """To make sure that the qubits in the counts or probabilities are in hex format and not in binary format"""
+    def qubit_binary_string_to_hex(qubits_in_binary: dict, reverse_qubit_order: bool = False) -> dict:
+        """To make sure that the qubits in the counts or probabilities are in hex format with registers and not in
+        binary string format with registers
+
+        @param qubits_in_binary: example: { "010 1": 1234 }
+        @param reverse_qubit_order: whether to reverse the order of the qubits
+        @return: example: { "0x2 0x1": 1234 }
+        """
 
         try:
-            return dict([(hex(int(k, 2)), v) for k, v in qubits_in_binary.items()])
+            hex_result = {}
+
+            for bitstring, v in qubits_in_binary.items():
+                registers: List[str] = bitstring.split()
+                hex_registers = []
+
+                for reg in registers:
+                    if reverse_qubit_order:
+                        reg = reg[::-1]
+
+                    hex_registers.append(f"0x{int(reg, 2):x}")
+
+                hex_string = " ".join(hex_registers)
+                hex_result[hex_string] = v
+
+            return hex_result
+
+        except Exception:
+            raise QunicornError("Could not convert binary-results to hex")
+
+    @staticmethod
+    def qubit_hex_string_to_binary(
+        qubits_in_hex: dict, registers: List[int], reverse_qubit_order: bool = False
+    ) -> dict:
+        """To make sure that the qubits in the counts or probabilities are in binary format with registers and not in
+        hex string format without registers
+
+        @param qubits_in_hex: example: { "0x5": 1234 }
+        @param registers: size of the registers, example: [3, 1]
+        @param reverse_qubit_order: whether to reverse the order of the qubits in the individual registers
+        @return: example: { "010 1": 1234 }
+        """
+
+        try:
+            hex_result = {}
+            max_len = sum(registers)
+
+            for hex_string, v in qubits_in_hex.items():
+                binary_string = f"{int(hex_string, 16):0{max_len}b}"
+                binary_string = binary_string[-max_len:]
+
+                def sliced(binary) -> Generator[str]:
+                    start = 0
+
+                    for reg in registers:
+                        end = start + reg
+                        bin_register = binary[start:end]
+
+                        if reverse_qubit_order:
+                            bin_register = bin_register[::-1]
+
+                        yield bin_register
+                        start = end
+
+                binary_registers = " ".join(sliced(binary_string))
+
+                hex_result[binary_registers] = v
+
+            return hex_result
+
         except Exception:
             raise QunicornError("Could not convert binary-results to hex")
 
@@ -182,7 +252,7 @@ class Pilot:
         deployment = DeploymentDataclass(deployed_by=None, programs=[program], deployed_at=datetime.now(), name=name)
 
         counts: dict = {"0x0": 2007, "0x3": 1993}
-        probs: dict = {"0x0": 0.50175, "0x3": 0.49825}
+        # probs: dict = {"0x0": 0.50175, "0x3": 0.49825}  # TODO: add as additional result
         job_name = device.provider.name + "Job"
         return JobDataclass(
             executed_by=None,
@@ -194,5 +264,11 @@ class Pilot:
             type=JobType.RUNNER.value,
             started_at=datetime.now(),
             name=job_name,
-            results=[ResultDataclass(result_dict={"counts": counts, "probabilities": probs})],
+            results=[
+                ResultDataclass(
+                    data=counts,
+                    meta={"format": "hex", "shots": 4000, "registers": {"name": "output", "size": 2}},
+                    result_type="COUNTS",
+                )
+            ],
         )
