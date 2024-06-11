@@ -17,7 +17,7 @@ import json
 import os
 from typing import Optional
 
-from qunicorn_core.api.api_models import DeploymentUpdateDto, JobRequestDto, SimpleJobDto, SimpleDeploymentDto
+from qunicorn_core.api.api_models import DeploymentUpdateDto, JobRequestDto, SimpleJobDto, DeploymentDto
 from qunicorn_core.core import deployment_service, job_service
 from qunicorn_core.db.models.job import JobDataclass
 from qunicorn_core.db.models.result import ResultDataclass
@@ -113,7 +113,7 @@ def save_deployment_and_add_id_to_job(job_request_dto: JobRequestDto, assembler_
     deployment_request: DeploymentUpdateDto = get_test_deployment_request(
         assembler_language_list=assembler_language_list
     )
-    deployment: SimpleDeploymentDto = deployment_service.create_deployment(deployment_request)
+    deployment: DeploymentDto = deployment_service.create_deployment(deployment_request)
     job_request_dto.deployment_id = deployment.id
 
 

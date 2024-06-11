@@ -18,6 +18,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
+from flask import url_for
 import marshmallow as ma
 
 from .quantum_program_dtos import (
@@ -34,7 +35,6 @@ __all__ = [
     "DeploymentUpdateDtoSchema",
     "DeploymentDto",
     "DeploymentUpdateDto",
-    "SimpleDeploymentDto",
     "SimpleDeploymentDtoSchema",
 ]
 
@@ -77,6 +77,7 @@ class DeploymentDtoSchema(MaBaseSchema):
         required=False,
         metadata={"description": "an optional name for the deployment_api."},
     )
+    self = ma.fields.Function(lambda obj: url_for("deployment-api.DeploymentDetailView", deployment_id=obj.id))
 
 
 class DeploymentUpdateDtoSchema(MaBaseSchema):
@@ -87,14 +88,10 @@ class DeploymentUpdateDtoSchema(MaBaseSchema):
     )
 
 
-@dataclass
-class SimpleDeploymentDto:
-    id: int
-    programs: str
-    name: Optional[str]
-
-
 class SimpleDeploymentDtoSchema(MaBaseSchema):
     id = ma.fields.Integer(dump_only=True)
-    programs = ma.fields.String(dump_only=True)
+    programs = ma.fields.List(
+        ma.fields.Nested(QuantumProgramDtoSchema(only=["id", "self", "assembler_language"])), dump_only=True
+    )
     name = ma.fields.String(dump_only=True)
+    self = ma.fields.Function(lambda obj: url_for("deployment-api.DeploymentDetailView", deployment_id=obj.id))
