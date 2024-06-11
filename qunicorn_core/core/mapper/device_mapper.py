@@ -42,7 +42,7 @@ def dataclass_to_dto(device: DeviceDataclass) -> DeviceDto:
 
 def dataclass_to_simple(device: DeviceDataclass) -> SimpleDeviceDto:
     return SimpleDeviceDto(
-        device_id=device.id,
+        id=device.id,
         device_name=device.name,
         provider_name=device.provider.name,
     )
