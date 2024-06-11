@@ -22,6 +22,7 @@ from qunicorn_core.static.enums.job_type import JobType
 def dataclass_to_response(job: JobDataclass) -> JobResponseDto:
     return JobResponseDto(
         id=job.id,
+        deployment_id=job.deployment_id,
         executed_by=job.executed_by,
         executed_on=device_mapper.dataclass_to_dto(job.executed_on) if job.executed_on else None,
         progress=job.progress,
@@ -37,6 +38,7 @@ def dataclass_to_response(job: JobDataclass) -> JobResponseDto:
 def dataclass_to_simple(job: JobDataclass) -> SimpleJobDto:
     return SimpleJobDto(
         id=job.id,
+        deployment_id=job.deployment_id,
         name=job.name,
         state=JobState(job.state),
     )

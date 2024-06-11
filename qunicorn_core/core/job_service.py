@@ -78,7 +78,7 @@ def create_and_run_job(
         job.celery_id = "synchronous"
     job.save(commit=True)
     run_job_with_celery(job, is_asynchronous, token=job_request_dto.token)
-    return SimpleJobDto(id=job.id, name=job.name, state=JobState.READY)
+    return SimpleJobDto(id=job.id, deployment_id=job.deployment_id, name=job.name, state=JobState.READY)
 
 
 def run_job_with_celery(job: JobDataclass, is_asynchronous: bool, token: Optional[str] = None):
@@ -96,12 +96,12 @@ def re_run_job_by_id(job_id: int, token: str, user_id: Optional[str] = None) -> 
     job: JobDataclass = JobDataclass.get_by_id_authenticated_or_404(job_id, user_id)
     job_request: JobRequestDto = JobRequestDto(
         name=job.name,
+        deployment_id=job.deployment_id,
         provider_name=job.executed_on.provider.name,
         device_name=job.executed_on.name,
         shots=job.shots,
         token=token,
         type=JobType(job.type),
-        deployment_id=job.deployment_id,
     )
     return create_and_run_job(job_request)
 
@@ -115,7 +115,7 @@ def run_job_by_id(
         job.celery_id = "synchronous"
     job.save(commit=True)
     run_job_with_celery(job, asyn, token=job_exec_dto.token)
-    return SimpleJobDto(id=job.id, name=job.name, state=JobState.RUNNING)
+    return SimpleJobDto(id=job.id, deployment_id=job.deployment_id, name=job.name, state=JobState.RUNNING)
 
 
 def get_job_by_id(job_id: int, user_id: Optional[str]) -> JobResponseDto:
@@ -152,7 +152,7 @@ def cancel_job_by_id(job_id, token, user_id: Optional[str] = None) -> SimpleJobD
     logging.info(f"Cancel execution of job with id:{job_id}")
     job: JobDataclass = JobDataclass.get_by_id_authenticated_or_404(job_id, user_id)
     job_manager_service.cancel_job(job, token, user_id)
-    return SimpleJobDto(id=job.id, name=job.name, state=JobState.CANCELED)
+    return SimpleJobDto(id=job.id, deployment_id=job.deployment_id, name=job.name, state=JobState.CANCELED)
 
 
 def get_jobs_by_deployment_id(deployment_id, user_id: Optional[str] = None) -> list[SimpleJobDto]:

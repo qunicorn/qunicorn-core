@@ -18,6 +18,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
+from flask import url_for
 import marshmallow as ma
 
 from .device_dtos import DeviceDto, DeviceDtoSchema
@@ -60,6 +61,7 @@ class JobResponseDto:
     """JobDto that is sent to the user as a response"""
 
     id: int
+    deployment_id: Optional[int]
     executed_by: Optional[str]
     executed_on: DeviceDto
     progress: int
@@ -74,6 +76,7 @@ class JobResponseDto:
 @dataclass
 class SimpleJobDto:
     id: Optional[int]
+    deployment_id: Optional[int]
     name: Optional[str]
     state: JobState = JobState.RUNNING
 
@@ -110,12 +113,20 @@ class JobResponseDtoSchema(MaBaseSchema):
     started_at = ma.fields.AwareDateTime(required=True, dump_only=True)
     finished_at = ma.fields.AwareDateTime(required=True, allow_none=True, dump_only=True)
     results = ma.fields.Nested(ResultDtoSchema(exclude=["job"]), many=True, required=True, dump_only=True)
+    self = ma.fields.Function(lambda obj: url_for("job-api.JobDetailView", job_id=obj.id))
+    deplyoment = ma.fields.Function(
+        lambda obj: url_for("deployment-api.DeploymentDetailView", deployment_id=obj.deployment_id)
+    )
 
 
 class SimpleJobDtoSchema(MaBaseSchema):
     id = ma.fields.Integer(required=True, allow_none=False, dump_only=True)
     name = ma.fields.String(required=False, allow_none=False, dump_only=True)
     state = ma.fields.String(required=False, allow_none=False, dump_only=True)
+    self = ma.fields.Function(lambda obj: url_for("job-api.JobDetailView", job_id=obj.id))
+    deplyoment = ma.fields.Function(
+        lambda obj: url_for("deployment-api.DeploymentDetailView", deployment_id=obj.deployment_id)
+    )
 
 
 class TokenSchema(MaBaseSchema):
