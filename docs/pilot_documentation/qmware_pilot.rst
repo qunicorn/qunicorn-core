@@ -7,15 +7,15 @@ The QMWare Pilot is implemented in an experimental form, and currently allows th
 
 **Note**: The Tokens provides by QMWare are necessary for the execution and need to be in environment variables in the form of:
 
-QMWARE_URL="https://dispatcher.dev.qmware-dev.cloud/"
-
-QMWARE_API_KEY=""
-QMWARE_API_KEY_ID=""
+* QMWARE_URL="https://dispatcher.dev.qmware-dev.cloud/"
+* QMWARE_API_KEY=""
+* QMWARE_API_KEY_ID=""
 
 Standard Devices
 ^^^^^^^^^^^^^^^^^^
 
 The local simulator (workaround): **fake_qiskit**
+
 The standard device for the testing environment is: **dev**
 
 Main Languages
