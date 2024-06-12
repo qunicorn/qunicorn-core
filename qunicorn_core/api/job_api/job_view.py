@@ -115,7 +115,7 @@ class JobRunView(MethodView):
     @JOBMANAGER_API.response(HTTPStatus.OK, SimpleJobDtoSchema())
     @JOBMANAGER_API.require_jwt(optional=True)
     def post(self, body, job_id: int, jwt_subject: Optional[str]):
-        """Run job on IBM that was previously uploaded."""
+        """DEPRECATED! Run job on IBM that was previously uploaded."""
         logging.info(f"Request: run job with id: {job_id}")
         job_execution_dto: JobExecutePythonFileDto = JobExecutePythonFileDto(**body)
         return job_service.run_job_by_id(job_id, job_execution_dto, user_id=jwt_subject)
@@ -129,7 +129,7 @@ class JobReRunView(MethodView):
     @JOBMANAGER_API.response(HTTPStatus.OK, SimpleJobDtoSchema())
     @JOBMANAGER_API.require_jwt(optional=True)
     def post(self, body, job_id: int, jwt_subject: Optional[str]):
-        """Create a new job on basis of an existing job and execute it."""
+        """DEPRECATED! Create a new job on basis of an existing job and execute it."""
         logging.info(f"Request: re run job with id: {job_id}")
         return job_service.re_run_job_by_id(job_id, body["token"], user_id=jwt_subject)
 
@@ -142,11 +142,12 @@ class JobCancelView(MethodView):
     @JOBMANAGER_API.response(HTTPStatus.OK, SimpleJobDtoSchema())
     @JOBMANAGER_API.require_jwt(optional=True)
     def post(self, body, job_id: int, jwt_subject: Optional[str]):
-        """Cancel a job execution via id."""
+        """DEPRECATED! Cancel a job execution via id."""
         logging.info(f"Request: cancel job with id: {job_id}")
         return job_service.cancel_job_by_id(job_id, body["token"], user_id=jwt_subject)
 
 
+# FIXME: make this a query param in the JobIDView
 @JOBMANAGER_API.route("/queue/")
 class JobQueueView(MethodView):
     """Jobs endpoint to get the queued jobs."""
@@ -154,6 +155,6 @@ class JobQueueView(MethodView):
     @JOBMANAGER_API.response(HTTPStatus.OK, QueuedJobsDtoSchema())
     @JOBMANAGER_API.require_jwt(optional=True)
     def get(self, jwt_subject: Optional[str]):
-        """Get the items of the job queue and the running job."""
+        """DEPRECATED! Get the items of the job queue and the running job."""
         logging.info("Request: Get the items of the job queue and the running job")
         return job_service.get_job_queue_items(user_id=jwt_subject)
