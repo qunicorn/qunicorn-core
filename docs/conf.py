@@ -49,7 +49,7 @@ sphinx_config = pyproject_toml["tool"].get("sphinx")
 
 project = str(package_config.get("name"))
 author = ", ".join(package_config.get("authors"))
-copyright_year = sphinx_config.get("copyright-year", 2023)
+copyright_year = sphinx_config.get("copyright-year", 2024)
 copyright = f"{copyright_year}, {author}"
 version = str(package_config.get("version"))
 release = str(sphinx_config.get("release", version))
