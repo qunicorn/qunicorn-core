@@ -4,7 +4,7 @@ Workflows and Pytest
 Workflows:
 ##########
 
-* Configured in .github/workflows
+* Configured in :file:`.github/workflows`
 * Formatting-linting.yml
     * Executes linting provided by flake8 and black, configured in .flake8
 * run-pytests.yml
