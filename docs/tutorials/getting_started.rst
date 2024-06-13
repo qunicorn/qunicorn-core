@@ -98,7 +98,7 @@ Trying out the Template
 
 For a list of all dependencies with their license open http://localhost:5005/licenses.
 The Port for qunicorn_core is set to 5005 to not interfere with other flask default apps.
-Settings can be changed in the `.flaskenv`.
+Settings can be changed in the :file:`.flaskenv`.
 
 The API:
 **********************
