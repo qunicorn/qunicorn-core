@@ -27,6 +27,7 @@ from ..api_models.deployment_dtos import (
     DeploymentUpdateDto,
     DeploymentUpdateDtoSchema,
     SimpleDeploymentDtoSchema,
+    DeploymentFilterParamsSchema,
     QuantumProgramDtoSchema,
 )
 from ...core import deployment_service, job_service
@@ -37,12 +38,13 @@ from ...util import logging
 class DeploymentIDView(MethodView):
     """Deployments endpoint for collection of all deployed jobs."""
 
+    @DEPLOYMENT_API.arguments(DeploymentFilterParamsSchema(), location="query", as_kwargs=True)
     @DEPLOYMENT_API.response(HTTPStatus.OK, SimpleDeploymentDtoSchema(many=True))
     @DEPLOYMENT_API.require_jwt(optional=True)
-    def get(self, jwt_subject: Optional[str]):
+    def get(self, jwt_subject: Optional[str], name: Optional[str] = None):
         """Get the list of deployments."""
         logging.info("Request: get all deployments")
-        return deployment_service.get_all_deployment_responses(user_id=jwt_subject)
+        return deployment_service.get_all_deployment_responses(user_id=jwt_subject, name=name)
 
     @DEPLOYMENT_API.arguments(DeploymentUpdateDtoSchema(), location="json")
     @DEPLOYMENT_API.response(HTTPStatus.CREATED, SimpleDeploymentDtoSchema())
