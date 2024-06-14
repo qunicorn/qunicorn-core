@@ -38,6 +38,7 @@ __all__ = [
     "JobExecutionDtoSchema",
     "JobFilterParamsSchema",
     "QueuedJobsDtoSchema",
+    "JobCommandSchema",
 ]
 
 from ...static.enums.job_state import JobState
@@ -150,3 +151,10 @@ class JobExecutionDtoSchema(MaBaseSchema):
 class QueuedJobsDtoSchema(MaBaseSchema):
     running_job = ma.fields.Nested(SimpleJobDtoSchema)
     queued_jobs = ma.fields.List(ma.fields.Nested(SimpleJobDtoSchema))
+
+
+class JobCommandSchema(MaBaseSchema):
+    command = ma.fields.String(
+        required=True, validate=OneOf(["run", "rerun", "cancel"]), metadata={"example": "cancel"}
+    )
+    token = ma.fields.String(required=False, allow_none=True, missing=None, metadata={"example": ""})

@@ -91,9 +91,11 @@ def run_job_with_celery(job: JobDataclass, is_asynchronous: bool, token: Optiona
         job_manager_service.run_job(job.id, token=token)
 
 
-def re_run_job_by_id(job_id: int, token: str, user_id: Optional[str] = None) -> SimpleJobDto:
+def re_run_job_by_id(job_id: int, token: Optional[str], user_id: Optional[str] = None) -> SimpleJobDto:
     """Get job from DB, Save it as new job and run it with the new id"""
     job: JobDataclass = JobDataclass.get_by_id_authenticated_or_404(job_id, user_id)
+    if token is None:
+        token = ""
     job_request: JobRequestDto = JobRequestDto(
         name=job.name,
         deployment_id=job.deployment_id,
@@ -156,7 +158,7 @@ def get_all_jobs(
     ]
 
 
-def cancel_job_by_id(job_id, token, user_id: Optional[str] = None) -> SimpleJobDto:
+def cancel_job_by_id(job_id, token: Optional[str], user_id: Optional[str] = None) -> SimpleJobDto:
     """cancel job execution"""
     logging.info(f"Cancel execution of job with id:{job_id}")
     job: JobDataclass = JobDataclass.get_by_id_authenticated_or_404(job_id, user_id)

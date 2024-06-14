@@ -34,9 +34,11 @@ from ..api_models.job_dtos import (
     ResultDtoSchema,
     ResultDto,
     TokenSchema,
+    JobCommandSchema,
 )
 from ...core import job_service
 from ...util import logging
+from ...static.qunicorn_exception import QunicornError
 
 
 @JOBMANAGER_API.route("/")
@@ -87,6 +89,39 @@ class JobDetailView(MethodView):
         logging.info(f"Request: delete job with id: {job_id}")
         return job_service.delete_job_data_by_id(job_id, user_id=jwt_subject)
 
+    @JOBMANAGER_API.response(HTTPStatus.OK, JobResponseDtoSchema())
+    @JOBMANAGER_API.arguments(JobCommandSchema(), location="json")
+    @JOBMANAGER_API.require_jwt(optional=True)
+    def post(self, command: dict, job_id: int, jwt_subject: Optional[str]):
+        """Run, rerun or cancel an existing job.
+
+        Commnad "run":
+            Run job on IBM that was previously uploaded.
+
+        Commnad "rerun":
+            Create a new job on basis of an existing job and execute it.
+
+        Commnad "cancel":
+            Cancel a job execution via id.
+        """
+        token = command.pop("token", None)
+        match command:
+            case {"command": "run"}:
+                logging.info(f"Request: run job with id: {job_id}")
+                job_execution_dto: JobExecutePythonFileDto = JobExecutePythonFileDto(token=token)
+                return job_service.run_job_by_id(job_id, job_execution_dto, user_id=jwt_subject)
+            case {"command": "rerun"}:
+                logging.info(f"Request: re run job with id: {job_id}")
+                return job_service.re_run_job_by_id(job_id, token=token, user_id=jwt_subject)
+            case {"command": "cancel"}:
+                logging.info(f"Request: cancel job with id: {job_id}")
+                return job_service.cancel_job_by_id(job_id, token=token, user_id=jwt_subject)
+            case {"command": command}:
+                raise QunicornError(f"Unknown command '{command}'.", HTTPStatus.BAD_REQUEST)
+            case _:
+                # check if JobCommandSchema and this match case are in sync!
+                raise QunicornError("Bad command format!")
+
 
 @JOBMANAGER_API.route("/<int:job_id>/results/")
 class JobResultsView(MethodView):
@@ -114,16 +149,19 @@ class JobResultDetailView(MethodView):
         return job_result_dto
 
 
-# FIXME: merge the three following views under /<int:job_id>/ into one post method!
+# TODO: remove the three following deprecated views later
 @JOBMANAGER_API.route("/run/<int:job_id>/")
 class JobRunView(MethodView):
     """Jobs endpoint to run a single job."""
 
     @JOBMANAGER_API.arguments(JobExecutionDtoSchema(), location="json")
     @JOBMANAGER_API.response(HTTPStatus.OK, SimpleJobDtoSchema())
+    @JOBMANAGER_API.doc(deprecated=True)
     @JOBMANAGER_API.require_jwt(optional=True)
     def post(self, body, job_id: int, jwt_subject: Optional[str]):
-        """DEPRECATED! Run job on IBM that was previously uploaded."""
+        """DEPRECATED! Use POST /jobs/<job_id>/ instead.
+
+        Run job on IBM that was previously uploaded."""
         logging.info(f"Request: run job with id: {job_id}")
         job_execution_dto: JobExecutePythonFileDto = JobExecutePythonFileDto(**body)
         return job_service.run_job_by_id(job_id, job_execution_dto, user_id=jwt_subject)
@@ -135,9 +173,12 @@ class JobReRunView(MethodView):
 
     @JOBMANAGER_API.arguments(TokenSchema(), location="json")
     @JOBMANAGER_API.response(HTTPStatus.OK, SimpleJobDtoSchema())
+    @JOBMANAGER_API.doc(deprecated=True)
     @JOBMANAGER_API.require_jwt(optional=True)
     def post(self, body, job_id: int, jwt_subject: Optional[str]):
-        """DEPRECATED! Create a new job on basis of an existing job and execute it."""
+        """DEPRECATED! Use POST /jobs/<job_id>/ instead.
+
+        Create a new job on basis of an existing job and execute it."""
         logging.info(f"Request: re run job with id: {job_id}")
         return job_service.re_run_job_by_id(job_id, body["token"], user_id=jwt_subject)
 
@@ -148,19 +189,23 @@ class JobCancelView(MethodView):
 
     @JOBMANAGER_API.arguments(TokenSchema(), location="json")
     @JOBMANAGER_API.response(HTTPStatus.OK, SimpleJobDtoSchema())
+    @JOBMANAGER_API.doc(deprecated=True)
     @JOBMANAGER_API.require_jwt(optional=True)
     def post(self, body, job_id: int, jwt_subject: Optional[str]):
-        """DEPRECATED! Cancel a job execution via id."""
+        """DEPRECATED! Use POST /jobs/<job_id>/ instead.
+
+        Cancel a job execution via id."""
         logging.info(f"Request: cancel job with id: {job_id}")
         return job_service.cancel_job_by_id(job_id, body["token"], user_id=jwt_subject)
 
 
-# FIXME: make this a query param in the JobIDView
+# TODO: remove deprecated endpoint later
 @JOBMANAGER_API.route("/queue/")
 class JobQueueView(MethodView):
     """Jobs endpoint to get the queued jobs."""
 
     @JOBMANAGER_API.response(HTTPStatus.OK, QueuedJobsDtoSchema())
+    @JOBMANAGER_API.doc(deprecated=True)
     @JOBMANAGER_API.require_jwt(optional=True)
     def get(self, jwt_subject: Optional[str]):
         """DEPRECATED! Use the "status" filter of the "/jobs/" route instead.
