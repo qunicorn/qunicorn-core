@@ -20,12 +20,6 @@ The Keycloak Docker Compose: `keycloak-docker-compose.yml` can be started by exe
 
     docker compose -f keycloak-docker-compose.yaml -p qunicorn-core up -d
 
-Or on Windows:
-
-.. code-block:: bash
-
-    [PathToDocker]\docker-compose.exe -f [PathToDockerCompose]\keycloak-docker-compose.yaml -p qunicorn-core up -d
-
 After it has been started it should be possible to access Keycloak `http://localhost:8081`
 
 Alternatively the Keycloak service can be started by using the general `docker-compose.yaml`.
