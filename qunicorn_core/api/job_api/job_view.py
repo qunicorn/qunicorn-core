@@ -35,7 +35,6 @@ from ..api_models.job_dtos import (
     ResultDto,
     TokenSchema,
 )
-from ...db.models.job import JobDataclass
 from ...core import job_service
 from ...util import logging
 
