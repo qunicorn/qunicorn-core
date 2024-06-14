@@ -105,5 +105,5 @@ class DeploymentFilterParamsSchema(MaBaseSchema):
         missing=None,
         load_only=True,
         description="Use % as wildcard and \\ to escape a % wildcard ('QASM%', 'Test 50\\% Entenglement').",
-        example="QASM%",
+        metadata={"example": "QASM%"},
     )
