@@ -27,6 +27,7 @@ from ..api_models.job_dtos import (
     JobRequestDtoSchema,
     JobResponseDto,
     JobResponseDtoSchema,
+    JobFilterParamsSchema,
     QueuedJobsDtoSchema,
     SimpleJobDto,
     SimpleJobDtoSchema,
@@ -34,6 +35,7 @@ from ..api_models.job_dtos import (
     ResultDto,
     TokenSchema,
 )
+from ...db.models.job import JobDataclass
 from ...core import job_service
 from ...util import logging
 
@@ -42,12 +44,19 @@ from ...util import logging
 class JobIDView(MethodView):
     """Jobs endpoint for collection of all jobs."""
 
+    @JOBMANAGER_API.arguments(JobFilterParamsSchema(), location="query", as_kwargs=True)
     @JOBMANAGER_API.response(HTTPStatus.OK, SimpleJobDtoSchema(many=True))
     @JOBMANAGER_API.require_jwt(optional=True)
-    def get(self, jwt_subject: Optional[str]):
+    def get(
+        self,
+        jwt_subject: Optional[str],
+        status: Optional[str] = None,
+        deployment: Optional[int] = None,
+        device: Optional[int] = None,
+    ):
         """Get all created jobs."""
         logging.info("Request: get all created jobs")
-        return job_service.get_all_jobs(user_id=jwt_subject)
+        return job_service.get_all_jobs(user_id=jwt_subject, status=status, deployment=deployment, device=device)
 
     @JOBMANAGER_API.arguments(JobRequestDtoSchema(), location="json")
     @JOBMANAGER_API.response(HTTPStatus.CREATED, SimpleJobDtoSchema())

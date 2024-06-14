@@ -18,8 +18,9 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
-from flask import url_for
 import marshmallow as ma
+from flask import url_for
+from marshmallow.validate import OneOf
 
 from .device_dtos import DeviceDto, DeviceDtoSchema
 from .result_dtos import ResultDto, ResultDtoSchema
@@ -35,6 +36,7 @@ __all__ = [
     "TokenSchema",
     "JobExecutePythonFileDto",
     "JobExecutionDtoSchema",
+    "JobFilterParamsSchema",
     "QueuedJobsDtoSchema",
 ]
 
@@ -127,6 +129,12 @@ class SimpleJobDtoSchema(MaBaseSchema):
     deplyoment = ma.fields.Function(
         lambda obj: url_for("deployment-api.DeploymentDetailView", deployment_id=obj.deployment_id)
     )
+
+
+class JobFilterParamsSchema(MaBaseSchema):
+    status = ma.fields.String(required=False, missing=None, load_only=True, validate=OneOf([s.value for s in JobState]))
+    deployment = ma.fields.Integer(required=False, missing=None, load_only=True)
+    device = ma.fields.Integer(required=False, missing=None, load_only=True)
 
 
 class TokenSchema(MaBaseSchema):
