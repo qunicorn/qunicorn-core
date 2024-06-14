@@ -39,6 +39,7 @@ class ProviderDtoSchema(MaBaseSchema):
     supported_languages = ma.fields.List(ma.fields.Enum(required=True, allow_none=False, enum=AssemblerLanguage))
     name = ma.fields.Str(required=True, allow_none=False)
     self = ma.fields.Function(lambda obj: url_for("provider-api.ProviderIDView", provider_id=obj.id))
+    devices = ma.fields.Function(lambda obj: url_for("device-api.DeviceView", provider=obj.id))
 
 
 class ProviderIDSchema(MaBaseSchema):

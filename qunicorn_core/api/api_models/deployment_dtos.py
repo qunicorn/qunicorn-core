@@ -78,6 +78,7 @@ class DeploymentDtoSchema(MaBaseSchema):
         metadata={"description": "an optional name for the deployment_api."},
     )
     self = ma.fields.Function(lambda obj: url_for("deployment-api.DeploymentDetailView", deployment_id=obj.id))
+    jobs = ma.fields.Function(lambda obj: url_for("deployment-api.JobsByDeploymentView", deployment_id=obj.id))
 
 
 class DeploymentUpdateDtoSchema(MaBaseSchema):
