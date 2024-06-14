@@ -163,6 +163,9 @@ class JobQueueView(MethodView):
     @JOBMANAGER_API.response(HTTPStatus.OK, QueuedJobsDtoSchema())
     @JOBMANAGER_API.require_jwt(optional=True)
     def get(self, jwt_subject: Optional[str]):
-        """DEPRECATED! Get the items of the job queue and the running job."""
+        """DEPRECATED! Use the "status" filter of the "/jobs/" route instead.
+
+        Get the items of the job queue and the running job.
+        """
         logging.info("Request: Get the items of the job queue and the running job")
         return job_service.get_job_queue_items(user_id=jwt_subject)
