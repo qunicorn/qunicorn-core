@@ -16,6 +16,7 @@
 """Module containing all Dtos and their Schemas  for tasks in the QuantumProgram API."""
 from dataclasses import dataclass
 
+from flask import url_for
 import marshmallow as ma
 
 __all__ = ["QuantumProgramDto", "QuantumProgramRequestDto", "QuantumProgramRequestDtoSchema", "QuantumProgramDtoSchema"]
@@ -28,6 +29,7 @@ from qunicorn_core.util import utils
 @dataclass
 class QuantumProgramDto:
     id: int | None = None
+    deployment_id: int | None = None
     quantum_circuit: str | None = None
     assembler_language: AssemblerLanguage | None = None
     python_file_path: str | None = None
@@ -78,3 +80,11 @@ class QuantumProgramDtoSchema(MaBaseSchema):
     assembler_language = ma.fields.Enum(required=True, dump_only=True, enum=AssemblerLanguage)
     python_file_path = ma.fields.String(required=False, dump_only=True)
     python_file_metadata = ma.fields.String(required=False, dump_only=True)
+    self = ma.fields.Function(
+        lambda obj: url_for(
+            "deployment-api.DeploymentProgramDetailsView", program_id=obj.id, deployment_id=obj.deployment_id
+        )
+    )
+    deployment = ma.fields.Function(
+        lambda obj: url_for("deployment-api.DeploymentDetailView", deployment_id=obj.deployment_id)
+    )

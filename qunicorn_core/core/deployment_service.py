@@ -15,9 +15,8 @@ from datetime import datetime, timezone
 from http import HTTPStatus
 from typing import Optional
 
-from qunicorn_core.api.api_models import DeploymentDto, DeploymentUpdateDto
-from qunicorn_core.api.api_models.deployment_dtos import SimpleDeploymentDto
-from qunicorn_core.core.mapper import deployment_mapper
+from qunicorn_core.api.api_models import DeploymentDto, DeploymentUpdateDto, QuantumProgramDto
+from qunicorn_core.core.mapper import deployment_mapper, quantum_program_mapper
 from qunicorn_core.db.models.deployment import DeploymentDataclass
 from qunicorn_core.db.models.quantum_program import QuantumProgramDataclass
 from qunicorn_core.static.qunicorn_exception import QunicornError
@@ -37,10 +36,20 @@ def get_deployment_by_id(deployment_id: int, user_id: Optional[str] = None) -> D
     return deployment_mapper.dataclass_to_dto(deployment)
 
 
-def get_all_deployment_responses(user_id: Optional[str] = None) -> list[SimpleDeploymentDto]:
+def get_program_by_id(program_id: int, deployment_id: int, user_id: Optional[str] = None) -> QuantumProgramDto:
+    """Gets one program of a deployment by id if the user is authorized to see it"""
+    program = QuantumProgramDataclass.get_by_id_authenticated_or_404(program_id, user_id)
+    if program.deployment_id != deployment_id:
+        raise QunicornError(
+            f"Program with id {program_id} for deployment with id {deployment_id} not found.", HTTPStatus.NOT_FOUND
+        )
+    return quantum_program_mapper.dataclass_to_dto(program)
+
+
+def get_all_deployment_responses(user_id: Optional[str] = None) -> list[DeploymentDto]:
     """Gets all deployments from a user as responses to clearly arrange them in the frontend"""
-    deployment_list: list[SimpleDeploymentDto] = [
-        deployment_mapper.dataclass_to_simple_dto(d) for d in DeploymentDataclass.get_all_authenticated(user_id)
+    deployment_list: list[DeploymentDto] = [
+        deployment_mapper.dataclass_to_dto(d) for d in DeploymentDataclass.get_all_authenticated(user_id)
     ]
     return deployment_list
 
@@ -84,7 +93,7 @@ def delete_deployment(deployment_id: int, user_id: Optional[str] = None) -> Opti
     return dto_deployment
 
 
-def create_deployment(deployment_dto: DeploymentUpdateDto, user_id: Optional[str] = None) -> SimpleDeploymentDto:
+def create_deployment(deployment_dto: DeploymentUpdateDto, user_id: Optional[str] = None) -> DeploymentDto:
     """Create a deployment and save it in the database"""
     programs = [
         QuantumProgramDataclass(
@@ -104,4 +113,4 @@ def create_deployment(deployment_dto: DeploymentUpdateDto, user_id: Optional[str
     for p in deployment.programs:
         p.save()
     deployment.save(commit=True)
-    return deployment_mapper.dataclass_to_simple_dto(deployment)
+    return deployment_mapper.dataclass_to_dto(deployment)

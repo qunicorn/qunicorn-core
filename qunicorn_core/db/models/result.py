@@ -14,13 +14,13 @@
 
 from typing import Any, Optional, Dict
 
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, Select
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.sql import sqltypes as sql
+from sqlalchemy.sql import sqltypes as sql, or_
 
 from . import job as job_model
 from . import quantum_program
-from .db_model import DbModel
+from .db_model import DbModel, T
 from ..db import REGISTRY
 from ...static.enums.result_type import ResultType
 
@@ -56,3 +56,15 @@ class ResultDataclass(DbModel):
     data: Mapped[Any] = mapped_column(sql.JSON, default=None, nullable=True)
     meta: Mapped[Dict[str, Any]] = mapped_column(sql.JSON, default=None, nullable=True)
     result_type: Mapped[str] = mapped_column(sql.String(50), default=ResultType.COUNTS.value)
+
+    @classmethod
+    def apply_authentication_filter(cls, query: Select[T], user_id: Optional[str]) -> Select[T]:
+        query = query.join(job_model.JobDataclass)
+        if user_id is None:
+            return query.where(job_model.JobDataclass.executed_by == None)  # noqa: E711
+        return query.where(
+            or_(
+                job_model.JobDataclass.executed_by == None,  # noqa: E711
+                job_model.JobDataclass.executed_by == user_id,
+            )
+        )

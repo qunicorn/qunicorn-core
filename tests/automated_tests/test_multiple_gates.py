@@ -14,7 +14,7 @@
 
 """"Test class to test the functionality of the job_api"""
 
-from qunicorn_core.api.api_models import DeploymentUpdateDto, SimpleDeploymentDto, JobRequestDto, SimpleJobDto
+from qunicorn_core.api.api_models import DeploymentUpdateDto, DeploymentDto, JobRequestDto, SimpleJobDto
 from qunicorn_core.core import deployment_service, job_service
 from qunicorn_core.db.models.job import JobDataclass
 from qunicorn_core.static.enums.provider_name import ProviderName
@@ -44,7 +44,7 @@ def create_and_test_multiple_gates_deployment(provider_name: ProviderName):
     with app.app_context():
         deployment_path: str = "deployment_request_dto_multiple_gates_test_data.json"
         deployment_request: DeploymentUpdateDto = DeploymentUpdateDto.from_dict(get_object_from_json(deployment_path))
-        deployment: SimpleDeploymentDto = deployment_service.create_deployment(deployment_request)
+        deployment: DeploymentDto = deployment_service.create_deployment(deployment_request)
         job_request_dto.deployment_id = deployment.id
         return_dto: SimpleJobDto = job_service.create_and_run_job(job_request_dto, IS_ASYNCHRONOUS)
 

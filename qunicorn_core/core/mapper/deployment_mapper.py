@@ -15,7 +15,6 @@ from datetime import datetime, timezone
 from typing import Union
 
 from qunicorn_core.api.api_models import DeploymentDto, DeploymentUpdateDto
-from qunicorn_core.api.api_models.deployment_dtos import SimpleDeploymentDto
 from qunicorn_core.core.mapper import quantum_program_mapper
 from qunicorn_core.db.models.deployment import DeploymentDataclass
 
@@ -36,22 +35,4 @@ def dataclass_to_dto(deployment: DeploymentDataclass) -> DeploymentDto:
         deployed_by=deployment.deployed_by,
         deployed_at=deployment.deployed_at,
         programs=[quantum_program_mapper.dataclass_to_dto(qc) for qc in deployment.programs],
-    )
-
-
-def dto_to_simple_dto(deployment: DeploymentDto) -> SimpleDeploymentDto:
-    joined_programs = ", ".join([f"{qc.assembler_language}-Program" for qc in deployment.programs])
-    return SimpleDeploymentDto(
-        id=deployment.id,
-        name=deployment.name,
-        programs=f"[{joined_programs}]",
-    )
-
-
-def dataclass_to_simple_dto(deployment: DeploymentDataclass) -> SimpleDeploymentDto:
-    joined_programs = ",  ".join([f"{qc.assembler_language}-Program" for qc in deployment.programs])
-    return SimpleDeploymentDto(
-        id=deployment.id,
-        name=deployment.name,
-        programs=f"[{joined_programs}]",
     )

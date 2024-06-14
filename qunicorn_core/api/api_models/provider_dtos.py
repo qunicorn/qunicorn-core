@@ -16,6 +16,7 @@
 """Module containing all Dtos and their Schemas  for tasks in the Services API."""
 from dataclasses import dataclass
 
+from flask import url_for
 import marshmallow as ma
 
 from ..flask_api_utils import MaBaseSchema
@@ -37,6 +38,7 @@ class ProviderDtoSchema(MaBaseSchema):
     with_token = ma.fields.Boolean(required=False, allow_none=True)
     supported_languages = ma.fields.List(ma.fields.Enum(required=True, allow_none=False, enum=AssemblerLanguage))
     name = ma.fields.Str(required=True, allow_none=False)
+    self = ma.fields.Function(lambda obj: url_for("provider-api.ProviderIDView", provider_id=obj.id))
 
 
 class ProviderIDSchema(MaBaseSchema):

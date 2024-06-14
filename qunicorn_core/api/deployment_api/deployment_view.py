@@ -27,6 +27,7 @@ from ..api_models.deployment_dtos import (
     DeploymentUpdateDto,
     DeploymentUpdateDtoSchema,
     SimpleDeploymentDtoSchema,
+    QuantumProgramDtoSchema,
 )
 from ...core import deployment_service, job_service
 from ...util import logging
@@ -82,6 +83,28 @@ class DeploymentDetailView(MethodView):
         logging.info("Request: update deployment by id")
         deployment_dto: DeploymentUpdateDto = DeploymentUpdateDto.from_dict(body)
         return deployment_service.update_deployment(deployment_dto, deployment_id, user_id=jwt_subject)
+
+
+@DEPLOYMENT_API.route("/<int:deployment_id>/programs/")
+class DeploymentProgramsView(MethodView):
+
+    @DEPLOYMENT_API.response(HTTPStatus.OK, QuantumProgramDtoSchema(many=True))
+    @DEPLOYMENT_API.require_jwt(optional=True)
+    def get(self, deployment_id: int, jwt_subject: Optional[str]):
+        """Get the programs of a single deployed job-definition."""
+        logging.info("Request: get deployment programs by deployment id")
+        return deployment_service.get_deployment_by_id(deployment_id, user_id=jwt_subject).programs
+
+
+@DEPLOYMENT_API.route("/<int:deployment_id>/programs/<int:program_id>/")
+class DeploymentProgramDetailsView(MethodView):
+
+    @DEPLOYMENT_API.response(HTTPStatus.OK, QuantumProgramDtoSchema())
+    @DEPLOYMENT_API.require_jwt(optional=True)
+    def get(self, deployment_id: int, program_id: int, jwt_subject: Optional[str]):
+        """Get the programs of a single deployed job-definition."""
+        logging.info("Request: get deployment program by id")
+        return deployment_service.get_program_by_id(program_id, deployment_id, user_id=jwt_subject)
 
 
 @DEPLOYMENT_API.route("/<int:deployment_id>/jobs")

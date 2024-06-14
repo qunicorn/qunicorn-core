@@ -16,6 +16,7 @@
 """Module containing all Dtos and their Schemas for tasks in the Devices API."""
 from dataclasses import dataclass
 
+from flask import url_for
 import marshmallow as ma
 from marshmallow.validate import OneOf
 
@@ -56,6 +57,7 @@ class DeviceDtoSchema(MaBaseSchema):
     is_simulator = ma.fields.Boolean(required=True, allow_none=False)
     is_local = ma.fields.Boolean(required=True, allow_none=False)
     provider = ma.fields.Nested(ProviderDtoSchema())
+    self = ma.fields.Function(lambda obj: url_for("device-api.DeviceIdView", device_id=obj.id))
 
 
 class DeviceRequestDtoSchema(MaBaseSchema):
@@ -67,15 +69,16 @@ class DeviceRequestDtoSchema(MaBaseSchema):
 
 @dataclass
 class SimpleDeviceDto:
-    device_id: int
+    id: int
     device_name: str
     provider_name: str
 
 
 class SimpleDeviceDtoSchema(MaBaseSchema):
-    device_id = ma.fields.Integer(required=True, dump_only=True)
+    id = ma.fields.Integer(required=True, dump_only=True)
     device_name = ma.fields.String(required=True, dump_only=True)
     provider_name = ma.fields.String(required=True, dump_only=True, validate=OneOf([p.value for p in ProviderName]))
+    self = ma.fields.Function(lambda obj: url_for("device-api.DeviceIdView", device_id=obj.id))
 
 
 class DevicesResponseSchema(MaBaseSchema):

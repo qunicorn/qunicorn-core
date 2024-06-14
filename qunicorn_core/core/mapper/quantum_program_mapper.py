@@ -32,6 +32,7 @@ def dto_to_dataclass(quantum_program: Union[QuantumProgramDto, QuantumProgramReq
 def dataclass_to_dto(quantum_program: QuantumProgramDataclass) -> QuantumProgramDto:
     return QuantumProgramDto(
         id=quantum_program.id,
+        deployment_id=quantum_program.deployment_id,
         quantum_circuit=quantum_program.quantum_circuit,
         assembler_language=(
             AssemblerLanguage(quantum_program.assembler_language) if quantum_program.assembler_language else None
