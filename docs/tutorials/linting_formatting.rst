@@ -20,6 +20,8 @@ Flake8 Settings
 
 * Ignore single line: Add :code:`# noqa` to the end of the line
 
+* Ignore specific error in a single line: Add :code:`# noqa E711` to the end of the line
+
 * Ignore whole file: Add :code:`# flake8: noqa` at the start of the file
 
 * Ignore certain warnings in files, add to .flake8 file
