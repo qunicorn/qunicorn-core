@@ -32,9 +32,23 @@ def update_devices(device_request: DeviceRequestDto) -> list[SimpleDeviceDto]:
     return [device_mapper.dataclass_to_simple(device) for device in DeviceDataclass.get_all()]
 
 
-def get_all_devices() -> list[SimpleDeviceDto]:
+def get_all_devices(
+    provider: Optional[int] = None,
+    min_qubits: Optional[int] = None,
+    is_simulator: Optional[bool] = None,
+    is_local: Optional[bool] = None,
+) -> list[SimpleDeviceDto]:
     """Gets all Devices from the DB and maps them"""
-    return [device_mapper.dataclass_to_simple(device) for device in DeviceDataclass.get_all()]
+    where = []
+    if provider is not None:
+        where.append(DeviceDataclass.provider_id == provider)
+    if min_qubits is not None:
+        where.append(DeviceDataclass.num_qubits >= min_qubits)
+    if is_simulator is not None:
+        where.append(DeviceDataclass.is_simulator == is_simulator)
+    if is_local is not None:
+        where.append(DeviceDataclass.is_local == is_local)
+    return [device_mapper.dataclass_to_simple(device) for device in DeviceDataclass.get_all(where=where)]
 
 
 def get_device_by_id(device_id: int) -> DeviceDto:

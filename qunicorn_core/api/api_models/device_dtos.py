@@ -31,6 +31,7 @@ __all__ = [
     "DeviceDto",
     "DeviceRequestDto",
     "DeviceRequestDtoSchema",
+    "DeviceFilterParamsSchema",
 ]
 
 
@@ -79,6 +80,13 @@ class SimpleDeviceDtoSchema(MaBaseSchema):
     device_name = ma.fields.String(required=True, dump_only=True)
     provider_name = ma.fields.String(required=True, dump_only=True, validate=OneOf([p.value for p in ProviderName]))
     self = ma.fields.Function(lambda obj: url_for("device-api.DeviceIdView", device_id=obj.id))
+
+
+class DeviceFilterParamsSchema(MaBaseSchema):
+    provider = ma.fields.Integer(required=False, missing=None, load_only=True)
+    min_qubits = ma.fields.Integer(data_key="min-qubits", required=False, missing=None, load_only=True)
+    is_simulator = ma.fields.Boolean(data_key="is-simulator", required=False, missing=None, load_only=True)
+    is_local = ma.fields.Boolean(data_key="is-local", required=False, missing=None, load_only=True)
 
 
 class DevicesResponseSchema(MaBaseSchema):

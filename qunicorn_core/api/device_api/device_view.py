@@ -15,6 +15,7 @@
 
 """Module containing the routes of the devices API."""
 from http import HTTPStatus
+from typing import Optional
 
 from flask import jsonify
 from flask.views import MethodView
@@ -26,6 +27,7 @@ from ..api_models.device_dtos import (
     DeviceRequestDto,
     DeviceRequestDtoSchema,
     SimpleDeviceDtoSchema,
+    DeviceFilterParamsSchema,
 )
 from ...core import device_service
 from ...util import logging
@@ -43,11 +45,20 @@ class DeviceView(MethodView):
         device_request: DeviceRequestDto = DeviceRequestDto(**device_request_data)
         return device_service.update_devices(device_request)
 
+    @DEVICES_API.arguments(DeviceFilterParamsSchema(), location="query", as_kwargs=True)
     @DEVICES_API.response(HTTPStatus.OK, SimpleDeviceDtoSchema(many=True))
-    def get(self):
+    def get(
+        self,
+        provider: Optional[int] = None,
+        min_qubits: Optional[int] = None,
+        is_simulator: Optional[bool] = None,
+        is_local: Optional[bool] = None,
+    ):
         """Get all devices from the database, for more details get the device by id."""
         logging.info("Request: get all devices that are in the database")
-        return device_service.get_all_devices()
+        return device_service.get_all_devices(
+            provider=provider, min_qubits=min_qubits, is_simulator=is_simulator, is_local=is_local
+        )
 
 
 @DEVICES_API.route("/<int:device_id>/")
