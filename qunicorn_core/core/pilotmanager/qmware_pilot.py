@@ -167,6 +167,7 @@ class QMwarePilot(Pilot):
             raise error
 
         register_size = circuit.cregs[0].size
+        register_name = circuit.cregs[0].name
 
         return [
             ResultDataclass(
@@ -176,7 +177,7 @@ class QMwarePilot(Pilot):
                 meta={
                     "format": "hex",
                     "shots": qunicorn_job.shots,
-                    "registers": [{"name": "", "size": register_size}],
+                    "registers": [{"name": register_name, "size": register_size}],
                 },
             ),
             ResultDataclass(
@@ -186,7 +187,7 @@ class QMwarePilot(Pilot):
                 meta={
                     "format": "hex",
                     "shots": qunicorn_job.shots,
-                    "registers": [{"name": "", "size": register_size}],
+                    "registers": [{"name": register_name, "size": register_size}],
                 },
             ),
         ]
