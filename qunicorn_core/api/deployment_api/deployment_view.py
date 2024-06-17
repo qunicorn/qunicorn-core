@@ -32,6 +32,7 @@ from ..api_models.deployment_dtos import (
 )
 from ...core import deployment_service, job_service
 from ...util import logging
+from ...static.qunicorn_exception import QunicornError
 
 
 @DEPLOYMENT_API.route("/")
@@ -67,15 +68,18 @@ class DeploymentDetailView(MethodView):
         logging.info("Request: get deployment by id")
         return deployment_service.get_deployment_by_id(deployment_id, user_id=jwt_subject)
 
-    @DEPLOYMENT_API.response(HTTPStatus.OK, DeploymentDtoSchema)
+    @DEPLOYMENT_API.response(HTTPStatus.NO_CONTENT)
     @DEPLOYMENT_API.require_jwt(optional=True)
     def delete(self, deployment_id: int, jwt_subject: Optional[str]):
         """Delete single deployment by ID."""
         logging.info("Request: delete deployment by id")
-        deleted_deployment = deployment_service.delete_deployment(deployment_id, user_id=jwt_subject)
-        if deleted_deployment is None:
-            pass  # TODO: treat this differently?
-        return deleted_deployment
+        try:
+            deployment_service.delete_deployment(deployment_id, user_id=jwt_subject)
+        except QunicornError as err:
+            if err.code == HTTPStatus.NOT_FOUND:
+                # treat as deleted
+                return
+            raise err
 
     @DEPLOYMENT_API.response(HTTPStatus.OK, DeploymentDtoSchema)
     @DEPLOYMENT_API.arguments(DeploymentUpdateDtoSchema(), location="json")

@@ -133,11 +133,10 @@ def get_job_result_by_id(result_id: int, job_id: int, user_id: Optional[str]) ->
     return result_mapper.dataclass_to_dto(result)
 
 
-def delete_job_data_by_id(job_id, user_id: Optional[str]) -> JobResponseDto:
+def delete_job_data_by_id(job_id, user_id: Optional[str]):
     """delete job data from db"""
     job = JobDataclass.get_by_id_authenticated_or_404(job_id, user_id)
     job.delete(commit=True)
-    return job_mapper.dataclass_to_response(job)
 
 
 def get_all_jobs(

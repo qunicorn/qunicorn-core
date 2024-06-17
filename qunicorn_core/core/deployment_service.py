@@ -87,16 +87,12 @@ def update_deployment(
         )
 
 
-def delete_deployment(deployment_id: int, user_id: Optional[str] = None) -> Optional[DeploymentDto]:
+def delete_deployment(deployment_id: int, user_id: Optional[str] = None):
     """Remove one deployment by id."""
-    db_deployment = DeploymentDataclass.get_by_id_authenticated(deployment_id, user_id)
-    if db_deployment is None:
-        return None
-    dto_deployment = deployment_mapper.dataclass_to_dto(db_deployment)
+    db_deployment = DeploymentDataclass.get_by_id_authenticated_or_404(deployment_id, user_id)
     if len(db_deployment.jobs) > 0:
         raise QunicornError("Deployment is in use by a job", HTTPStatus.BAD_REQUEST)
     db_deployment.delete(commit=True)
-    return dto_deployment
 
 
 def create_deployment(deployment_dto: DeploymentUpdateDto, user_id: Optional[str] = None) -> DeploymentDto:

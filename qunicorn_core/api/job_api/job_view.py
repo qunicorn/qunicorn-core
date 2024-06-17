@@ -89,12 +89,18 @@ class JobDetailView(MethodView):
         job_response_dto: JobResponseDto = job_service.get_job_by_id(job_id, user_id=jwt_subject)
         return job_response_dto
 
-    @JOBMANAGER_API.response(HTTPStatus.OK, JobResponseDtoSchema())
+    @JOBMANAGER_API.response(HTTPStatus.NO_CONTENT)
     @JOBMANAGER_API.require_jwt(optional=True)
     def delete(self, job_id: int, jwt_subject: Optional[str]):
         """Delete job data via id and return the deleted job."""
         logging.info(f"Request: delete job with id: {job_id}")
-        return job_service.delete_job_data_by_id(job_id, user_id=jwt_subject)
+        try:
+            job_service.delete_job_data_by_id(job_id, user_id=jwt_subject)
+        except QunicornError as err:
+            if err.code == HTTPStatus.NOT_FOUND:
+                # treat as deleted
+                return
+            raise err
 
     @JOBMANAGER_API.response(HTTPStatus.OK, JobResponseDtoSchema())
     @JOBMANAGER_API.arguments(JobCommandSchema(), location="json")
