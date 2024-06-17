@@ -33,7 +33,14 @@ API = Api(spec_kwargs={"title": "QUNICORN_API", "version": "v1"})
 
 class VersionsRootSchema(MaBaseSchema):
     title = ma.fields.String(required=True, allow_none=False, dump_only=True)
-    v1 = ma.fields.Url(required=False, allow_none=False, dump_only=True)
+    jobs = ma.fields.Url(required=False, allow_none=False, dump_only=True)
+    devices = ma.fields.Url(required=False, allow_none=False, dump_only=True)
+    deployments = ma.fields.Url(required=False, allow_none=False, dump_only=True)
+    provider = ma.fields.Url(required=False, allow_none=False, dump_only=True)
+    api_spec = ma.fields.Url(required=False, allow_none=False, dump_only=True)
+    swagger_ui = ma.fields.Url(required=False, allow_none=False, dump_only=True)
+    rapidoc = ma.fields.Url(required=False, allow_none=False, dump_only=True)
+    licenses = ma.fields.Url(required=False, allow_none=False, dump_only=True)
 
 
 ROOT_ENDPOINT = SmorestBlueprint(
@@ -51,8 +58,14 @@ class RootView(MethodView):
         """Get the Root API information containing the links to all versions of this api."""
         return {
             "title": API.spec.title,
-            "v1": url_for("job-api.JobIDView", _external=True),
-            # "v1": url_for("device_api-api.DeviceView", _external=True),
+            "jobs": url_for("job-api.JobIDView", _external=True),
+            "devices": url_for("device-api.DeviceView", _external=True),
+            "deployments": url_for("deployment-api.DeploymentIDView", _external=True),
+            "provider": url_for("provider-api.ProviderView", _external=True),
+            "api_spec": url_for("api-docs.openapi_json", _external=True),
+            "swagger_ui": url_for("api-docs.openapi_swagger_ui", _external=True),
+            "rapidoc": url_for("api-docs.openapi_rapidoc", _external=True),
+            "licenses": url_for("licenses.show_licenses", _external=True),
         }
 
 
