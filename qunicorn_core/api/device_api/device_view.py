@@ -25,9 +25,11 @@ from .blueprint import DEVICES_API
 from ..api_models.device_dtos import (
     DeviceDtoSchema,
     DeviceRequestDtoSchema,
+    ApiTokenHeaderSchema,
     SimpleDeviceDtoSchema,
     DeviceFilterParamsSchema,
     DeviceUpdateFilterParamsSchema,
+    DeviceStatusResponseSchema,
 )
 from ...core import device_service
 from ...util import logging
@@ -77,12 +79,23 @@ class DeviceIdView(MethodView):
 class DevicesStatusStatus(MethodView):
     """Devices endpoint to get properties of a specific device."""
 
-    @DEVICES_API.arguments(DeviceRequestDtoSchema(), location="json")
-    @DEVICES_API.response(HTTPStatus.OK)
-    def post(self, device_request_data, device_id):
-        """To check if a specific device is available."""
-        logging.info(f"Request: get availability information of the device with id:{device_id}")
+    @DEVICES_API.arguments(ApiTokenHeaderSchema(), location="headers")
+    @DEVICES_API.response(HTTPStatus.OK, DeviceStatusResponseSchema())
+    def get(self, device_request_data, device_id):
+        """Check if a specific device is available."""
         token = device_request_data.pop("token", None)
+        return self._get_status(device_id=device_id, token=token)
+
+    @DEVICES_API.arguments(DeviceRequestDtoSchema(), location="json")
+    @DEVICES_API.response(HTTPStatus.OK, DeviceStatusResponseSchema())
+    @DEVICES_API.doc(deprecated=True)
+    def post(self, device_request_data, device_id):
+        """DEPRECATED (use GET instead); Check if a specific device is available."""
+        token = device_request_data.pop("token", None)
+        return self._get_status(device_id=device_id, token=token)
+
+    def _get_status(self, device_id, token: Optional[str]):
+        logging.info(f"Request: get availability information of the device with id:{device_id}")
         if not token:
             abort(HTTPStatus.BAD_REQUEST, message="Request is missing the device token.")
         return device_service.check_if_device_available(device_id, token)
@@ -92,12 +105,23 @@ class DevicesStatusStatus(MethodView):
 class DevicesCalibrationView(MethodView):
     """Devices endpoint to get properties of a specific device."""
 
+    @DEVICES_API.arguments(ApiTokenHeaderSchema(), location="headers")
+    @DEVICES_API.response(HTTPStatus.OK)
+    def get(self, device_request_data, device_id):
+        """Get configuration data for a specific device in a uniform way."""
+        token = device_request_data.pop("token", None)
+        return self._get_calibration(device_id=device_id, token=token)
+
     @DEVICES_API.arguments(DeviceRequestDtoSchema(), location="json")
     @DEVICES_API.response(HTTPStatus.OK)
+    @DEVICES_API.doc(deprecated=True)
     def post(self, device_request_data, device_id):
-        """Get configuration data for a specific device in a uniform way."""
-        logging.info(f"Request: get configuration data for device with id:{device_id}")
+        """DEPRECATED (use GET instead); Get configuration data for a specific device in a uniform way."""
         token = device_request_data.pop("token", None)
+        return self._get_calibration(device_id=device_id, token=token)
+
+    def _get_calibration(self, device_id, token: Optional[str]):
+        logging.info(f"Request: get configuration data for device with id:{device_id}")
         if not token:
             abort(HTTPStatus.BAD_REQUEST, message="Request is missing the device token.")
         device = device_service.get_device_data_from_provider(device_id, token)

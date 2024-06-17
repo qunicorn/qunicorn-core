@@ -30,8 +30,10 @@ __all__ = [
     "SimpleDeviceDto",
     "DeviceDto",
     "DeviceRequestDtoSchema",
+    "ApiTokenHeaderSchema",
     "DeviceFilterParamsSchema",
     "DeviceUpdateFilterParamsSchema",
+    "DeviceStatusResponseSchema",
 ]
 
 
@@ -59,6 +61,10 @@ class DeviceRequestDtoSchema(MaBaseSchema):
     token = ma.fields.String(required=False, metadata={"example": ""})
 
 
+class ApiTokenHeaderSchema(MaBaseSchema):
+    token = ma.fields.String(required=False, data_key="X_QUNICORN_PROVIDER_TOKEN", metadata={"example": ""})
+
+
 @dataclass
 class SimpleDeviceDto:
     id: int
@@ -84,5 +90,5 @@ class DeviceUpdateFilterParamsSchema(MaBaseSchema):
     provider = ma.fields.Integer(required=True, load_only=True)
 
 
-class DevicesResponseSchema(MaBaseSchema):
-    pass
+class DeviceStatusResponseSchema(MaBaseSchema):
+    available = ma.fields.Bool(dump_only=True)
