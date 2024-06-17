@@ -15,11 +15,12 @@
 
 """Module containing the routes of the Taskmanager API."""
 from http import HTTPStatus
+from typing import Optional
 
 from flask.views import MethodView
 
 from .blueprint import PROVIDER_API
-from ..api_models.provider_dtos import ProviderDtoSchema
+from ..api_models.provider_dtos import ProviderDtoSchema, ProviderFilterParamsSchema
 from ...core import provider_service
 from ...util import logging
 
@@ -28,11 +29,12 @@ from ...util import logging
 class ProviderView(MethodView):
     """Root endpoint of the provider api, to list all available provider_apis."""
 
+    @PROVIDER_API.arguments(ProviderFilterParamsSchema(), location="query", as_kwargs=True)
     @PROVIDER_API.response(HTTPStatus.OK, ProviderDtoSchema(many=True))
-    def get(self):
+    def get(self, name: Optional[str] = None):
         """Get all providers from the database"""
         logging.info("Request: get all providers from database")
-        return provider_service.get_all_providers()
+        return provider_service.get_all_providers(name=name)
 
 
 @PROVIDER_API.route("/<int:provider_id>/")

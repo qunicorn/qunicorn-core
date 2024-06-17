@@ -408,8 +408,8 @@ class IBMPilot(Pilot):
         )
         return self.create_default_job_with_circuit_and_device(device, circuit, assembler_language="QISKIT-PYTHON")
 
-    def save_devices_from_provider(self, device_request):
-        ibm_provider: QiskitRuntimeService = IBMPilot.get_ibm_provider_and_login(device_request.token)
+    def save_devices_from_provider(self, token: Optional[str]):
+        ibm_provider: QiskitRuntimeService = IBMPilot.get_ibm_provider_and_login(token)
         all_devices = ibm_provider.backends()
 
         provider: Optional[ProviderDataclass] = self.get_standard_provider()

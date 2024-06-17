@@ -36,6 +36,7 @@ __all__ = [
     "DeploymentDto",
     "DeploymentUpdateDto",
     "SimpleDeploymentDtoSchema",
+    "DeploymentFilterParamsSchema",
 ]
 
 
@@ -78,6 +79,7 @@ class DeploymentDtoSchema(MaBaseSchema):
         metadata={"description": "an optional name for the deployment_api."},
     )
     self = ma.fields.Function(lambda obj: url_for("deployment-api.DeploymentDetailView", deployment_id=obj.id))
+    jobs = ma.fields.Function(lambda obj: url_for("deployment-api.JobsByDeploymentView", deployment_id=obj.id))
 
 
 class DeploymentUpdateDtoSchema(MaBaseSchema):
@@ -95,3 +97,13 @@ class SimpleDeploymentDtoSchema(MaBaseSchema):
     )
     name = ma.fields.String(dump_only=True)
     self = ma.fields.Function(lambda obj: url_for("deployment-api.DeploymentDetailView", deployment_id=obj.id))
+
+
+class DeploymentFilterParamsSchema(MaBaseSchema):
+    name = ma.fields.String(
+        required=False,
+        missing=None,
+        load_only=True,
+        description="Use % as wildcard and \\ to escape a % wildcard ('QASM%', 'Test 50\\% Entenglement').",
+        metadata={"example": "QASM%"},
+    )

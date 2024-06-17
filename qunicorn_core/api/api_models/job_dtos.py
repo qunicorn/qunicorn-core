@@ -18,8 +18,9 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
-from flask import url_for
 import marshmallow as ma
+from flask import url_for
+from marshmallow.validate import OneOf
 
 from .device_dtos import DeviceDto, DeviceDtoSchema
 from .result_dtos import ResultDto, ResultDtoSchema
@@ -35,7 +36,9 @@ __all__ = [
     "TokenSchema",
     "JobExecutePythonFileDto",
     "JobExecutionDtoSchema",
+    "JobFilterParamsSchema",
     "QueuedJobsDtoSchema",
+    "JobCommandSchema",
 ]
 
 from ...static.enums.job_state import JobState
@@ -129,6 +132,12 @@ class SimpleJobDtoSchema(MaBaseSchema):
     )
 
 
+class JobFilterParamsSchema(MaBaseSchema):
+    status = ma.fields.String(required=False, missing=None, load_only=True, validate=OneOf([s.value for s in JobState]))
+    deployment = ma.fields.Integer(required=False, missing=None, load_only=True)
+    device = ma.fields.Integer(required=False, missing=None, load_only=True)
+
+
 class TokenSchema(MaBaseSchema):
     token = ma.fields.String(required=True, metadata={"example": ""})
 
@@ -142,3 +151,10 @@ class JobExecutionDtoSchema(MaBaseSchema):
 class QueuedJobsDtoSchema(MaBaseSchema):
     running_job = ma.fields.Nested(SimpleJobDtoSchema)
     queued_jobs = ma.fields.List(ma.fields.Nested(SimpleJobDtoSchema))
+
+
+class JobCommandSchema(MaBaseSchema):
+    command = ma.fields.String(
+        required=True, validate=OneOf(["run", "rerun", "cancel"]), metadata={"example": "cancel"}
+    )
+    token = ma.fields.String(required=False, allow_none=True, missing=None, metadata={"example": ""})

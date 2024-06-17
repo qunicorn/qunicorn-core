@@ -20,7 +20,7 @@ from typing import Any, List, Optional, Sequence, Tuple, Union, Generator
 
 from celery.states import PENDING
 
-from qunicorn_core.api.api_models.device_dtos import DeviceDto, DeviceRequestDto
+from qunicorn_core.api.api_models.device_dtos import DeviceDto
 from qunicorn_core.celery import CELERY
 from qunicorn_core.db.models.deployment import DeploymentDataclass
 from qunicorn_core.db.models.device import DeviceDataclass
@@ -60,7 +60,7 @@ class Pilot:
         """Create the standard ProviderDataclass Object for the pilot and return it"""
         raise NotImplementedError()
 
-    def save_devices_from_provider(self, device_request: DeviceRequestDto):
+    def save_devices_from_provider(self, token: Optional[str]):
         """Access the devices from the cloud service of the provider, to update the current device list of qunicorn"""
         raise NotImplementedError()
 
