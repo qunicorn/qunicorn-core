@@ -18,6 +18,7 @@ from typing import Any, List, Optional, Sequence, Tuple, Union
 from urllib.parse import urljoin
 
 import requests
+from qiskit import qasm2
 from requests import RequestException
 
 from qunicorn_core.api.api_models.device_dtos import DeviceDto, DeviceRequestDto
@@ -158,18 +159,36 @@ class QMwarePilot(Pilot):
         counts = {element["number"]: element["hits"] for element in results}
         probabilities = {element["number"]: element["probability"] for element in results}
 
+        circuit = qasm2.loads(program.quantum_circuit)
+
+        if len(circuit.cregs) != 1:
+            error = QunicornError("currently only one register supported")
+            qunicorn_job.save_error(error)
+            raise error
+
+        register_size = circuit.cregs[0].size
+        register_name = circuit.cregs[0].name
+
         return [
             ResultDataclass(
                 program=program,
                 data=Pilot.qubits_integer_to_hex(counts),
                 result_type=ResultType.COUNTS,
-                meta={},  # FIXME: add register metadata, TODO: add more metadata
+                meta={
+                    "format": "hex",
+                    "shots": qunicorn_job.shots,
+                    "registers": [{"name": register_name, "size": register_size}],
+                },
             ),
             ResultDataclass(
                 program=program,
                 data=Pilot.qubits_integer_to_hex(probabilities),
                 result_type=ResultType.PROBABILITIES,
-                meta={},  # FIXME: add register metadata, TODO: add more metadata
+                meta={
+                    "format": "hex",
+                    "shots": qunicorn_job.shots,
+                    "registers": [{"name": register_name, "size": register_size}],
+                },
             ),
         ]
 
