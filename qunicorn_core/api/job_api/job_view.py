@@ -59,12 +59,19 @@ class JobIDView(MethodView):
         logging.info("Request: get all created jobs")
         return job_service.get_all_jobs(user_id=jwt_subject, status=status, deployment=deployment, device=device)
 
+    @JOBMANAGER_API.arguments(JobFilterParamsSchema(only=["deployment"]), location="query", as_kwargs=True)
     @JOBMANAGER_API.arguments(JobRequestDtoSchema(), location="json")
     @JOBMANAGER_API.response(HTTPStatus.CREATED, SimpleJobDtoSchema())
     @JOBMANAGER_API.require_jwt(optional=True)
-    def post(self, body, jwt_subject: Optional[str]):
-        """Create/Register and run new job."""
+    def post(self, body: dict, jwt_subject: Optional[str], deployment: Optional[int] = None):
+        """Create/Register and run new job.
+
+        The deployment can be set in the body as `deploymentId`or with the query parameter `deployment`.
+        If both are given, the query parameter will be used.
+        """
         logging.info("Request: create and run new job")
+        if deployment is not None:
+            body["deployment_id"] = deployment
         job_dto: JobRequestDto = JobRequestDto(**body)
         job_response: SimpleJobDto = job_service.create_and_run_job(job_dto, user_id=jwt_subject)
         return job_response
