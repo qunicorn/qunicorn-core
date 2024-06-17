@@ -18,6 +18,8 @@ from typing import Any, List, Optional, Sequence, Tuple, Union
 from urllib.parse import urljoin
 
 import requests
+from requests import RequestException
+
 from qunicorn_core.api.api_models.device_dtos import DeviceDto
 from qunicorn_core.core.pilotmanager.base_pilot import Pilot
 from qunicorn_core.db.models.device import DeviceDataclass
@@ -62,13 +64,16 @@ class QMwarePilot(Pilot):
     supported_languages = tuple([AssemblerLanguage.QASM2])
 
     def run(
-        self, job: JobDataclass, circuits: Sequence[Tuple[QuantumProgramDataclass, Any]], token: Optional[str] = None
+        self,
+        qunicorn_job: JobDataclass,
+        circuits: Sequence[Tuple[QuantumProgramDataclass, Any]],
+        token: Optional[str] = None,
     ) -> Tuple[List[ResultDataclass], JobState]:
         """Run a job of type RUNNER on a backend using a Pilot"""
-        if job.id is None:
+        if qunicorn_job.id is None:
             raise QunicornError("Job has no database ID and cannot be executed!")
 
-        job_ids = []
+        qmware_job_ids = []
         programs = []
 
         job_name = "Qunicorn request"
@@ -80,46 +85,73 @@ class QMwarePilot(Pilot):
                 "ttlAfterFinishedInMs": 1_200_000,
                 "code": {"type": "qasm2", "code": qasm_circuit},
                 "selectionParameters": [],
-                "programParameters": [{"name": "shots", "value": str(job.shots)}],
+                "programParameters": [{"name": "shots", "value": str(qunicorn_job.shots)}],
             }
 
-            response = requests.post(urljoin(QMWARE_URL, "/v0/requests"), json=data, headers=AUTHORIZATION_HEADERS)
-            response.raise_for_status()
+            try:
+                response = requests.post(urljoin(QMWARE_URL, "/v0/requests"), json=data, headers=AUTHORIZATION_HEADERS)
+                response.raise_for_status()
+            except RequestException as re:
+                qunicorn_job.save_error(re)
+                raise re
+
             result = response.json()
 
             if not result["jobCreated"]:
-                raise ValueError(f"Job was not created. ({result['message']})")
+                error = QunicornError(f"Job was not created. ({result['message']})")
+                qunicorn_job.save_error(error)
+                raise error
 
-            job_ids.append(result["id"])
+            qmware_job_ids.append(result["id"])
             programs.append(program)
 
         results = []
 
-        for job_id, program in zip(job_ids, programs):
-            results.extend(QMwarePilot._get_job_results(job_id, program))
+        for qmware_job_id, program in zip(qmware_job_ids, programs):
+            results.extend(QMwarePilot._get_job_results(qunicorn_job, qmware_job_id, program))
 
         return results, JobState.FINISHED
 
     @staticmethod
-    def _get_job_results(job_id: str, program: QuantumProgramDataclass) -> List[ResultDataclass]:
+    def _get_job_results(
+        qunicorn_job: JobDataclass, qmware_job_id: str, program: QuantumProgramDataclass
+    ) -> List[ResultDataclass]:
         for _i in range(100):
-            response = requests.get(urljoin(QMWARE_URL, f"/v0/jobs/{job_id}"), headers=AUTHORIZATION_HEADERS)
+            response = requests.get(urljoin(QMWARE_URL, f"/v0/jobs/{qmware_job_id}"), headers=AUTHORIZATION_HEADERS)
             response.raise_for_status()
             result = response.json()
 
             if result["status"] == "SUCCESS":
                 break
-            elif result["status"] not in ("RUNNING", "SUCCESS"):
-                raise ValueError("QMware job failed")
+            elif result["status"] == "ERROR":
+                error = QunicornError("QMware job returned status ERROR")
+                qunicorn_job.save_error(error)
+                raise error
+            elif result["status"] == "TIMEOUT":
+                error = QunicornError("QMware job returned status TIMEOUT")
+                qunicorn_job.save_error(error)
+                raise error
+            elif result["status"] == "CANCELED":
+                error = QunicornError("QMware job returned status CANCELED")
+                qunicorn_job.save_error(error)
+                raise error
+            elif result["status"] not in ("WAITING", "PREPARING", "RUNNING"):
+                error = QunicornError(f"QMware job returned unknown status {result['status']}")
+                qunicorn_job.save_error(error)
+                raise error
 
             sleep(1)
         else:
-            raise ValueError("QMware job timed out")
+            error = QunicornError("QMware job timed out")
+            qunicorn_job.save_error(error)
+            raise error
 
         measurements = json.loads(result["out"]["value"])
 
         if len(measurements) != 1:
-            raise ValueError("currently only one register supported")
+            error = QunicornError("currently only one register supported")
+            qunicorn_job.save_error(error)
+            raise error
 
         results = measurements[0]["result"]
 
