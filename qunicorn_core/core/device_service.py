@@ -16,7 +16,6 @@ from typing import Optional
 
 from qunicorn_core.api.api_models.device_dtos import (
     DeviceDto,
-    DeviceRequestDto,
     SimpleDeviceDto,
 )
 from qunicorn_core.core.mapper import device_mapper
@@ -25,11 +24,14 @@ from qunicorn_core.db.models.device import DeviceDataclass
 from qunicorn_core.util import logging
 
 
-def update_devices(device_request: DeviceRequestDto) -> list[SimpleDeviceDto]:
+def update_devices(provider_id: int, token: Optional[str] = None) -> list[SimpleDeviceDto]:
     """Update all backends for the provider from device_request"""
-    logging.info(f"Update all available devices for {device_request.provider_name} in database.")
-    pilot_manager.update_devices_from_provider(device_request)
-    return [device_mapper.dataclass_to_simple(device) for device in DeviceDataclass.get_all()]
+    logging.info(f"Update all available devices for provider with id {provider_id} in database.")
+    pilot_manager.update_devices_from_provider(provider_id, token)
+    return [
+        device_mapper.dataclass_to_simple(device)
+        for device in DeviceDataclass.get_all(where=[DeviceDataclass.provider_id == provider_id])
+    ]
 
 
 def get_all_devices(

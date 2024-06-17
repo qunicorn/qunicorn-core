@@ -15,7 +15,7 @@
 from http import HTTPStatus
 from typing import Optional, Union
 
-from qunicorn_core.api.api_models import DeviceDto, DeviceRequestDto
+from qunicorn_core.api.api_models import DeviceDto
 from qunicorn_core.core.pilotmanager.aws_pilot import AWSPilot
 from qunicorn_core.core.pilotmanager.base_pilot import Pilot
 from qunicorn_core.core.pilotmanager.ibm_pilot import IBMPilot
@@ -24,6 +24,7 @@ from qunicorn_core.core.pilotmanager.rigetti_pilot import RigettiPilot
 from qunicorn_core.db.db import DB
 from qunicorn_core.db.models.device import DeviceDataclass
 from qunicorn_core.db.models.job import JobDataclass
+from qunicorn_core.db.models.provider import ProviderDataclass
 from qunicorn_core.static.qunicorn_exception import QunicornError
 
 PILOTS: list[Pilot] = [IBMPilot(), AWSPilot(), RigettiPilot(), QMwarePilot()]
@@ -41,10 +42,11 @@ def save_default_jobs_and_devices_from_provider(include_default_jobs=True):
     DB.session.commit()
 
 
-def update_devices_from_provider(device_request: DeviceRequestDto):
+def update_devices_from_provider(provider_id: int, token: Optional[str]):
     """Update the devices from the provider and return all devices from the database"""
-    pilot: Pilot = get_matching_pilot(device_request.provider_name)
-    pilot.save_devices_from_provider(device_request)
+    provider: ProviderDataclass = ProviderDataclass.get_by_id_or_404(provider_id)
+    pilot: Pilot = get_matching_pilot(provider.name)
+    pilot.save_devices_from_provider(token)
 
 
 def check_if_device_available_from_provider(device: Union[DeviceDataclass, DeviceDto], token: Optional[str]) -> bool:

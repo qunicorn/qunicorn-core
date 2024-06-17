@@ -29,9 +29,9 @@ __all__ = [
     "SimpleDeviceDtoSchema",
     "SimpleDeviceDto",
     "DeviceDto",
-    "DeviceRequestDto",
     "DeviceRequestDtoSchema",
     "DeviceFilterParamsSchema",
+    "DeviceUpdateFilterParamsSchema",
 ]
 
 
@@ -45,12 +45,6 @@ class DeviceDto:
     provider: ProviderDto | None = None
 
 
-@dataclass
-class DeviceRequestDto:
-    provider_name: ProviderName
-    token: str | None = None
-
-
 class DeviceDtoSchema(MaBaseSchema):
     id = ma.fields.Integer(required=True, allow_none=False, metadata={"description": "The unique deviceID."})
     name = ma.fields.String(required=True, allow_none=False, metadata={"description": "The name of the device."})
@@ -62,9 +56,6 @@ class DeviceDtoSchema(MaBaseSchema):
 
 
 class DeviceRequestDtoSchema(MaBaseSchema):
-    provider_name = ma.fields.String(
-        required=True, metadata={"example": ProviderName.IBM.value}, validate=OneOf([p.value for p in ProviderName])
-    )
     token = ma.fields.String(required=False, metadata={"example": ""})
 
 
@@ -87,6 +78,10 @@ class DeviceFilterParamsSchema(MaBaseSchema):
     min_qubits = ma.fields.Integer(data_key="min-qubits", required=False, missing=None, load_only=True)
     is_simulator = ma.fields.Boolean(data_key="is-simulator", required=False, missing=None, load_only=True)
     is_local = ma.fields.Boolean(data_key="is-local", required=False, missing=None, load_only=True)
+
+
+class DeviceUpdateFilterParamsSchema(MaBaseSchema):
+    provider = ma.fields.Integer(required=True, load_only=True)
 
 
 class DevicesResponseSchema(MaBaseSchema):

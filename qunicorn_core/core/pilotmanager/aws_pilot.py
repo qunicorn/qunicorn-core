@@ -137,7 +137,7 @@ class AWSPilot(Pilot):
     def get_standard_job_with_deployment(self, device: DeviceDataclass) -> JobDataclass:
         return self.create_default_job_with_circuit_and_device(device, "Circuit().h(0).cnot(0, 1)")
 
-    def save_devices_from_provider(self, device_request):
+    def save_devices_from_provider(self, token: Optional[str]):
         raise QunicornError("AWS Pilot cannot fetch Devices from AWS API, because there is no Cloud Access.")
 
     def get_standard_provider(self) -> ProviderDataclass:

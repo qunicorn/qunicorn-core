@@ -18,7 +18,7 @@ from typing import Any, List, Optional, Sequence, Tuple, Union
 from urllib.parse import urljoin
 
 import requests
-from qunicorn_core.api.api_models.device_dtos import DeviceDto, DeviceRequestDto
+from qunicorn_core.api.api_models.device_dtos import DeviceDto
 from qunicorn_core.core.pilotmanager.base_pilot import Pilot
 from qunicorn_core.db.models.device import DeviceDataclass
 from qunicorn_core.db.models.job import JobDataclass
@@ -168,7 +168,7 @@ class QMwarePilot(Pilot):
         """Create the standard ProviderDataclass Object for the pilot and return it"""
         return self.create_default_job_with_circuit_and_device(device, DEFAULT_QUANTUM_CIRCUIT)
 
-    def save_devices_from_provider(self, device_request: DeviceRequestDto):
+    def save_devices_from_provider(self, token: Optional[str]):
         """Access the devices from the cloud service of the provider, to update the current device list of qunicorn"""
         raise QunicornError(
             "The QMware pilot cannot fetch devices because the QMware API doesn't have the concept of devices."
