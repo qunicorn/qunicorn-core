@@ -75,7 +75,7 @@ class DeviceIdView(MethodView):
         return device_service.get_device_by_id(device_id)
 
 
-@DEVICES_API.route("/<int:device_id>/status")
+@DEVICES_API.route("/<int:device_id>/status/")
 class DevicesStatusStatus(MethodView):
     """Devices endpoint to get properties of a specific device."""
 
@@ -101,7 +101,7 @@ class DevicesStatusStatus(MethodView):
         return device_service.check_if_device_available(device_id, token)
 
 
-@DEVICES_API.route("/<int:device_id>/calibration")
+@DEVICES_API.route("/<int:device_id>/calibration/")
 class DevicesCalibrationView(MethodView):
     """Devices endpoint to get properties of a specific device."""
 

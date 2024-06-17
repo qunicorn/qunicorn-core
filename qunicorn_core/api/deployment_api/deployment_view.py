@@ -113,7 +113,7 @@ class DeploymentProgramDetailsView(MethodView):
         return deployment_service.get_program_by_id(program_id, deployment_id, user_id=jwt_subject)
 
 
-@DEPLOYMENT_API.route("/<int:deployment_id>/jobs")
+@DEPLOYMENT_API.route("/<int:deployment_id>/jobs/")
 class JobsByDeploymentView(MethodView):
     """API endpoint for jobs of a specific deployment."""
 
