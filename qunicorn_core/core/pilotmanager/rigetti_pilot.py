@@ -80,7 +80,7 @@ class RigettiPilot(Pilot):
                             "format": "hex",
                             "shots": qvm_result.shape[0],
                             "registers": {
-                                "name": "",
+                                "name": "default",
                                 "size": qvm_result.shape[1],
                             },
                         },
@@ -95,7 +95,7 @@ class RigettiPilot(Pilot):
                             "format": "hex",
                             "shots": qvm_result.shape[0],
                             "registers": {
-                                "name": "",
+                                "name": "default",
                                 "size": qvm_result.shape[1],
                             },
                         },
