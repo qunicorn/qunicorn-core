@@ -76,7 +76,14 @@ class RigettiPilot(Pilot):
                         program=program,
                         data=result_dict,
                         result_type=ResultType.COUNTS,
-                        meta={},  # FIXME: add register metadata
+                        meta={
+                            "format": "hex",
+                            "shots": qvm_result.shape[0],
+                            "registers": {
+                                "name": "",
+                                "size": qvm_result.shape[1],
+                            },
+                        },
                     )
                 )
                 results.append(
@@ -84,7 +91,14 @@ class RigettiPilot(Pilot):
                         program=program,
                         data=probabilities_dict,
                         result_type=ResultType.PROBABILITIES,
-                        meta={},  # FIXME: add register metadata
+                        meta={
+                            "format": "hex",
+                            "shots": qvm_result.shape[0],
+                            "registers": {
+                                "name": "",
+                                "size": qvm_result.shape[1],
+                            },
+                        },
                     )
                 )
             return results

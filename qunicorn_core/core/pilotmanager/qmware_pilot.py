@@ -176,7 +176,7 @@ class QMwarePilot(Pilot):
                 meta={
                     "format": "hex",
                     "shots": qunicorn_job.shots,
-                    "registers": [{"name": "register", "size": register_size}],
+                    "registers": [{"name": "", "size": register_size}],
                 },
             ),
             ResultDataclass(
@@ -186,7 +186,7 @@ class QMwarePilot(Pilot):
                 meta={
                     "format": "hex",
                     "shots": qunicorn_job.shots,
-                    "registers": [{"name": "register", "size": register_size}],
+                    "registers": [{"name": "", "size": register_size}],
                 },
             ),
         ]
