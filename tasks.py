@@ -460,6 +460,7 @@ def update_source_doc(c):
         ".",
         "./tasks.py",
         "docs",
+        "tests",
         "migrations",
     ]
 
