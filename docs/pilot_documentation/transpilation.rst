@@ -36,3 +36,6 @@ The new transpiler should specify the ``source`` and ``target`` format in the cl
         def transpile_circuit(self, circuit: Any) -> Any:
             ...
 
+.. hint:: A transpiler class **must be imported** to be registered for transpilation!
+    If a transpiler does not show up in the graph above, make sure that it is always imported.
+
