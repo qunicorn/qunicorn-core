@@ -4,21 +4,11 @@ qunicorn\_core.api.job\_api package
 Submodules
 ----------
 
-qunicorn\_core.api.job\_api.job\_view module
---------------------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: qunicorn_core.api.job_api.job_view
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-qunicorn\_core.api.job\_api.root module
----------------------------------------
-
-.. automodule:: qunicorn_core.api.job_api.root
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   qunicorn_core.api.job_api.blueprint
+   qunicorn_core.api.job_api.job_view
 
 Module contents
 ---------------

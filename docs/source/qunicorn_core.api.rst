@@ -12,26 +12,15 @@ Subpackages
    qunicorn_core.api.device_api
    qunicorn_core.api.job_api
    qunicorn_core.api.provider_api
-   qunicorn_core.api.user_api
 
 Submodules
 ----------
 
-qunicorn\_core.api.flask\_api\_utils module
--------------------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: qunicorn_core.api.flask_api_utils
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-qunicorn\_core.api.jwt module
------------------------------
-
-.. automodule:: qunicorn_core.api.jwt
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   qunicorn_core.api.flask_api_utils
+   qunicorn_core.api.jwt
 
 Module contents
 ---------------

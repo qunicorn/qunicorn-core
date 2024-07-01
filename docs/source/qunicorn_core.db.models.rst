@@ -4,77 +4,17 @@ qunicorn\_core.db.models package
 Submodules
 ----------
 
-qunicorn\_core.db.models.db\_model module
------------------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: qunicorn_core.db.models.db_model
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-qunicorn\_core.db.models.deployment module
-------------------------------------------
-
-.. automodule:: qunicorn_core.db.models.deployment
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-qunicorn\_core.db.models.device module
---------------------------------------
-
-.. automodule:: qunicorn_core.db.models.device
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-qunicorn\_core.db.models.job module
------------------------------------
-
-.. automodule:: qunicorn_core.db.models.job
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-qunicorn\_core.db.models.provider module
-----------------------------------------
-
-.. automodule:: qunicorn_core.db.models.provider
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-qunicorn\_core.db.models.provider\_assembler\_language module
--------------------------------------------------------------
-
-.. automodule:: qunicorn_core.db.models.provider_assembler_language
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-qunicorn\_core.db.models.quantum\_program module
-------------------------------------------------
-
-.. automodule:: qunicorn_core.db.models.quantum_program
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-qunicorn\_core.db.models.result module
---------------------------------------
-
-.. automodule:: qunicorn_core.db.models.result
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-qunicorn\_core.db.models.user module
-------------------------------------
-
-.. automodule:: qunicorn_core.db.models.user
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   qunicorn_core.db.models.db_model
+   qunicorn_core.db.models.deployment
+   qunicorn_core.db.models.device
+   qunicorn_core.db.models.job
+   qunicorn_core.db.models.provider
+   qunicorn_core.db.models.provider_assembler_language
+   qunicorn_core.db.models.quantum_program
+   qunicorn_core.db.models.result
 
 Module contents
 ---------------

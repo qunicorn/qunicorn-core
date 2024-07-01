@@ -4,21 +4,11 @@ qunicorn\_core.api.device\_api package
 Submodules
 ----------
 
-qunicorn\_core.api.device\_api.device\_view module
---------------------------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: qunicorn_core.api.device_api.device_view
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-qunicorn\_core.api.device\_api.root module
-------------------------------------------
-
-.. automodule:: qunicorn_core.api.device_api.root
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   qunicorn_core.api.device_api.blueprint
+   qunicorn_core.api.device_api.device_view
 
 Module contents
 ---------------

@@ -13,29 +13,12 @@ Subpackages
 Submodules
 ----------
 
-qunicorn\_core.util.logging module
-----------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: qunicorn_core.util.logging
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-qunicorn\_core.util.reverse\_proxy\_fix module
-----------------------------------------------
-
-.. automodule:: qunicorn_core.util.reverse_proxy_fix
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-qunicorn\_core.util.utils module
---------------------------------
-
-.. automodule:: qunicorn_core.util.utils
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   qunicorn_core.util.logging
+   qunicorn_core.util.reverse_proxy_fix
+   qunicorn_core.util.utils
 
 Module contents
 ---------------
