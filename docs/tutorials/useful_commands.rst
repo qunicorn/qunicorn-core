@@ -4,7 +4,7 @@ Useful Commands
 How to create invoke commands
 ##############################
 
-Add a method to qunicorn-core/tasks.py. All underscores in the method name will be transformed into hyphens (``hello_world`` → ``hello-world``).
+Add a method to :file:`tasks.py`. All underscores in the method name will be transformed into hyphens (``hello_world`` → ``hello-world``).
 
 To execute something in the terminal use the context :code:`c` that is passed as an argument to the method.
 With :code:`c.run` a command can be executed.
@@ -32,6 +32,9 @@ How to add a dependency to poetry
 .. code-block:: bash
 
     poetry add [dependency-name]
+    poetry run invoke update-dependencies
 
-It will automatically install the dependency and add it to the 'pyproject.toml'- and 'poetry.lock'-file.
+The first command will automatically install the dependency and add it to :file:`pyproject.toml` and :file:`poetry.lock`.
 Both need to be pushed to git.
+The second command updates the list of licenses and the requirements file used by ReadTheDocs.
+The changes made by the second command also need to be pushed to git.
