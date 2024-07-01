@@ -5,11 +5,13 @@ This site gives an overview of the functionality of the QMWare Pilot.
 
 The QMWare Pilot is implemented in an experimental form, and currently allows the usage of the testing environment.
 
-**Note**: The Tokens provides by QMWare are necessary for the execution and need to be in environment variables in the form of:
+.. note:: The Tokens provides by QMWare are necessary for the execution and need to be in environment variables in the form of:
 
-* QMWARE_URL="https://dispatcher.dev.qmware-dev.cloud/"
-* QMWARE_API_KEY=""
-* QMWARE_API_KEY_ID=""
+    .. code-block:: bash
+
+        QMWARE_URL="https://dispatcher.dev.qmware-dev.cloud/"
+        QMWARE_API_KEY=""
+        QMWARE_API_KEY_ID=""
 
 Standard Devices
 ^^^^^^^^^^^^^^^^^^

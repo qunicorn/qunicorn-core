@@ -6,15 +6,15 @@ Workflows:
 
 * Configured in :file:`.github/workflows`
 * Formatting-linting.yml
-    * Executes linting provided by flake8 and black, configured in .flake8
+    * Executes linting provided by flake8 and black, configured in :file:`.flake8`
 * run-pytests.yml
-    * Executed tests defined in /tests/automated_tests/
+    * Executed tests defined in :file:`/tests/automated_tests/`
 
 PyTest
 #########
 
 * General Documentation: `pytest Documentation <https://docs.pytest.org/en/8.2.x/>`_
-* Tests can be found in /tests
+* Tests can be found in :file:`/tests`
 * Install pytest with
 
 .. code-block:: bash

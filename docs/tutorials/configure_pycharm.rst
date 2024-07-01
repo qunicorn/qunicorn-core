@@ -7,11 +7,11 @@ Configure Pycharm - Developer Guide
 
 3. Assumption: Poetry and Python have already been set up as in the step above
 
-4. Overwrite IBM_TOKEN="yourToken" and EXECUTE_CELERY_TASK_ASYNCHRONOUS="Boolean" in .env file
+4. Overwrite ``IBM_TOKEN="yourToken"`` and ``EXECUTE_CELERY_TASK_ASYNCHRONOUS="Boolean"`` in :file:`.env` file
 
-5. Ctrl + Shift + A → Search for "Switch Python Interpreter" → Select Poetry Python version
+5. :kbd:`Ctrl + Shift + A` → Search for "Switch Python Interpreter" → Select Poetry Python version
 
-6. Ctrl + Shift + A → Search for "Plugins" → Switch to the Marketplace (top center)
+6. :kbd:`Ctrl + Shift + A` → Search for "Plugins" → Switch to the Marketplace (top center)
 
     a. Install Grep Console
 
@@ -21,7 +21,7 @@ Configure Pycharm - Developer Guide
 
 7. Customize code style:
 
-8. Double-click on ./instance/qunicorn_core.db to automatically configure a database connection that can be searched and manipulated
+8. Double-click on :file:`./instance/qunicorn_core.db` to automatically configure a database connection that can be searched and manipulated
 
 9. Configure debugger and logger from the following paragraphs
 
@@ -29,7 +29,7 @@ Configure Pycharm - Developer Guide
 Configure Debugger for Pycharm
 ------------------------------
 
-Run → Edit Configurations → Add the configuration parameters from the image
+Open :menuselection:`Run --> Edit Configurations` and add the configuration parameters from the image
 
 .. image:: ../resources/images/configure_debugger.jpeg
 
@@ -51,9 +51,9 @@ Configure Logger Terminal
 How to open the database
 ------------------------
 
-1. Double-click on ./instance/qunicorn_core.db to automatically configure a database connection that can be searched and manipulated
+1. Double-click on :file:`./instance/qunicorn_core.db` to automatically configure a database connection that can be searched and manipulated
 
-2. Display the domain model of the database: rightclick at the database tab on main → diagrams → show diagrams
+2. Display the domain model of the database: rightclick at the database tab on :menuselection:`main --> diagrams --> show diagrams`
 
 
 How to check if the pipeline will succeed

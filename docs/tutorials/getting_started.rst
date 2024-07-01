@@ -35,15 +35,15 @@ Run :code:`poetry install` to install dependencies.
 Environment variables
 #########################
 
-The flask dev server loads environment variables from `.flaskenv` and `.env`.
-To override any variable create a `.env` file.
-Environment variables in `.env` take precedence over `.flaskenv`.
-See the content of the `.flaskenv` file for the default environment variables.
+The flask dev server loads environment variables from :file:`.flaskenv` and :file:`.env`.
+To override any variable create a :file:`.env` file.
+Environment variables in :file:`.env` take precedence over :file:`.flaskenv`.
+See the content of the :file:`.flaskenv` file for the default environment variables.
 
-You can also add an `IBM_TOKEN` to the `.env` file to use the IBM backend without a token in each request.
-Set the `EXECUTE_CELERY_TASK_ASYNCHRONOUS` in your .env file to False, if you don't want to start a
+You can also add an :envvar:`IBM_TOKEN` to the :file:`.env` file to use the IBM backend without a token in each request.
+Set the :envvar:`EXECUTE_CELERY_TASK_ASYNCHRONOUS` in your :file:`.env` file to False, if you don't want to start a
 celery worker and execute all tasks synchronously.
-Set the `ENABLE_EXPERIMENTAL_FEATURES` in your .env file to True, if you want to use experimental features like
+Set the :envvar:`ENABLE_EXPERIMENTAL_FEATURES` in your :file:`.env` file to True, if you want to use experimental features like
 the qasm to quil transpilation, and IBM File_Runner and File_Upload job types.
 
 Run the Development Server
@@ -64,7 +64,7 @@ Start Docker, init the celery worker and then start it
    poetry run invoke worker
 
 
-Create the initial database (If this doesn't work, try to delete the db-file from the "instance" folder)
+Create the initial database (If this doesn't work, try to delete the db-file from the :file:`instance` folder)
 
 .. code-block:: bash
 

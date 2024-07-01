@@ -62,17 +62,17 @@ Naming Conventions
 -------------------
 
 Branch Naming convention
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^
 
-Convention is based on: <https://gist.github.com/digitaljhelms/4287848>
-* Feature Branch: feature/{IssueNumber}-{ShortIssueDescription}
-* Bug Branch: bug/{bugNumber}-{ShortBugDescription}
+Convention is based on: https://gist.github.com/digitaljhelms/4287848
+* Feature Branch: ``feature/{IssueNumber}-{ShortIssueDescription}``
+* Bug Branch: ``bug/{bugNumber}-{ShortBugDescription}``
 * Descriptions should not be much longer than 4,5 words
 
 Commit message convention
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Convention is based on: <https://github.com/joelparkerhenderson/git-commit-message>
+Convention is based on: https://github.com/joelparkerhenderson/git-commit-message
 
 * Short Description
     * Start with an imperative present active verb: Add, Drop, Fix, Refactor, Optimize, etc.

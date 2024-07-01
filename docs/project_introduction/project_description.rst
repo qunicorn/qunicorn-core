@@ -6,7 +6,8 @@ Users can create deployments to deploy/register their quantum programs at qunico
 These deployments can be referenced when creating jobs.
 Jobs are used to run the quantum programs defined in the deployments on the quantum hardware.
 The quantum hardware is provided by different providers like AWS and IBM.
-    .. image:: ../resources/images/qunicorn_overview.png
+
+.. image:: ../resources/images/qunicorn_overview.png
 
 
 Circuit Transpilation

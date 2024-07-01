@@ -9,9 +9,9 @@ To create a use case you can start the Docker Compose from the `Use Case reposit
 
 The following services should now be available:
 
-* qunicorn: `localhost:5005/swagger-ui/ <localhost:5005/swagger-ui/>`_
-* workflow-modeler: `localhost:8080/ <localhost:8080/>`_
-* camunda: `localhost:8078/camunda/app/ <localhost:8078/camunda/app/>`_
+* qunicorn: `localhost:5005/swagger-ui/ <http://localhost:5005/swagger-ui/>`_
+* workflow-modeler: `localhost:8080/ <http://localhost:8080/>`_
+* camunda: `localhost:8078/camunda/app/ <http://localhost:8078/camunda/app/>`_
 
 To create a new use case check the README of the `Use Case repository <https://github.com/SeQuenC-Consortium/SeQuenC-UseCases/>`_.
 
@@ -24,4 +24,4 @@ Example Use Case: Get Devices and Create Job
 4. Get the results/details of the job
 5. UserTask: Let the user evaluate the results
 
-    .. image:: ../resources/images/use_case_1_bpmn.JPG
+.. image:: ../resources/images/use_case_1_bpmn.JPG

@@ -7,9 +7,9 @@ Local Linting with Flake8 (VSC):
 * Install `Flake8 Extension <https://marketplace.visualstudio.com/items?itemName=ms-python.flake8>`_
     * If python environment included flake8 already, it will automatically start linting the python files
     * Otherwise: Install Flake8 (`Documentation <https://flake8.pycqa.org/en/latest/>`_)
-* Qunicorn Flake8 Settings can be found in .flake8
+* Qunicorn Flake8 Settings can be found in :file:`.flake8`
 * Display the current problems in the console: :code:`flake8 .`
-* Check for Linting Errors  (black & flake) with:
+* Check for Linting Errors (black & flake) with:
 
 .. code-block:: bash
 
@@ -20,11 +20,11 @@ Flake8 Settings
 
 * Ignore single line: Add :code:`# noqa` to the end of the line
 
-* Ignore specific error in a single line: Add :code:`# noqa E711` to the end of the line
+* Ignore specific error in a single line: Add :code:`# noqa E711` to the end of the line (replace ``E711`` with the error code to suppress)
 
 * Ignore whole file: Add :code:`# flake8: noqa` at the start of the file
 
-* Ignore certain warnings in files, add to .flake8 file
+* Ignore certain warnings in files, add to :file:`.flake8` file
 
 .. code-block:: bash
 
@@ -78,6 +78,6 @@ Automatic Formatting on Save
 *****************************
 
 * In Pycharm:
-    * Strg+Alt+A → Search for “Actions on Save” → check “Reformat code” and “Optimize imports”
-    * “Settings” → “Editor” → “Code Style” → “Python”
+    * :kbd:`Strg + Alt + A` → Search for “Actions on Save” → check “Reformat code” and “Optimize imports”
+    * :menuselection:`Settings --> Editor --> Code Style --> Python`
     * Furthermore: Disable Line breaks reformatting and increase hard wrap

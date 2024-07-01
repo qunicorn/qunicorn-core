@@ -1,5 +1,5 @@
 Pilot Documentation
-=========================================
+===================
 
 Introduction
 ^^^^^^^^^^^^
@@ -13,7 +13,8 @@ In qunicorn, this is handled by a celery queue.
 Implementation
 ^^^^^^^^^^^^^^
 
-All pilots implement the *Pilot* class from the base_pilot. The *Pilot* class is an abstract class and defines the interface for all pilots.
+All pilots implement the :py:class:`~qunicorn_core.core.pilotmanager.base_pilot.Pilot` class from the :py:mod:`~qunicorn_core.core.pilotmanager.base_pilot` module.
+The :py:class:`~qunicorn_core.core.pilotmanager.base_pilot.Pilot` class is an abstract class and defines the interface for all pilots.
 It also implements some general logic used by all pilots.
 
 This ensures a consistent interface for all pilots and allows for easy extension of the pilot framework.
