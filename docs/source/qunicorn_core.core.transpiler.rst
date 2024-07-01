@@ -4,21 +4,14 @@ qunicorn\_core.core.transpiler package
 Submodules
 ----------
 
-qunicorn\_core.core.transpiler.preprocessing\_manager module
-------------------------------------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: qunicorn_core.core.transpiler.preprocessing_manager
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-qunicorn\_core.core.transpiler.transpiler\_manager module
----------------------------------------------------------
-
-.. automodule:: qunicorn_core.core.transpiler.transpiler_manager
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   qunicorn_core.core.transpiler.braket_transpiler
+   qunicorn_core.core.transpiler.circuit_transpiler
+   qunicorn_core.core.transpiler.qiskit_transpiler
+   qunicorn_core.core.transpiler.qrisp_transpiler
+   qunicorn_core.core.transpiler.unsafe_transpilers
 
 Module contents
 ---------------

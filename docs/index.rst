@@ -12,6 +12,7 @@ Welcome to Qunicorn_Core's documentation!
    architecture_documentation/main_architecture
    pilot_documentation/main_pilot_documentation
    others/cli
+   source/qunicorn_core
    others/glossary
    others/changelog
    others/disclaimer

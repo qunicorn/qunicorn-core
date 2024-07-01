@@ -4,21 +4,11 @@ qunicorn\_core.util.debug\_routes package
 Submodules
 ----------
 
-qunicorn\_core.util.debug\_routes.root module
----------------------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: qunicorn_core.util.debug_routes.root
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-qunicorn\_core.util.debug\_routes.routes module
------------------------------------------------
-
-.. automodule:: qunicorn_core.util.debug_routes.routes
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   qunicorn_core.util.debug_routes.root
+   qunicorn_core.util.debug_routes.routes
 
 Module contents
 ---------------

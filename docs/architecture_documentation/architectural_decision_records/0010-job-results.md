@@ -6,7 +6,7 @@
 
 ## Context and Problem Statement
 
-Job results currently cannot be associated back with their deploayed program.
+Job results currently cannot be associated back with their deployed program.
 Job results are poorly specified.
 
 ## Decision Drivers

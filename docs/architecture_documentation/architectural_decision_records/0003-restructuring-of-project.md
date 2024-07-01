@@ -13,7 +13,7 @@ The Project Structure needed to be restructured in order to have api and logic s
 * Not doing anything
 
 ## Decision Outcome
-Chosen option: ""Core" Folder with logic"
+Chosen option: "'Core' Folder with logic"
 
 ## Description of Changes
 A core package was added. Most of the computational logic was moved to it. 

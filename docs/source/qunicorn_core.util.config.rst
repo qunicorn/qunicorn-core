@@ -4,29 +4,12 @@ qunicorn\_core.util.config package
 Submodules
 ----------
 
-qunicorn\_core.util.config.celery\_config module
-------------------------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: qunicorn_core.util.config.celery_config
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-qunicorn\_core.util.config.smorest\_config module
--------------------------------------------------
-
-.. automodule:: qunicorn_core.util.config.smorest_config
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-qunicorn\_core.util.config.sqlalchemy\_config module
-----------------------------------------------------
-
-.. automodule:: qunicorn_core.util.config.sqlalchemy_config
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   qunicorn_core.util.config.celery_config
+   qunicorn_core.util.config.smorest_config
+   qunicorn_core.util.config.sqlalchemy_config
 
 Module contents
 ---------------

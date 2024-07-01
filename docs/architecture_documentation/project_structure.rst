@@ -4,7 +4,7 @@ Project Structure
 This site gives a brief overview of the project structure of the qunicorn project.
 Describing the different packages and components within.
 
-The Structure described can be found within the **qunicorn_core** package.
+The Structure described can be found within the :py:mod:`qunicorn_core` package.
 
 Structure of the project
 *************************
@@ -12,67 +12,67 @@ Structure of the project
 api <Package>:
 ^^^^^^^^^^^^^^^^
 
-The api package contains all the api views and models. It is used to define the API.
+The :py:mod:`api package <qunicorn_core.api>` contains all the api views and models. It is used to define the API.
 
-* api_models <Package>:
-    * contains DTOS and Schemas for all Objects
-    * these are used for computation and to define the schemas for the api views
+* :py:mod:`api_models <qunicorn_core.api.api_models>` <Package>:
+    * Contains DTOS and Schemas for all Objects
+    * These are used for computation and to define the schemas for the api views
 * {component}_api <Package>:
-    * contains the api definition for a component.
+    * Contains the api definition for a component.
 
 core <Package>:
 ^^^^^^^^^^^^^^^^
 
-The core package contains all the core logic of the project. This includes mappers and various services.
+The :py:mod:`core package <qunicorn_core.core>` contains all the core logic of the project. This includes mappers and various services.
 
-* mapper <Package>:
-    * contains mappers to map between different objects.
-    * this includes:
+* :py:mod:`mapper <qunicorn_core.core.mapper>` <Package>:
+    * Contains mappers to map between different objects.
+    * This includes:
         * mapping from DTOs to Dataclass objects
         * mapping from Schemas to DTOs
-* pilotmanager <Package>:
-    * contains the different pilots, which are used to communicate with different quantum providers
-    * contains the pilot_manager, a service class for handling of pilot data.
+* :py:mod:`pilotmanager <qunicorn_core.core.pilotmanager>` <Package>:
+    * Contains the different pilots, which are used to communicate with different quantum providers
+    * Contains the pilot_manager, a service class for handling of pilot data.
     * pilot_resources <Package>:
         * Contains resources for the pilots in the json format.
-* transpiler <Package>:
-    * contains the transpiler, which is used to transpile between assembler languages used by different providers.
+* :py:mod:`transpiler <qunicorn_core.core.transpiler>` <Package>:
+    * Contains the transpiler, which is used to transpile between assembler languages used by different providers.
 * {component}_service <.py File>
-    * a service file for a component which handles communication between the api and other parts of the core package and the db package.
+    * A service file for a component which handles communication between the api and other parts of the core package and the db package.
 
 db <Package>:
 ^^^^^^^^^^^^^^^^
 
-The db package contains the database models and the database service. It is used to define the database, and to handle communication with it.
+The :py:mod:`db package <qunicorn_core.db>` contains the database models and the database service. It is used to define the database, and to handle communication with it.
 
-* models <Package>:
-    * contains the definitions of the various database models.
-* cli <.py File>:
-    * contains cli commands to interact with the database, such as setting up the database or pushing clean data.
-* db <.py File>:
-    * contains DB constant to avoid circular imports.
+* :py:mod:`models <qunicorn_core.db.models>` <Package>:
+    * Contains the definitions of the various database models.
+* :py:mod:`cli <qunicorn_core.db.cli>` <.py File>:
+    * Contains cli commands to interact with the database, such as setting up the database or pushing clean data.
+* :py:mod:`db <qunicorn_core.db.db>` <.py File>:
+    * Contains DB constant to avoid circular imports.
 
 static <Package>:
 ^^^^^^^^^^^^^^^^^^
 
-The static package contains all static files, such as the enums used in the qunicorn project.
+The :py:mod:`static package <qunicorn_core.static>` contains all static files, such as the enums used in the qunicorn project.
 
-* enums <Package>:
-    * contains all enums used within the project.
+* :py:mod:`enums <qunicorn_core.static.enums>` <Package>:
+    * Contains all enums used within the project.
 
 util <Package>:
 ^^^^^^^^^^^^^^^^
 
-The util package contains various util files, as well as config files for the project.
+The :py:mod:`util package <qunicorn_core.util>` contains various util files, as well as config files for the project.
 
-* config <Package>:
-    * contains config files for the project.
-    * These include: Celery, Smorest and sqlalchemy config files.
-* debug_routes <Package>:
-    * contains routes for debugging purposes.
-* logging <.py File>:
-    * a util file to set up logging.
-* reserve_proxy_fix <.py File>
-    * a util file to set up reverse proxy fix.
-* utils <.py File>:
-    * a util file to set up general util methods.
+* :py:mod:`config <qunicorn_core.util.config>` <Package>:
+    * Contains config files for the project.
+    * These include: Celery, Smorest and SQLAlchemy config files.
+* :py:mod:`debug_routes <qunicorn_core.util.debug_routes>` <Package>:
+    * Contains routes for debugging purposes.
+* :py:mod:`logging <qunicorn_core.util.logging>` <.py File>:
+    * A util file to set up logging.
+* :py:mod:`reverse_proxy_fix <qunicorn_core.util.reverse_proxy_fix>` <.py File>
+    * A util file to set up reverse proxy fix.
+* :py:mod:`utils <qunicorn_core.util.utils>` <.py File>:
+    * A util file to set up general util methods.

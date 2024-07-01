@@ -7,11 +7,11 @@ Configure Pycharm - Developer Guide
 
 3. Assumption: Poetry and Python have already been set up as in the step above
 
-4. Overwrite IBM_TOKEN="yourToken" and EXECUTE_CELERY_TASK_ASYNCHRONOUS="Boolean" in .env file
+4. Overwrite ``IBM_TOKEN="yourToken"`` and ``EXECUTE_CELERY_TASK_ASYNCHRONOUS="Boolean"`` in :file:`.env` file
 
-5. Ctrl + Shift + A → Search for "Switch Python Interpreter" → Select Poetry Python version
+5. :kbd:`Ctrl + Shift + A` → Search for "Switch Python Interpreter" → Select Poetry Python version
 
-6. Ctrl + Shift + A → Search for "Plugins" → Switch to the Marketplace (top center)
+6. :kbd:`Ctrl + Shift + A` → Search for "Plugins" → Switch to the Marketplace (top center)
 
     a. Install Grep Console
 
@@ -21,7 +21,7 @@ Configure Pycharm - Developer Guide
 
 7. Customize code style:
 
-8. Double-click on ./instance/qunicorn_core.db to automatically configure a database connection that can be searched and manipulated
+8. Double-click on :file:`./instance/qunicorn_core.db` to automatically configure a database connection that can be searched and manipulated
 
 9. Configure debugger and logger from the following paragraphs
 
@@ -29,7 +29,7 @@ Configure Pycharm - Developer Guide
 Configure Debugger for Pycharm
 ------------------------------
 
-Run → Edit Configurations → Add the configuration parameters from the image
+Open :menuselection:`Run --> Edit Configurations` and add the configuration parameters from the image
 
 .. image:: ../resources/images/configure_debugger.jpeg
 
@@ -51,27 +51,21 @@ Configure Logger Terminal
 How to open the database
 ------------------------
 
-1. Double-click on ./instance/qunicorn_core.db to automatically configure a database connection that can be searched and manipulated
+1. Double-click on :file:`./instance/qunicorn_core.db` to automatically configure a database connection that can be searched and manipulated
 
-
-How to open the database
-------------------------
-
-1. Double-click on ./instance/qunicorn_core.db to automatically configure a database connection that can be searched and manipulated
-
-2. How to display the domain model of the database: rightclick at the database tab on main -> diagrams -> show diagrams
+2. Display the domain model of the database: rightclick at the database tab on :menuselection:`main --> diagrams --> show diagrams`
 
 
 How to check if the pipeline will succeed
 -----------------------------------------
 
-1. poetry run invoke check-linting
+1. :code:`poetry run invoke check-linting`
 
-    a. If black fails fix it with: poetry run black .
+    a. If black fails fix it with: :code:`poetry run black .`
 
-    b. If flake8 fails fix it with: poetry run flake8
+    b. If flake8 fails fix it with: :code:`poetry run flake8`
 
-2. poetry run pytest ./tests/automated_tests/
+2. :code:`poetry run pytest ./tests/automated_tests/`
 
 
 How to test the user authentication

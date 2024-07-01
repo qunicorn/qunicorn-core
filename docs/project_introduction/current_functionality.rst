@@ -1,12 +1,13 @@
 Current Functionality
 #####################
 
-To give a brief overview of the current functionality of the application.
-The user currently has one main way to access the application, this is through the defined API Endpoints.
+As a brief overview of the current functionality of the application, the main way to access the application is through the defined API Endpoints.
 
-A good way to get an overview, as well as example values, is to access those through the `Swagger UI <http://localhost:5005/swagger-ui>`_.
+A good way to get an overview, is to access the `Swagger UI <http://localhost:5005/swagger-ui>`_.
+It also contains samples values for API calls.
+An alternative interface based on rapidoc is also provided under `/rapidoc <http://localhost:5005/rapidoc>`_.
 
-The Endpoints defined can be found on the api documentation under :doc:`API Documentation <../architecture_documentation/api_documentation/apidocumentation>`.
+The defined Endpoints can be found in the API documentation under :doc:`API Documentation <../architecture_documentation/api_documentation/apidocumentation>`.
 
 Available Providers
 ^^^^^^^^^^^^^^^^^^^

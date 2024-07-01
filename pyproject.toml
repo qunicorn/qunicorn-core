@@ -81,6 +81,7 @@ enable-graphviz = true
 include-changelog = true
 # update gitignore if you want to edit docs/readme.md manually!
 include-readme = true
+theme = "sphinx_rtd_theme"
 
 [tool.sphinx.intersphinx-mapping]
 python = ["https://docs.python.org/3"]
