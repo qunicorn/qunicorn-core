@@ -5,6 +5,7 @@ As a brief overview of the current functionality of the application, the main wa
 
 A good way to get an overview, is to access the `Swagger UI <http://localhost:5005/swagger-ui>`_.
 It also contains samples values for API calls.
+An alternative interface based on rapidoc is also provided under `/rapidoc <http://localhost:5005/rapidoc>`_.
 
 The defined Endpoints can be found in the API documentation under :doc:`API Documentation <../architecture_documentation/api_documentation/apidocumentation>`.
 
