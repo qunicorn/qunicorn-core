@@ -13,7 +13,7 @@
 # limitations under the License.
 import json
 import os
-from typing import Any, List, Optional, Sequence, Tuple, Union
+from typing import Any, List, Optional, Sequence, Tuple, Union, Dict
 from urllib.parse import urljoin
 
 import requests
@@ -144,47 +144,58 @@ class QMwarePilot(Pilot):
             qunicorn_job.save_error(error)
             raise error
 
-        measurements = json.loads(result["out"]["value"])
+        measurements: List[Dict] = json.loads(result["out"]["value"])
+        results: List[List[Dict[str, int]]] = [measurement["result"] for measurement in measurements]
+        hex_counts = {}
+        hex_probabilities = {}
 
-        if len(measurements) != 1:
-            error = QunicornError("currently only one register supported")
-            qunicorn_job.save_error(error)
-            raise error
+        for single_result in zip(*results):
+            hex_measurements = []
+            hits = None
+            register: Dict[str, int]
 
-        results = measurements[0]["result"]
+            for register in single_result:
+                hex_measurements.append(hex(register["number"]))
 
-        counts = {element["number"]: element["hits"] for element in results}
-        probabilities = {element["number"]: element["probability"] for element in results}
+                if hits is None:
+                    hits = register["hits"]
+                else:
+                    assert hits == register["hits"], "results have different number of hits"
+
+            hex_measurement = " ".join(hex_measurements)
+            hex_counts[hex_measurement] = hits
+            hex_probabilities[hex_measurement] = hits / qunicorn_job.shots
 
         circuit = qasm2.loads(program.quantum_circuit)
+        register_metadata = []
 
-        if len(circuit.cregs) != 1:
-            error = QunicornError("currently only one register supported")
-            qunicorn_job.save_error(error)
-            raise error
-
-        register_size = circuit.cregs[0].size
-        register_name = circuit.cregs[0].name
+        for classical_register in circuit.cregs:
+            register_metadata.append(
+                {
+                    "name": classical_register.name,
+                    "size": classical_register.size,
+                }
+            )
 
         return [
             ResultDataclass(
                 program=program,
-                data=Pilot.qubits_integer_to_hex(counts),
+                data=hex_counts,
                 result_type=ResultType.COUNTS,
                 meta={
                     "format": "hex",
                     "shots": qunicorn_job.shots,
-                    "registers": [{"name": register_name, "size": register_size}],
+                    "registers": register_metadata,
                 },
             ),
             ResultDataclass(
                 program=program,
-                data=Pilot.qubits_integer_to_hex(probabilities),
+                data=hex_probabilities,
                 result_type=ResultType.PROBABILITIES,
                 meta={
                     "format": "hex",
                     "shots": qunicorn_job.shots,
-                    "registers": [{"name": register_name, "size": register_size}],
+                    "registers": register_metadata,
                 },
             ),
         ]
