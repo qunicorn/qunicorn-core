@@ -17,7 +17,7 @@ spec:
         io.kompose.service: broker
     spec:
       containers:
-        - image: redis:7.0.12
+        - image: redis:7.2.5
           name: broker
           ports:
             - containerPort: 6379
