@@ -29,7 +29,7 @@ When the editing person perceives the issue as done, a pull request is created o
 ### Short Description:
 “This item is awaiting further clarification or resources”
 ### Issue-Status: 
-Issue was already "In Progress.
+Issue was already "In Progress".
 There are ambiguities/questions that cannot be clarified directly.
 In order to close the issue, other previously finished issues are required.
 ### What needs to be done?
@@ -88,6 +88,6 @@ Convention is based on: <https://github.com/joelparkerhenderson/git-commit-messa
     * If the commit is related to one issue, we can add the issue number here
 * General
     * Commit features.
-    * Do not commit to much at once.
+    * Do not commit too much at once.
     * Git-squash if necessary
 
