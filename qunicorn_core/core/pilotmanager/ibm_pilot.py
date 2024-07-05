@@ -59,38 +59,37 @@ class IBMPilot(Pilot):
 
     def execute_provider_specific(
         self, job: JobDataclass, circuits: Sequence[Tuple[QuantumProgramDataclass, Any]], token: Optional[str] = None
-    ) -> Tuple[List[ResultDataclass], JobState]:
+    ) -> JobState:
         """Execute a job of a provider specific type on a backend using a Pilot"""
         if job.id is None:
             raise QunicornError("Job has no database ID and cannot be executed!")
 
         if job.type == JobType.ESTIMATOR.value:
-            return self.__estimate(job, circuits, token=token)
+            results, state = self.__estimate(job, circuits, token=token)
         elif job.type == JobType.SAMPLER.value:
-            return self.__sample(job, circuits, token=token)
+            results, state = self.__sample(job, circuits, token=token)
         elif job.type == JobType.IBM_RUNNER.value:
-            return self.__run_ibm_program(job, token=token)
+            results, state = self.__run_ibm_program(job, token=token)
         elif job.type == JobType.IBM_UPLOAD.value:
-            return self.__upload_ibm_program(job, token=token)
+            results, state = self.__upload_ibm_program(job, token=token)
         else:
-            error = QunicornError("No valid Job Type specified")
-            job.save_error(error)
-            raise error
+            raise QunicornError("No valid Job Type specified")
+
+        job.save_results(results, state)
+        return state
 
     def run(
         self,
         job: JobDataclass,
         circuits: Sequence[Tuple[QuantumProgramDataclass, QuantumCircuit]],
         token: Optional[str] = None,
-    ) -> Tuple[List[ResultDataclass], JobState]:
+    ) -> JobState:
         """Execute a job local using aer simulator or a real backend"""
         if job.id is None:
             raise QunicornError("Job has no database ID and cannot be executed!")
         device = job.executed_on
         if device is None:
-            error = QunicornError("The job does not have any device associated!")
-            job.save_error(error)
-            raise error
+            raise QunicornError("The job does not have any device associated!")
 
         backend: Backend
         if device.is_local:
@@ -117,7 +116,9 @@ class IBMPilot(Pilot):
             if res is not None and "circuit" in res.meta:
                 res.meta.pop("circuit")
 
-        return results, JobState.FINISHED
+        job.save_results(results, JobState.FINISHED)
+
+        return JobState.FINISHED
 
     def cancel_provider_specific(self, job: JobDataclass, token: Optional[str] = None):
         """Cancel a job on an IBM backend using the IBM Pilot"""

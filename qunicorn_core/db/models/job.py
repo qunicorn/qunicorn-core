@@ -122,13 +122,15 @@ class JobDataclass(DbModel):
         return default
 
     def save_results(self, results: List[ResultDataclass], job_state: Union[JobState, str] = JobState.FINISHED):
-        """Update the job to include the results and commit everything to the database."""
+        """Update the job to include the results and commit everything to the database and delete transient state."""
         self.finished_at = datetime.now(timezone.utc)
         self.progress = 100
         self.results = results
         self.state = job_state.value if isinstance(job_state, JobState) else job_state
         for result in results:
             result.save()  # add nested objects to db session
+        for state in self._transient:
+            state.delete()
         self.save(commit=True)
 
     def save_error(self, exception: BaseException, program: Optional["quantum_program.QuantumProgramDataclass"] = None):

@@ -40,33 +40,28 @@ def run_job(job_id: int):
     job.state = JobState.RUNNING.value
     job.save(commit=True)
 
-    device = job.executed_on
+    try:
+        device = job.executed_on
 
-    if not device or not device.provider:
-        raise QunicornError(
-            f"Job '{job_id}' has no valid device specified. (No device specified or device is missing a provider.)"
-        )
+        if not device or not device.provider:
+            raise QunicornError(
+                f"Job '{job_id}' has no valid device specified. (No device specified or device is missing a provider.)"
+            )
 
-    token = job.get_transient_state("token", None)
+        token = job.get_transient_state("token", None)
 
-    # Transpile and Run the Job on the correct provider
-    pilot: Pilot = pilot_manager.get_matching_pilot(device.provider.name)
-    circuits = _transpile_circuits(job, pilot.supported_languages)
+        # Transpile and Run the Job on the correct provider
+        pilot: Pilot = pilot_manager.get_matching_pilot(device.provider.name)
+        circuits = _transpile_circuits(job, pilot.supported_languages)
 
-    logging.info(f"Run job with id {job_id} on {pilot.__class__}")
-    results: Optional[list[ResultDataclass]]
-    job_state: JobState
-    results, job_state = pilot.execute(job, circuits, token=token)
+        logging.info(f"Run job with id {job_id} on {pilot.__class__}")
+        pilot.execute(job, circuits, token=token)
 
-    # Check if the job was executed successfully and return results
-    if results is None:
-        exception: Exception = QunicornError("No valid Target specified")
-        job.save_error(exception)
-        raise exception
-
-    # Update job state and results of the job
-    job.save_results(results, job_state)
-    logging.info(f"Run job with id {job_id} and get the result {results}")
+    except Exception as err:
+        for transient_state in job._transient:
+            transient_state.delete()
+        job.save_error(err)
+        raise err
 
 
 def _transpile_circuits(  # noqa: C901

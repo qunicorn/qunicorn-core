@@ -43,15 +43,13 @@ class AWSPilot(Pilot):
 
     def run(
         self, job: JobDataclass, circuits: Sequence[Tuple[QuantumProgramDataclass, Any]], token: Optional[str] = None
-    ) -> Tuple[List[ResultDataclass], JobState]:
+    ) -> JobState:
         """Execute the job on a local simulator and saves results in the database"""
         if job.id is None:
             raise QunicornError("Job has no database ID and cannot be executed!")
         device = job.executed_on
         if device and not device.is_local:
-            error: Exception = QunicornError("Device not found, device needs to be local for AWS")
-            job.save_error(error)
-            raise error
+            raise QunicornError("Device not found, device needs to be local for AWS")
 
         # Since QASM is stored as a string, it needs to be converted to a QASM program before execution
         programs = [p for p, _ in circuits]
@@ -61,17 +59,17 @@ class AWSPilot(Pilot):
         quantum_tasks: LocalQuantumTaskBatch = LocalSimulator().run_batch(preprocessed_circuits, shots=job.shots)
 
         results, job_state = AWSPilot.__map_aws_results_to_dataclass(quantum_tasks.results(), programs, job)
-        return results, job_state
+        job.save_results(results)
+
+        return job_state
 
     def execute_provider_specific(
         self, job: JobDataclass, circuits: Sequence[Tuple[QuantumProgramDataclass, Any]], token: Optional[str] = None
-    ) -> Tuple[List[ResultDataclass], JobState]:
+    ) -> JobState:
         """Execute a job of a provider specific type on a backend using a pilot"""
         if job.id is None:
             raise QunicornError("Job has no database ID and cannot be executed!")
-        error = QunicornError("No valid Job Type specified")
-        job.save_error(error)
-        raise error
+        raise QunicornError("No valid Job Type specified")
 
     def cancel_provider_specific(self, job_dto):
         logging.warn(
