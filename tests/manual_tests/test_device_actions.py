@@ -16,9 +16,9 @@
 
 import pytest
 
-from qunicorn_core.api.api_models import DeviceRequestDto
 from qunicorn_core.core import device_service
 from qunicorn_core.static.enums.provider_name import ProviderName
+from qunicorn_core.db.models.provider import ProviderDataclass
 from tests.conftest import set_up_env
 
 
@@ -26,11 +26,13 @@ from tests.conftest import set_up_env
 def test_get_devices_invalid_token():
     """Testing the device request for get request from IBM"""
     app = set_up_env()
-    device_request_dto: DeviceRequestDto = DeviceRequestDto(provider_name=ProviderName.IBM, token="invalid_token")
-
     with app.app_context():
+        providers = ProviderDataclass.get_all(where=[ProviderDataclass.name == ProviderName.IBM.value])
+        assert len(providers) == 1, "there should be exactly one provider with this name in the database"
+        provider_id = providers[0].id
+
         with pytest.raises(Exception) as exception:
-            device_service.update_devices(device_request_dto)
+            device_service.update_devices(provider_id=provider_id, token="invalid_token")
 
     with app.app_context():
         assert "IBMNotAuthorizedError" in str(exception)

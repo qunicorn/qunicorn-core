@@ -27,22 +27,25 @@ from ..api_models.deployment_dtos import (
     DeploymentUpdateDto,
     DeploymentUpdateDtoSchema,
     SimpleDeploymentDtoSchema,
+    DeploymentFilterParamsSchema,
     QuantumProgramDtoSchema,
 )
 from ...core import deployment_service, job_service
 from ...util import logging
+from ...static.qunicorn_exception import QunicornError
 
 
 @DEPLOYMENT_API.route("/")
 class DeploymentIDView(MethodView):
     """Deployments endpoint for collection of all deployed jobs."""
 
+    @DEPLOYMENT_API.arguments(DeploymentFilterParamsSchema(), location="query", as_kwargs=True)
     @DEPLOYMENT_API.response(HTTPStatus.OK, SimpleDeploymentDtoSchema(many=True))
     @DEPLOYMENT_API.require_jwt(optional=True)
-    def get(self, jwt_subject: Optional[str]):
+    def get(self, jwt_subject: Optional[str], name: Optional[str] = None):
         """Get the list of deployments."""
         logging.info("Request: get all deployments")
-        return deployment_service.get_all_deployment_responses(user_id=jwt_subject)
+        return deployment_service.get_all_deployment_responses(user_id=jwt_subject, name=name)
 
     @DEPLOYMENT_API.arguments(DeploymentUpdateDtoSchema(), location="json")
     @DEPLOYMENT_API.response(HTTPStatus.CREATED, SimpleDeploymentDtoSchema())
@@ -65,15 +68,18 @@ class DeploymentDetailView(MethodView):
         logging.info("Request: get deployment by id")
         return deployment_service.get_deployment_by_id(deployment_id, user_id=jwt_subject)
 
-    @DEPLOYMENT_API.response(HTTPStatus.OK, DeploymentDtoSchema)
+    @DEPLOYMENT_API.response(HTTPStatus.NO_CONTENT)
     @DEPLOYMENT_API.require_jwt(optional=True)
     def delete(self, deployment_id: int, jwt_subject: Optional[str]):
         """Delete single deployment by ID."""
         logging.info("Request: delete deployment by id")
-        deleted_deployment = deployment_service.delete_deployment(deployment_id, user_id=jwt_subject)
-        if deleted_deployment is None:
-            pass  # TODO: treat this differently?
-        return deleted_deployment
+        try:
+            deployment_service.delete_deployment(deployment_id, user_id=jwt_subject)
+        except QunicornError as err:
+            if err.code == HTTPStatus.NOT_FOUND:
+                # treat as deleted
+                return
+            raise err
 
     @DEPLOYMENT_API.response(HTTPStatus.OK, DeploymentDtoSchema)
     @DEPLOYMENT_API.arguments(DeploymentUpdateDtoSchema(), location="json")
@@ -107,7 +113,7 @@ class DeploymentProgramDetailsView(MethodView):
         return deployment_service.get_program_by_id(program_id, deployment_id, user_id=jwt_subject)
 
 
-@DEPLOYMENT_API.route("/<int:deployment_id>/jobs")
+@DEPLOYMENT_API.route("/<int:deployment_id>/jobs/")
 class JobsByDeploymentView(MethodView):
     """API endpoint for jobs of a specific deployment."""
 

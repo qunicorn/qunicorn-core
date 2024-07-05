@@ -116,7 +116,7 @@ class RigettiPilot(Pilot):
             device, DEFAULT_QUANTUM_CIRCUIT_1, assembler_language="QUIL-PYTHON"
         )
 
-    def save_devices_from_provider(self, device_request):
+    def save_devices_from_provider(self, token: Optional[str]):
         raise QunicornError(
             "Rigetti Pilot cannot fetch Devices from Rigetti Computing, because there is no Cloud Access."
         )

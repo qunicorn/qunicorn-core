@@ -91,9 +91,11 @@ def run_job_with_celery(job: JobDataclass, is_asynchronous: bool, token: Optiona
         job_manager_service.run_job(job.id, token=token)
 
 
-def re_run_job_by_id(job_id: int, token: str, user_id: Optional[str] = None) -> SimpleJobDto:
+def re_run_job_by_id(job_id: int, token: Optional[str], user_id: Optional[str] = None) -> SimpleJobDto:
     """Get job from DB, Save it as new job and run it with the new id"""
     job: JobDataclass = JobDataclass.get_by_id_authenticated_or_404(job_id, user_id)
+    if token is None:
+        token = ""
     job_request: JobRequestDto = JobRequestDto(
         name=job.name,
         deployment_id=job.deployment_id,
@@ -131,23 +133,31 @@ def get_job_result_by_id(result_id: int, job_id: int, user_id: Optional[str]) ->
     return result_mapper.dataclass_to_dto(result)
 
 
-def delete_job_data_by_id(job_id, user_id: Optional[str]) -> JobResponseDto:
+def delete_job_data_by_id(job_id, user_id: Optional[str]):
     """delete job data from db"""
     job = JobDataclass.get_by_id_authenticated_or_404(job_id, user_id)
     job.delete(commit=True)
-    return job_mapper.dataclass_to_response(job)
 
 
-def get_all_jobs(user_id: Optional[str]) -> list[SimpleJobDto]:
+def get_all_jobs(
+    user_id: Optional[str], status: Optional[str] = None, deployment: Optional[int] = None, device: Optional[int] = None
+) -> list[SimpleJobDto]:
     """get all jobs from the db"""
+    where = []
+    if status:
+        where.append(JobDataclass.state == status)
+    if deployment is not None:
+        where.append(JobDataclass.deployment_id == deployment)
+    if device is not None:
+        where.append(JobDataclass.executed_on_id == device)
     return [
         job_mapper.dataclass_to_simple(job)
-        for job in JobDataclass.get_all_authenticated(user_id)
+        for job in JobDataclass.get_all_authenticated(user_id, where=where)
         if job.executed_by is None or job.executed_by == user_id
     ]
 
 
-def cancel_job_by_id(job_id, token, user_id: Optional[str] = None) -> SimpleJobDto:
+def cancel_job_by_id(job_id, token: Optional[str], user_id: Optional[str] = None) -> SimpleJobDto:
     """cancel job execution"""
     logging.info(f"Cancel execution of job with id:{job_id}")
     job: JobDataclass = JobDataclass.get_by_id_authenticated_or_404(job_id, user_id)

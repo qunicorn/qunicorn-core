@@ -14,9 +14,10 @@
 
 from typing import Optional
 
+from sqlalchemy.sql import or_
+
 from qunicorn_core.api.api_models.device_dtos import (
     DeviceDto,
-    DeviceRequestDto,
     SimpleDeviceDto,
 )
 from qunicorn_core.core.mapper import device_mapper
@@ -25,16 +26,34 @@ from qunicorn_core.db.models.device import DeviceDataclass
 from qunicorn_core.util import logging
 
 
-def update_devices(device_request: DeviceRequestDto) -> list[SimpleDeviceDto]:
+def update_devices(provider_id: int, token: Optional[str] = None) -> list[SimpleDeviceDto]:
     """Update all backends for the provider from device_request"""
-    logging.info(f"Update all available devices for {device_request.provider_name} in database.")
-    pilot_manager.update_devices_from_provider(device_request)
-    return [device_mapper.dataclass_to_simple(device) for device in DeviceDataclass.get_all()]
+    logging.info(f"Update all available devices for provider with id {provider_id} in database.")
+    pilot_manager.update_devices_from_provider(provider_id, token)
+    return [
+        device_mapper.dataclass_to_simple(device)
+        for device in DeviceDataclass.get_all(where=[DeviceDataclass.provider_id == provider_id])
+    ]
 
 
-def get_all_devices() -> list[SimpleDeviceDto]:
+def get_all_devices(
+    provider: Optional[int] = None,
+    min_qubits: Optional[int] = None,
+    is_simulator: Optional[bool] = None,
+    is_local: Optional[bool] = None,
+) -> list[SimpleDeviceDto]:
     """Gets all Devices from the DB and maps them"""
-    return [device_mapper.dataclass_to_simple(device) for device in DeviceDataclass.get_all()]
+    where = []
+    if provider is not None:
+        where.append(DeviceDataclass.provider_id == provider)
+    if min_qubits is not None:
+        # qubit counts < 0 are treated as infinite
+        where.append(or_(DeviceDataclass.num_qubits >= min_qubits, DeviceDataclass.num_qubits < 0))
+    if is_simulator is not None:
+        where.append(DeviceDataclass.is_simulator == is_simulator)
+    if is_local is not None:
+        where.append(DeviceDataclass.is_local == is_local)
+    return [device_mapper.dataclass_to_simple(device) for device in DeviceDataclass.get_all(where=where)]
 
 
 def get_device_by_id(device_id: int) -> DeviceDto:

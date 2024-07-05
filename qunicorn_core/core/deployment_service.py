@@ -46,10 +46,16 @@ def get_program_by_id(program_id: int, deployment_id: int, user_id: Optional[str
     return quantum_program_mapper.dataclass_to_dto(program)
 
 
-def get_all_deployment_responses(user_id: Optional[str] = None) -> list[DeploymentDto]:
+def get_all_deployment_responses(user_id: Optional[str] = None, name: Optional[str] = None) -> list[DeploymentDto]:
     """Gets all deployments from a user as responses to clearly arrange them in the frontend"""
+    where = []
+    if name:
+        if "%" in name:
+            where.append(DeploymentDataclass.name.like(name, escape="\\"))
+        else:
+            where.append(DeploymentDataclass.name == name)
     deployment_list: list[DeploymentDto] = [
-        deployment_mapper.dataclass_to_dto(d) for d in DeploymentDataclass.get_all_authenticated(user_id)
+        deployment_mapper.dataclass_to_dto(d) for d in DeploymentDataclass.get_all_authenticated(user_id, where=where)
     ]
     return deployment_list
 
@@ -81,16 +87,12 @@ def update_deployment(
         )
 
 
-def delete_deployment(deployment_id: int, user_id: Optional[str] = None) -> Optional[DeploymentDto]:
+def delete_deployment(deployment_id: int, user_id: Optional[str] = None):
     """Remove one deployment by id."""
-    db_deployment = DeploymentDataclass.get_by_id_authenticated(deployment_id, user_id)
-    if db_deployment is None:
-        return None
-    dto_deployment = deployment_mapper.dataclass_to_dto(db_deployment)
+    db_deployment = DeploymentDataclass.get_by_id_authenticated_or_404(deployment_id, user_id)
     if len(db_deployment.jobs) > 0:
         raise QunicornError("Deployment is in use by a job", HTTPStatus.BAD_REQUEST)
     db_deployment.delete(commit=True)
-    return dto_deployment
 
 
 def create_deployment(deployment_dto: DeploymentUpdateDto, user_id: Optional[str] = None) -> DeploymentDto:

@@ -22,7 +22,7 @@ import marshmallow as ma
 from ..flask_api_utils import MaBaseSchema
 from ...static.enums.assembler_languages import AssemblerLanguage
 
-__all__ = ["ProviderDtoSchema", "ProviderIDSchema", "ProviderDto"]
+__all__ = ["ProviderDtoSchema", "ProviderIDSchema", "ProviderDto", "ProviderFilterParamsSchema"]
 
 
 @dataclass
@@ -39,7 +39,17 @@ class ProviderDtoSchema(MaBaseSchema):
     supported_languages = ma.fields.List(ma.fields.Enum(required=True, allow_none=False, enum=AssemblerLanguage))
     name = ma.fields.Str(required=True, allow_none=False)
     self = ma.fields.Function(lambda obj: url_for("provider-api.ProviderIDView", provider_id=obj.id))
+    devices = ma.fields.Function(lambda obj: url_for("device-api.DeviceView", provider=obj.id))
 
 
 class ProviderIDSchema(MaBaseSchema):
     provider_id = ma.fields.String(required=True, allow_none=False)
+
+
+class ProviderFilterParamsSchema(MaBaseSchema):
+    name = ma.fields.String(
+        required=False,
+        missing=None,
+        load_only=True,
+        description="Use % as wildcard and \\ to escape a % wildcard.",
+    )
