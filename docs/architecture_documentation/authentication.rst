@@ -4,10 +4,15 @@ Authentication is based on OAuth2. The docker-compose contains a Keycloak servic
 The realm already contains the client configuration for qunicorn.
 After the start up of the Keycloak service one can add users via the management interface.
 The management interface is exposed on port ``8081``.
-The following credentials are required to login:
+The following credentials are required to login as a user:
 
 - username: ``kc_user``
 - password: ``kc_pass``
+
+For admin right the credentials are:
+
+- username: ``admin``
+- password: ``admin``
 
 After login the realm has to switched to qunicorn in the top left dropdown menu.
 
@@ -51,7 +56,7 @@ Exchange this placeholder with the credentials of your newly created user.
 
 .. code-block:: bash
 
-    curl --location 'http://localhost:8081/auth/realms/qunicorn/protocol/openid-connect/token' \
+    curl --location 'http://localhost:8081/realms/qunicorn/protocol/openid-connect/token' \
         --header 'Content-Type: application/x-www-form-urlencoded' \
         --data-urlencode 'client_id=qunicorn' \
         --data-urlencode 'grant_type=password' \
