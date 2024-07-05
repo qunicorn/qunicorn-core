@@ -13,12 +13,13 @@
 # limitations under the License.
 import json
 import os
-from time import sleep
 from typing import Any, List, Optional, Sequence, Tuple, Union
 from urllib.parse import urljoin
 
 import requests
+from qiskit import qasm2
 from requests import RequestException
+from tenacity import retry, retry_if_result, wait_exponential, RetryError, stop_after_delay
 
 from qunicorn_core.api.api_models.device_dtos import DeviceDto
 from qunicorn_core.core.pilotmanager.base_pilot import Pilot
@@ -108,41 +109,38 @@ class QMwarePilot(Pilot):
         results = []
 
         for qmware_job_id, program in zip(qmware_job_ids, programs):
-            results.extend(QMwarePilot._get_job_results(qunicorn_job, qmware_job_id, program))
+            try:
+                results.extend(QMwarePilot._get_job_results(qunicorn_job, qmware_job_id, program))
+            except RetryError:
+                error = QunicornError("QMware job timed out")
+                qunicorn_job.save_error(error)
+                raise error
 
         return results, JobState.FINISHED
 
     @staticmethod
+    @retry(
+        retry=retry_if_result(lambda output: output is None),
+        stop=stop_after_delay(3600),
+        wait=wait_exponential(multiplier=1, exp_base=1.5),
+    )
     def _get_job_results(
         qunicorn_job: JobDataclass, qmware_job_id: str, program: QuantumProgramDataclass
-    ) -> List[ResultDataclass]:
-        for _i in range(100):
-            response = requests.get(urljoin(QMWARE_URL, f"/v0/jobs/{qmware_job_id}"), headers=AUTHORIZATION_HEADERS)
-            response.raise_for_status()
-            result = response.json()
+    ) -> List[ResultDataclass] | None:
+        response = requests.get(urljoin(QMWARE_URL, f"/v0/jobs/{qmware_job_id}"), headers=AUTHORIZATION_HEADERS)
+        response.raise_for_status()
+        result = response.json()
 
-            if result["status"] == "SUCCESS":
-                break
-            elif result["status"] == "ERROR":
-                error = QunicornError("QMware job returned status ERROR")
-                qunicorn_job.save_error(error)
-                raise error
-            elif result["status"] == "TIMEOUT":
-                error = QunicornError("QMware job returned status TIMEOUT")
-                qunicorn_job.save_error(error)
-                raise error
-            elif result["status"] == "CANCELED":
-                error = QunicornError("QMware job returned status CANCELED")
-                qunicorn_job.save_error(error)
-                raise error
-            elif result["status"] not in ("WAITING", "PREPARING", "RUNNING"):
-                error = QunicornError(f"QMware job returned unknown status {result['status']}")
-                qunicorn_job.save_error(error)
-                raise error
+        if result["status"] in ("WAITING", "PREPARING", "RUNNING"):
+            return None
 
-            sleep(1)
-        else:
-            error = QunicornError("QMware job timed out")
+        if result["status"] in ("ERROR", "TIMEOUT", "CANCELED"):
+            error = QunicornError(f"QMware job returned status {result['status']}")
+            qunicorn_job.save_error(error)
+            raise error
+
+        if result["status"] != "SUCCESS":
+            error = QunicornError(f"QMware job returned unknown status {result['status']}")
             qunicorn_job.save_error(error)
             raise error
 
@@ -158,18 +156,36 @@ class QMwarePilot(Pilot):
         counts = {element["number"]: element["hits"] for element in results}
         probabilities = {element["number"]: element["probability"] for element in results}
 
+        circuit = qasm2.loads(program.quantum_circuit)
+
+        if len(circuit.cregs) != 1:
+            error = QunicornError("currently only one register supported")
+            qunicorn_job.save_error(error)
+            raise error
+
+        register_size = circuit.cregs[0].size
+        register_name = circuit.cregs[0].name
+
         return [
             ResultDataclass(
                 program=program,
                 data=Pilot.qubits_integer_to_hex(counts),
                 result_type=ResultType.COUNTS,
-                meta={},  # FIXME: add register metadata, TODO: add more metadata
+                meta={
+                    "format": "hex",
+                    "shots": qunicorn_job.shots,
+                    "registers": [{"name": register_name, "size": register_size}],
+                },
             ),
             ResultDataclass(
                 program=program,
                 data=Pilot.qubits_integer_to_hex(probabilities),
                 result_type=ResultType.PROBABILITIES,
-                meta={},  # FIXME: add register metadata, TODO: add more metadata
+                meta={
+                    "format": "hex",
+                    "shots": qunicorn_job.shots,
+                    "registers": [{"name": register_name, "size": register_size}],
+                },
             ),
         ]
 
