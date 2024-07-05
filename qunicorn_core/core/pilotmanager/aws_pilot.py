@@ -15,6 +15,7 @@
 import traceback
 from typing import Any, List, Optional, Sequence, Tuple, Union
 
+from flask.globals import current_app
 from braket.devices import LocalSimulator
 from braket.ir.openqasm import Program
 from braket.tasks import GateModelQuantumTaskResult
@@ -32,7 +33,6 @@ from qunicorn_core.static.enums.job_state import JobState
 from qunicorn_core.static.enums.provider_name import ProviderName
 from qunicorn_core.static.enums.result_type import ResultType
 from qunicorn_core.static.qunicorn_exception import QunicornError
-from qunicorn_core.util import logging
 
 
 class AWSPilot(Pilot):
@@ -72,7 +72,7 @@ class AWSPilot(Pilot):
         raise QunicornError("No valid Job Type specified")
 
     def cancel_provider_specific(self, job_dto):
-        logging.warn(
+        current_app.logger.warn(
             f"Cancel job with id {job_dto.id} on {job_dto.executed_on.provider.name} failed."
             f"Canceling while in execution not supported for AWS Jobs"
         )
@@ -150,5 +150,5 @@ class AWSPilot(Pilot):
         return found_provider
 
     def is_device_available(self, device: Union[DeviceDataclass, DeviceDto], token: Optional[str]) -> bool:
-        logging.info("AWS local simulator is always available")
+        current_app.logger.info("AWS local simulator is always available")
         return True

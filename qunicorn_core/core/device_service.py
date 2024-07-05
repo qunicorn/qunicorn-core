@@ -15,6 +15,7 @@
 from typing import Optional
 
 from sqlalchemy.sql import or_
+from flask.globals import current_app
 
 from qunicorn_core.api.api_models.device_dtos import (
     DeviceDto,
@@ -23,12 +24,11 @@ from qunicorn_core.api.api_models.device_dtos import (
 from qunicorn_core.core.mapper import device_mapper
 from qunicorn_core.core.pilotmanager import pilot_manager
 from qunicorn_core.db.models.device import DeviceDataclass
-from qunicorn_core.util import logging
 
 
 def update_devices(provider_id: int, token: Optional[str] = None) -> list[SimpleDeviceDto]:
     """Update all backends for the provider from device_request"""
-    logging.info(f"Update all available devices for provider with id {provider_id} in database.")
+    current_app.logger.info(f"Update all available devices for provider with id {provider_id} in database.")
     pilot_manager.update_devices_from_provider(provider_id, token)
     return [
         device_mapper.dataclass_to_simple(device)

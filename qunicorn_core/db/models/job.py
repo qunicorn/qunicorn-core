@@ -16,6 +16,8 @@ import traceback
 from datetime import datetime, timezone
 from typing import List, Optional, Union, Any
 
+from flask import current_app
+
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import Select, or_, select
@@ -132,6 +134,8 @@ class JobDataclass(DbModel):
         for state in self._transient:
             state.delete()
         self.save(commit=True)
+        if current_app:
+            current_app.logger.info(f"Finished job with id {self.id} in state {self.state} with {len(self.results)} results.")
 
     def save_error(self, exception: BaseException, program: Optional["quantum_program.QuantumProgramDataclass"] = None):
         exception_message: str = str(exception)
@@ -153,3 +157,5 @@ class JobDataclass(DbModel):
 
         error_result.save()
         self.save(commit=True)
+        if current_app:
+            current_app.logger.info(f"Encountered error on job with id {self.id} with {len(self.results)} results.")

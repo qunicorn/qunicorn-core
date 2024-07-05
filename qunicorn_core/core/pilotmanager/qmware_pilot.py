@@ -17,6 +17,7 @@ from typing import Any, List, Optional, Sequence, Tuple, Union
 from urllib.parse import urljoin
 
 import requests
+from flask.globals import current_app
 from qiskit import qasm2
 from requests import RequestException
 from tenacity import retry, retry_if_result, wait_exponential, RetryError, stop_after_delay
@@ -33,7 +34,6 @@ from qunicorn_core.static.enums.job_state import JobState
 from qunicorn_core.static.enums.provider_name import ProviderName
 from qunicorn_core.static.enums.result_type import ResultType
 from qunicorn_core.static.qunicorn_exception import QunicornError
-from qunicorn_core.util import logging
 
 DEFAULT_QUANTUM_CIRCUIT = """OPENQASM 2.0;
 include "qelib1.inc";
@@ -238,7 +238,7 @@ class QMwarePilot(Pilot):
 
     def cancel_provider_specific(self, job: JobDataclass, token: Optional[str] = None):
         """Cancel execution of a job at the corresponding backend"""
-        logging.warn(
+        current_app.logger.warn(
             f"Cancel job with id {job.id} on {job.executed_on.provider.name} failed."
             f"Canceling while in execution not supported for QMware Jobs"
         )

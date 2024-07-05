@@ -18,6 +18,7 @@ from os import environ
 from pathlib import Path
 from typing import Any, List, Optional, Sequence, Tuple, Union, Dict
 
+from flask.globals import current_app
 import qiskit_aer
 from qiskit import transpile, QuantumCircuit, QiskitError
 from qiskit.primitives import Estimator as LocalEstimator
@@ -48,7 +49,7 @@ from qunicorn_core.static.enums.job_type import JobType
 from qunicorn_core.static.enums.provider_name import ProviderName
 from qunicorn_core.static.enums.result_type import ResultType
 from qunicorn_core.static.qunicorn_exception import QunicornError
-from qunicorn_core.util import logging, utils
+from qunicorn_core.util import utils
 
 
 class IBMPilot(Pilot):
@@ -126,7 +127,7 @@ class IBMPilot(Pilot):
         qiskit_job.cancel()
         job.state = JobState.CANCELED.value
         job.save(commit=True)
-        logging.info(f"Cancel job with id {job.id} on {job.executed_on.provider.name} successful.")
+        current_app.logger.info(f"Cancel job with id {job.id} on {job.executed_on.provider.name} successful.")
 
     def __sample(
         self, job: JobDataclass, circuits: Sequence[Tuple[QuantumProgramDataclass, Any]], token: Optional[str] = None
@@ -262,7 +263,7 @@ class IBMPilot(Pilot):
             job.save_error(exception)
             raise exception
 
-        logging.warn("This function is experimental and could not be fully tested yet")
+        current_app.logger.warn("This function is experimental and could not be fully tested yet")
 
     @staticmethod
     def __get_runtime_service(job: JobDataclass, token: Optional[str]) -> QiskitRuntimeService:

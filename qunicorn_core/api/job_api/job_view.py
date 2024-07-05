@@ -17,6 +17,7 @@
 from http import HTTPStatus
 from typing import Optional
 
+from flask.globals import current_app
 from flask.views import MethodView
 
 from .blueprint import JOBMANAGER_API
@@ -37,7 +38,6 @@ from ..api_models.job_dtos import (
     JobCommandSchema,
 )
 from ...core import job_service
-from ...util import logging
 from ...static.qunicorn_exception import QunicornError
 
 
@@ -56,7 +56,7 @@ class JobIDView(MethodView):
         device: Optional[int] = None,
     ):
         """Get all created jobs."""
-        logging.info("Request: get all created jobs")
+        current_app.logger.info("Request: get all created jobs")
         return job_service.get_all_jobs(user_id=jwt_subject, status=status, deployment=deployment, device=device)
 
     @JOBMANAGER_API.arguments(JobFilterParamsSchema(only=["deployment"]), location="query", as_kwargs=True)
@@ -69,7 +69,7 @@ class JobIDView(MethodView):
         The deployment can be set in the body as `deploymentId`or with the query parameter `deployment`.
         If both are given, the query parameter will be used.
         """
-        logging.info("Request: create and run new job")
+        current_app.logger.info("Request: create and run new job")
         if deployment is not None:
             body["deployment_id"] = deployment
         job_dto: JobRequestDto = JobRequestDto(**body)
@@ -85,7 +85,7 @@ class JobDetailView(MethodView):
     @JOBMANAGER_API.require_jwt(optional=True)
     def get(self, job_id: int, jwt_subject: Optional[str]):
         """Get the details/results of a job."""
-        logging.info(f"Request: get results of job with id: {job_id}")
+        current_app.logger.info(f"Request: get results of job with id: {job_id}")
         job_response_dto: JobResponseDto = job_service.get_job_by_id(job_id, user_id=jwt_subject)
         return job_response_dto
 
@@ -93,7 +93,7 @@ class JobDetailView(MethodView):
     @JOBMANAGER_API.require_jwt(optional=True)
     def delete(self, job_id: int, jwt_subject: Optional[str]):
         """Delete job data via id and return the deleted job."""
-        logging.info(f"Request: delete job with id: {job_id}")
+        current_app.logger.info(f"Request: delete job with id: {job_id}")
         try:
             job_service.delete_job_data_by_id(job_id, user_id=jwt_subject)
         except QunicornError as err:
@@ -120,14 +120,14 @@ class JobDetailView(MethodView):
         token = command.pop("token", None)
         match command:
             case {"command": "run"}:
-                logging.info(f"Request: run job with id: {job_id}")
+                current_app.logger.info(f"Request: run job with id: {job_id}")
                 job_execution_dto: JobExecutePythonFileDto = JobExecutePythonFileDto(token=token)
                 return job_service.run_job_by_id(job_id, job_execution_dto, user_id=jwt_subject)
             case {"command": "rerun"}:
-                logging.info(f"Request: re run job with id: {job_id}")
+                current_app.logger.info(f"Request: re run job with id: {job_id}")
                 return job_service.re_run_job_by_id(job_id, token=token, user_id=jwt_subject)
             case {"command": "cancel"}:
-                logging.info(f"Request: cancel job with id: {job_id}")
+                current_app.logger.info(f"Request: cancel job with id: {job_id}")
                 return job_service.cancel_job_by_id(job_id, token=token, user_id=jwt_subject)
             case {"command": command}:
                 raise QunicornError(f"Unknown command '{command}'.", HTTPStatus.BAD_REQUEST)
@@ -144,7 +144,7 @@ class JobResultsView(MethodView):
     @JOBMANAGER_API.require_jwt(optional=True)
     def get(self, job_id: int, jwt_subject: Optional[str]):
         """Get the results of a job."""
-        logging.info(f"Request: get results list of job with id: {job_id}")
+        current_app.logger.info(f"Request: get results list of job with id: {job_id}")
         job_response_dto: JobResponseDto = job_service.get_job_by_id(job_id, user_id=jwt_subject)
         return job_response_dto.results
 
@@ -157,7 +157,7 @@ class JobResultDetailView(MethodView):
     @JOBMANAGER_API.require_jwt(optional=True)
     def get(self, result_id: int, job_id: int, jwt_subject: Optional[str]):
         """Get a single result of a job."""
-        logging.info(f"Request: get result with id {result_id} of job with id: {job_id}")
+        current_app.logger.info(f"Request: get result with id {result_id} of job with id: {job_id}")
         job_result_dto: ResultDto = job_service.get_job_result_by_id(result_id, job_id, user_id=jwt_subject)
         return job_result_dto
 
@@ -175,7 +175,7 @@ class JobRunView(MethodView):
         """DEPRECATED! Use POST /jobs/<job_id>/ instead.
 
         Run job on IBM that was previously uploaded."""
-        logging.info(f"Request: run job with id: {job_id}")
+        current_app.logger.info(f"Request: run job with id: {job_id}")
         job_execution_dto: JobExecutePythonFileDto = JobExecutePythonFileDto(**body)
         return job_service.run_job_by_id(job_id, job_execution_dto, user_id=jwt_subject)
 
@@ -192,7 +192,7 @@ class JobReRunView(MethodView):
         """DEPRECATED! Use POST /jobs/<job_id>/ instead.
 
         Create a new job on basis of an existing job and execute it."""
-        logging.info(f"Request: re run job with id: {job_id}")
+        current_app.logger.info(f"Request: re run job with id: {job_id}")
         return job_service.re_run_job_by_id(job_id, body["token"], user_id=jwt_subject)
 
 
@@ -208,7 +208,7 @@ class JobCancelView(MethodView):
         """DEPRECATED! Use POST /jobs/<job_id>/ instead.
 
         Cancel a job execution via id."""
-        logging.info(f"Request: cancel job with id: {job_id}")
+        current_app.logger.info(f"Request: cancel job with id: {job_id}")
         return job_service.cancel_job_by_id(job_id, body["token"], user_id=jwt_subject)
 
 
@@ -225,5 +225,5 @@ class JobQueueView(MethodView):
 
         Get the items of the job queue and the running job.
         """
-        logging.info("Request: Get the items of the job queue and the running job")
+        current_app.logger.info("Request: Get the items of the job queue and the running job")
         return job_service.get_job_queue_items(user_id=jwt_subject)

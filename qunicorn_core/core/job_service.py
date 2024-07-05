@@ -16,6 +16,8 @@ from os import environ
 from http import HTTPStatus
 from typing import Optional, Sequence
 
+from flask.globals import current_app
+
 from qunicorn_core.api.api_models.job_dtos import (
     JobExecutePythonFileDto,
     JobRequestDto,
@@ -34,7 +36,6 @@ from qunicorn_core.db.models.result import ResultDataclass
 from qunicorn_core.static.enums.job_state import JobState
 from qunicorn_core.static.enums.job_type import JobType
 from qunicorn_core.static.qunicorn_exception import QunicornError
-from qunicorn_core.util import logging
 from qunicorn_core.util.utils import is_running_asynchronously
 
 """
@@ -165,7 +166,7 @@ def get_all_jobs(
 
 def cancel_job_by_id(job_id, token: Optional[str], user_id: Optional[str] = None) -> SimpleJobDto:
     """cancel job execution"""
-    logging.info(f"Cancel execution of job with id:{job_id}")
+    current_app.logger.info(f"Cancel execution of job with id: {job_id}")
     job: JobDataclass = JobDataclass.get_by_id_authenticated_or_404(job_id, user_id)
     job_manager_service.cancel_job(job, token, user_id)
     return SimpleJobDto(id=job.id, deployment_id=job.deployment_id, name=job.name, state=JobState.CANCELED)

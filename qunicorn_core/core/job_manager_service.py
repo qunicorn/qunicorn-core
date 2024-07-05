@@ -26,7 +26,6 @@ from qunicorn_core.db.models.quantum_program import QuantumProgramDataclass
 from qunicorn_core.db.models.result import ResultDataclass
 from qunicorn_core.static.enums.job_state import JobState
 from qunicorn_core.static.qunicorn_exception import QunicornError
-from qunicorn_core.util import logging
 
 """This Class is responsible for running a job on a pilot and scheduling them with celery"""
 
@@ -54,7 +53,7 @@ def run_job(job_id: int):
         pilot: Pilot = pilot_manager.get_matching_pilot(device.provider.name)
         circuits = _transpile_circuits(job, pilot.supported_languages)
 
-        logging.info(f"Run job with id {job_id} on {pilot.__class__}")
+        current_app.logger.info(f"Run job with id {job_id} on {pilot.__class__}")
         pilot.execute(job, circuits, token=token)
 
     except Exception as err:
@@ -71,7 +70,7 @@ def _transpile_circuits(  # noqa: C901
     job: JobDataclass, dest_languages: Sequence[str]
 ) -> Sequence[Tuple[QuantumProgramDataclass, Any]]:
     """Transforms all circuits of the deployment into the circuits in the destination language"""
-    logging.info(f"Transpile all circuits of job with id{job.id}")
+    current_app.logger.info(f"Transpile all circuits of job with id {job.id}")
     error_results: list[ResultDataclass] = []
 
     if job.deployment is None:

@@ -16,6 +16,7 @@ from collections import Counter
 from http import HTTPStatus
 from typing import Any, Optional, Sequence, Tuple, Union
 
+from flask.globals import current_app
 from pyquil.api import get_qc
 
 from qunicorn_core.api.api_models import DeviceDto
@@ -30,7 +31,7 @@ from qunicorn_core.static.enums.job_state import JobState
 from qunicorn_core.static.enums.provider_name import ProviderName
 from qunicorn_core.static.enums.result_type import ResultType
 from qunicorn_core.static.qunicorn_exception import QunicornError
-from qunicorn_core.util import logging, utils
+from qunicorn_core.util import utils
 
 DEFAULT_QUANTUM_CIRCUIT_1 = """from pyquil import Program \n
 from pyquil.gates import * \n
@@ -145,5 +146,5 @@ class RigettiPilot(Pilot):
         return found_provider
 
     def is_device_available(self, device: Union[DeviceDataclass, DeviceDto], token: Optional[str]) -> bool:
-        logging.info("Rigetti local simulator is always available")
+        current_app.logger.info("Rigetti local simulator is always available")
         return True
