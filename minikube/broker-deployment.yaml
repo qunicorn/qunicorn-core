@@ -19,6 +19,13 @@ spec:
       containers:
         - image: redis:7.2.5
           name: broker
+          env:
+            - name: BROKER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: broker-secret
+                  key: password
+          command: ["redis-server", "--requirepass", "$(BROKER_PASSWORD)"]
           ports:
             - containerPort: 6379
               hostPort: 6379

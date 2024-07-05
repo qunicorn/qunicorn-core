@@ -20,8 +20,12 @@ spec:
         - env:
             - name: CONTAINER_MODE
               value: server
+            - name: BROKER_HOST
+              value: broker
+            - name: BROKER_PORT
+              value: "6379"
             - name: BROKER_URL
-              value: redis://broker:6379
+              value: "redis://:$(BROKER_PASSWORD)@$(BROKER_HOST):$(BROKER_PORT)"
             - name: JWKS_URL
               value: http://keycloak:8081/auth/realms/qunicorn/protocol/openid-connect/certs
             - name: DB_URL
@@ -30,6 +34,19 @@ spec:
               value: "8081"
             - name: NUMBA_CACHE_DIR
               value: /app/cache
+            - name: QMWARE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: qmware-secret
+                  key: QMWARE_API_KEY
+            - name: QMWARE_API_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: qmware-secret
+                  key: QMWARE_API_KEY_ID
+            # the URL of the QMware API is to be set here
+            # - name: QMWARE_URL
+            #   value: ???
           image: ghcr.io/qunicorn/qunicorn-core:main
           name: server
           ports:
