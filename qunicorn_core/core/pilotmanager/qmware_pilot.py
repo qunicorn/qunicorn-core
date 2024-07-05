@@ -13,7 +13,6 @@
 # limitations under the License.
 import json
 import os
-from time import sleep
 from typing import Any, List, Optional, Sequence, Tuple, Union
 from urllib.parse import urljoin
 
