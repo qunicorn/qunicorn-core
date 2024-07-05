@@ -84,7 +84,7 @@ services:
       - qunicorn
 
   broker:
-    image: redis:7.0.12
+    image: redis:7.2.5
     networks:
       - qunicorn
     ports:
