@@ -10,34 +10,18 @@ Subpackages
    qunicorn_core.api
    qunicorn_core.core
    qunicorn_core.db
+   qunicorn_core.static
    qunicorn_core.util
 
 Submodules
 ----------
 
-qunicorn\_core.celery module
-----------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: qunicorn_core.celery
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-qunicorn\_core.celery\_worker module
-------------------------------------
-
-.. automodule:: qunicorn_core.celery_worker
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-qunicorn\_core.licenses module
-------------------------------
-
-.. automodule:: qunicorn_core.licenses
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   qunicorn_core.celery
+   qunicorn_core.celery_worker
+   qunicorn_core.licenses
 
 Module contents
 ---------------

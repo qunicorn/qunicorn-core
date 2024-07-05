@@ -4,37 +4,15 @@ qunicorn\_core.core.pilotmanager package
 Submodules
 ----------
 
-qunicorn\_core.core.pilotmanager.aws\_pilot module
---------------------------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: qunicorn_core.core.pilotmanager.aws_pilot
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-qunicorn\_core.core.pilotmanager.base\_pilot module
----------------------------------------------------
-
-.. automodule:: qunicorn_core.core.pilotmanager.base_pilot
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-qunicorn\_core.core.pilotmanager.ibm\_pilot module
---------------------------------------------------
-
-.. automodule:: qunicorn_core.core.pilotmanager.ibm_pilot
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-qunicorn\_core.core.pilotmanager.pilot\_manager module
-------------------------------------------------------
-
-.. automodule:: qunicorn_core.core.pilotmanager.pilot_manager
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   qunicorn_core.core.pilotmanager.aws_pilot
+   qunicorn_core.core.pilotmanager.base_pilot
+   qunicorn_core.core.pilotmanager.ibm_pilot
+   qunicorn_core.core.pilotmanager.pilot_manager
+   qunicorn_core.core.pilotmanager.qmware_pilot
+   qunicorn_core.core.pilotmanager.rigetti_pilot
 
 Module contents
 ---------------

@@ -52,15 +52,15 @@ Attributes of the Device Dataclass
 
     *   - **num_qubits**
         - int
-        - The amount of qubits that is available at this device.
+        - The amount of qubits available on this device.
 
     *   - **is_simulator**
         - int
-        - The information whether the device is a simulator (true) or not (false).
+        - Whether the device is a simulator (true) or not (false).
 
     *   - **is_local**
         - int
-        - The information whether jobs executed on this device are executed local or not.
+        - Whether jobs executed on this device are executed local or not.
 
     *   - **id**
         - int
@@ -221,7 +221,7 @@ Attributes of the QuantumProgram Dataclass
 
     *   - **deployment_id**
         - int
-        - The deployment where a list of quantum program is used.
+        - The deployment where a list of quantum programs is used.
 
     *   - **python_file_path**
         - str

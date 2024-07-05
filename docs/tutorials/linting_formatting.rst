@@ -4,12 +4,12 @@ Linting and Formatting
 Local Linting with Flake8 (VSC):
 ################################
 
-* Install Flake8 Extension
-* If python environment included flake8 already, it will automatically start linting the python files
-    * Otherwise: Install Flake8 (Flake8: Your Tool For Style Guide Enforcement — flake8 6.1.0 documentation )
-* Qunicorn Flake8 Settings can be found in .flake8
-* Display the current problems in the console: “flake8 .”
-* Check for Linting Errors  (black & flake) with:
+* Install `Flake8 Extension <https://marketplace.visualstudio.com/items?itemName=ms-python.flake8>`_
+    * If python environment included flake8 already, it will automatically start linting the python files
+    * Otherwise: Install Flake8 (`Documentation <https://flake8.pycqa.org/en/latest/>`_)
+* Qunicorn Flake8 Settings can be found in :file:`.flake8`
+* Display the current problems in the console: :code:`flake8 .`
+* Check for Linting Errors (black & flake) with:
 
 .. code-block:: bash
 
@@ -18,23 +18,13 @@ Local Linting with Flake8 (VSC):
 Flake8 Settings
 ****************
 
-* Ignore singular line:
+* Ignore single line: Add :code:`# noqa` to the end of the line
 
-.. code-block:: bash
+* Ignore specific error in a single line: Add :code:`# noqa E711` to the end of the line (replace ``E711`` with the error code to suppress)
 
-    # noqa
+* Ignore whole file: Add :code:`# flake8: noqa` at the start of the file
 
-at end of line
-
-* Ignore whole file:
-
-.. code-block:: bash
-
-    # flake8: noqa
-
-At start of file
-
-* Ignore certain warnings in files, add to .flake8 file
+* Ignore certain warnings in files, add to :file:`.flake8` file
 
 .. code-block:: bash
 
@@ -61,7 +51,7 @@ Formatting with black
 
     black --check .
 
-* Run Black on File:
+* Run Black on a single file:
 
 .. code-block:: bash
 
@@ -71,10 +61,10 @@ Formatting with black
 
 .. code-block:: bash
 
-    black directory
+    black directory/
     black .
 
-    This will automatically format the selected files
+This will automatically format the selected files
 
 * Files or directories can also be excluded
 
@@ -82,12 +72,12 @@ Formatting with black
 
     black --check --extend-exclude="regex" directory
 
-* To get more information on the progress add --verbose option
+* To get more information on the progress add :code:`--verbose` option
 
 Automatic Formatting on Save
 *****************************
 
 * In Pycharm:
-    * Strg+Alt+A → Search for “Actions on Save” → check “Reformat code” and “Optimize imports”
-    * “Settings” → “Editor” → “Code Style” → “Python”
+    * :kbd:`Strg + Alt + A` → Search for “Actions on Save” → check “Reformat code” and “Optimize imports”
+    * :menuselection:`Settings --> Editor --> Code Style --> Python`
     * Furthermore: Disable Line breaks reformatting and increase hard wrap

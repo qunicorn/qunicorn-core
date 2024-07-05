@@ -5,8 +5,8 @@ Contribution Process
 ----------------------
 1. Issues are moved from the Product Backlog to the Sprint Backlog if:
     * The issue is well defined (Definition of Ready)
-    * it is sprint planing
-    * no other issues are in the sprint backlog and no other developer requires support.
+    * It is sprint planning
+    * No other issues are in the sprint backlog and no other developer requires support.
 2. The developer moves the issue to "In Progress" and starts working on it.
     * Developer assigns ticket to themself
 3. Document important information during development within the issue
@@ -76,7 +76,7 @@ Describe the bug
 Steps To Reproduce
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-[Steps to reproduce the behavior:]
+[Steps to reproduce the behavior]
 
 Expected behavior
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
