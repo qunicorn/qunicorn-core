@@ -19,7 +19,7 @@ from urllib.parse import urljoin
 import requests
 from qiskit import qasm2
 from requests import RequestException
-from tenacity import retry, retry_if_result, stop_after_attempt, wait_exponential, RetryError, stop_after_delay
+from tenacity import retry, retry_if_result, wait_exponential, RetryError, stop_after_delay
 
 from qunicorn_core.api.api_models.device_dtos import DeviceDto, DeviceRequestDto
 from qunicorn_core.core.pilotmanager.base_pilot import Pilot
