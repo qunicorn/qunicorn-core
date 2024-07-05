@@ -58,6 +58,9 @@ def run_job(job_id: int):
         pilot.execute(job, circuits, token=token)
 
     except Exception as err:
+        if isinstance(err, QunicornError) and err.data.get("message", "").startswith("Transpilation Error"):
+            # transpilation has already saved the errors for the job, nothing to do
+            raise err
         for transient_state in job._transient:
             transient_state.delete()
         job.save_error(err)
@@ -118,7 +121,7 @@ def _transpile_circuits(  # noqa: C901
     # If an error was caught -> Update the job and raise it again
     if len(error_results) > 0:
         job.save_results(error_results, JobState.ERROR)
-        string_errors = " ".join(str(error.result_dict.get("exception_message", "")) for error in error_results)
+        string_errors = " ".join(str(error.data.get("exception_message", "")) for error in error_results)
         if string_errors:
             raise QunicornError("Transpilation Error: " + string_errors)
 
