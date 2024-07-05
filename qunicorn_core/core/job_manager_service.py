@@ -32,7 +32,7 @@ from qunicorn_core.util import logging
 
 
 @CELERY.task()
-def run_job(job_id: int, token: Optional[str] = None):
+def run_job(job_id: int):
     """Assign the job to the target pilot which executes the job"""
     job = JobDataclass.get_by_id(job_id)
     if job is None:
@@ -46,6 +46,8 @@ def run_job(job_id: int, token: Optional[str] = None):
         raise QunicornError(
             f"Job '{job_id}' has no valid device specified. (No device specified or device is missing a provider.)"
         )
+
+    token = job.get_transient_state("token", None)
 
     # Transpile and Run the Job on the correct provider
     pilot: Pilot = pilot_manager.get_matching_pilot(device.provider.name)

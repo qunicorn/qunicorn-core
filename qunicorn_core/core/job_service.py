@@ -29,6 +29,7 @@ from qunicorn_core.db.db import DB
 from qunicorn_core.db.models.deployment import DeploymentDataclass
 from qunicorn_core.db.models.device import DeviceDataclass
 from qunicorn_core.db.models.job import JobDataclass
+from qunicorn_core.db.models.job_state import TransientJobStateDataclass
 from qunicorn_core.db.models.result import ResultDataclass
 from qunicorn_core.static.enums.job_state import JobState
 from qunicorn_core.static.enums.job_type import JobType
@@ -83,12 +84,17 @@ def create_and_run_job(
 
 def run_job_with_celery(job: JobDataclass, is_asynchronous: bool, token: Optional[str] = None):
     """Serialize the job and run it with celery"""
+    assert len(job._transient) == 0, "jobs should not have any state attached by default"
+    if token is not None:
+        state = TransientJobStateDataclass(job=job, data={"token": token})
+        state.save(commit=True)  # make sure token is immediately available in DB
+
     if is_asynchronous:
-        task = job_manager_service.run_job.delay(job.id, token=token)
+        task = job_manager_service.run_job.delay(job.id)
         job.celery_id = task.id
         job.save(commit=True)
     else:
-        job_manager_service.run_job(job.id, token=token)
+        job_manager_service.run_job(job.id)
 
 
 def re_run_job_by_id(job_id: int, token: Optional[str], user_id: Optional[str] = None) -> SimpleJobDto:
