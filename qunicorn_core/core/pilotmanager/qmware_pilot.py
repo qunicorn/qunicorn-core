@@ -19,7 +19,7 @@ from urllib.parse import urljoin
 import requests
 from qiskit import qasm2
 from requests import RequestException
-from tenacity import retry, retry_if_result, stop_after_attempt, wait_exponential, RetryError
+from tenacity import retry, retry_if_result, stop_after_attempt, wait_exponential, RetryError, stop_after_delay
 
 from qunicorn_core.api.api_models.device_dtos import DeviceDto, DeviceRequestDto
 from qunicorn_core.core.pilotmanager.base_pilot import Pilot
@@ -121,7 +121,7 @@ class QMwarePilot(Pilot):
     @staticmethod
     @retry(
         retry=retry_if_result(lambda output: output is None),
-        stop=stop_after_attempt(30),
+        stop=stop_after_delay(3600),
         wait=wait_exponential(multiplier=1, exp_base=1.5),
     )
     def _get_job_results(
