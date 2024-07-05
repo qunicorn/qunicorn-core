@@ -14,6 +14,8 @@
 
 from typing import Optional
 
+from sqlalchemy.sql import or_
+
 from qunicorn_core.api.api_models.device_dtos import (
     DeviceDto,
     SimpleDeviceDto,
@@ -45,7 +47,8 @@ def get_all_devices(
     if provider is not None:
         where.append(DeviceDataclass.provider_id == provider)
     if min_qubits is not None:
-        where.append(DeviceDataclass.num_qubits >= min_qubits)
+        # qubit counts < 0 are treated as infinite
+        where.append(or_(DeviceDataclass.num_qubits >= min_qubits, DeviceDataclass.num_qubits < 0))
     if is_simulator is not None:
         where.append(DeviceDataclass.is_simulator == is_simulator)
     if is_local is not None:
