@@ -54,10 +54,17 @@ class JobIDView(MethodView):
         status: Optional[str] = None,
         deployment: Optional[int] = None,
         device: Optional[int] = None,
+        page: int = 1,
+        item_count: int = 100,
     ):
         """Get all created jobs."""
         current_app.logger.info("Request: get all created jobs")
-        return job_service.get_all_jobs(user_id=jwt_subject, status=status, deployment=deployment, device=device)
+        jobs = job_service.get_all_jobs(
+            user_id=jwt_subject, status=status, deployment=deployment, device=device, page=page, item_count=item_count
+        )
+        if page > 1 and not jobs:
+            raise QunicornError(f"Page {page} not found.", HTTPStatus.NOT_FOUND)
+        return jobs
 
     @JOBMANAGER_API.arguments(JobFilterParamsSchema(only=["deployment"]), location="query", as_kwargs=True)
     @JOBMANAGER_API.arguments(JobRequestDtoSchema(), location="json")

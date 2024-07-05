@@ -20,7 +20,7 @@ from typing import Optional
 
 import marshmallow as ma
 from flask import url_for
-from marshmallow.validate import OneOf
+from marshmallow.validate import OneOf, Range
 
 from .device_dtos import DeviceDto, DeviceDtoSchema
 from .result_dtos import ResultDto, ResultDtoSchema
@@ -136,6 +136,23 @@ class JobFilterParamsSchema(MaBaseSchema):
     status = ma.fields.String(required=False, missing=None, load_only=True, validate=OneOf([s.value for s in JobState]))
     deployment = ma.fields.Integer(required=False, missing=None, load_only=True)
     device = ma.fields.Integer(required=False, missing=None, load_only=True)
+    page = ma.fields.Integer(
+        required=False,
+        missing=1,
+        load_only=True,
+        validate=Range(min=0),
+        description="Page numbers range from 1 for the first page to n.",
+        metadata={"example": 1},
+    )
+    item_count = ma.fields.Integer(
+        data_key="item-count",
+        required=False,
+        missing=100,
+        load_only=True,
+        validate=Range(min=1, max=1000, min_inclusive=True, max_inclusive=True),
+        description="The number of items per page (can be set between 1 and 1000, defaults to 100).",
+        metadata={"example": 100},
+    )
 
 
 class TokenSchema(MaBaseSchema):

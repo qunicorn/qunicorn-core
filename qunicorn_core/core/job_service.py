@@ -147,7 +147,12 @@ def delete_job_data_by_id(job_id, user_id: Optional[str]):
 
 
 def get_all_jobs(
-    user_id: Optional[str], status: Optional[str] = None, deployment: Optional[int] = None, device: Optional[int] = None
+    user_id: Optional[str],
+    status: Optional[str] = None,
+    deployment: Optional[int] = None,
+    device: Optional[int] = None,
+    page: int = 1,
+    item_count: int = 100,
 ) -> list[SimpleJobDto]:
     """get all jobs from the db"""
     where = []
@@ -157,9 +162,10 @@ def get_all_jobs(
         where.append(JobDataclass.deployment_id == deployment)
     if device is not None:
         where.append(JobDataclass.executed_on_id == device)
+    page_offset = (page - 1) * item_count
     return [
         job_mapper.dataclass_to_simple(job)
-        for job in JobDataclass.get_all_authenticated(user_id, where=where)
+        for job in JobDataclass.get_all_authenticated(user_id, where=where, limit=item_count, offset=page_offset)
         if job.executed_by is None or job.executed_by == user_id
     ]
 

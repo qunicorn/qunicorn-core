@@ -135,7 +135,9 @@ class JobDataclass(DbModel):
             state.delete()
         self.save(commit=True)
         if current_app:
-            current_app.logger.info(f"Finished job with id {self.id} in state {self.state} with {len(self.results)} results.")
+            current_app.logger.info(
+                f"Finished job with id {self.id} in state {self.state} with {len(self.results)} results."
+            )
 
     def save_error(self, exception: BaseException, program: Optional["quantum_program.QuantumProgramDataclass"] = None):
         exception_message: str = str(exception)

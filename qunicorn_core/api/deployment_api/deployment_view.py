@@ -42,10 +42,15 @@ class DeploymentIDView(MethodView):
     @DEPLOYMENT_API.arguments(DeploymentFilterParamsSchema(), location="query", as_kwargs=True)
     @DEPLOYMENT_API.response(HTTPStatus.OK, SimpleDeploymentDtoSchema(many=True))
     @DEPLOYMENT_API.require_jwt(optional=True)
-    def get(self, jwt_subject: Optional[str], name: Optional[str] = None):
+    def get(self, jwt_subject: Optional[str], name: Optional[str] = None, page: int = 1, item_count: int = 100):
         """Get the list of deployments."""
         current_app.logger.info("Request: get all deployments")
-        return deployment_service.get_all_deployment_responses(user_id=jwt_subject, name=name)
+        deployments = deployment_service.get_all_deployment_responses(
+            user_id=jwt_subject, name=name, page=page, item_count=item_count
+        )
+        if page > 1 and not deployments:
+            raise QunicornError(f"Page {page} not found.", HTTPStatus.NOT_FOUND)
+        return deployments
 
     @DEPLOYMENT_API.arguments(DeploymentUpdateDtoSchema(), location="json")
     @DEPLOYMENT_API.response(HTTPStatus.CREATED, SimpleDeploymentDtoSchema())
