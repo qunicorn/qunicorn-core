@@ -29,7 +29,6 @@ from flask_cors import CORS
 from tomli import load as load_toml
 
 from . import api, celery, core, db, licenses, util
-from .util import logging
 from .util.config import DebugConfig, ProductionConfig
 from .util.reverse_proxy_fix import apply_reverse_proxy_fix
 
@@ -165,7 +164,7 @@ def create_app(test_config: Optional[Dict[str, Any]] = None):
     # To display the errors differently in the swagger ui
     @app.errorhandler(Exception)
     def handle_errors(error):
-        logging.error(str(error))
+        logger.error(str(error), exc_info=True)
         if isinstance(error, NotImplementedError):
             error_code: int = 501
         else:

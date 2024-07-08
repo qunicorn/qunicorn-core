@@ -46,7 +46,9 @@ def get_program_by_id(program_id: int, deployment_id: int, user_id: Optional[str
     return quantum_program_mapper.dataclass_to_dto(program)
 
 
-def get_all_deployment_responses(user_id: Optional[str] = None, name: Optional[str] = None) -> list[DeploymentDto]:
+def get_all_deployment_responses(
+    user_id: Optional[str] = None, name: Optional[str] = None, page: int = 1, item_count: int = 100
+) -> list[DeploymentDto]:
     """Gets all deployments from a user as responses to clearly arrange them in the frontend"""
     where = []
     if name:
@@ -54,8 +56,10 @@ def get_all_deployment_responses(user_id: Optional[str] = None, name: Optional[s
             where.append(DeploymentDataclass.name.like(name, escape="\\"))
         else:
             where.append(DeploymentDataclass.name == name)
+    page_offset = (page - 1) * item_count
     deployment_list: list[DeploymentDto] = [
-        deployment_mapper.dataclass_to_dto(d) for d in DeploymentDataclass.get_all_authenticated(user_id, where=where)
+        deployment_mapper.dataclass_to_dto(d)
+        for d in DeploymentDataclass.get_all_authenticated(user_id, where=where, limit=item_count, offset=page_offset)
     ]
     return deployment_list
 

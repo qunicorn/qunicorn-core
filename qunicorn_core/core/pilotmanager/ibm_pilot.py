@@ -18,6 +18,7 @@ from os import environ
 from pathlib import Path
 from typing import Any, List, Optional, Sequence, Tuple, Union, Dict
 
+from flask.globals import current_app
 import qiskit_aer
 from qiskit import transpile, QuantumCircuit, QiskitError
 from qiskit.primitives import Estimator as LocalEstimator
@@ -48,7 +49,7 @@ from qunicorn_core.static.enums.job_type import JobType
 from qunicorn_core.static.enums.provider_name import ProviderName
 from qunicorn_core.static.enums.result_type import ResultType
 from qunicorn_core.static.qunicorn_exception import QunicornError
-from qunicorn_core.util import logging, utils
+from qunicorn_core.util import utils
 
 
 class IBMPilot(Pilot):
@@ -59,38 +60,37 @@ class IBMPilot(Pilot):
 
     def execute_provider_specific(
         self, job: JobDataclass, circuits: Sequence[Tuple[QuantumProgramDataclass, Any]], token: Optional[str] = None
-    ) -> Tuple[List[ResultDataclass], JobState]:
+    ) -> JobState:
         """Execute a job of a provider specific type on a backend using a Pilot"""
         if job.id is None:
             raise QunicornError("Job has no database ID and cannot be executed!")
 
         if job.type == JobType.ESTIMATOR.value:
-            return self.__estimate(job, circuits, token=token)
+            results, state = self.__estimate(job, circuits, token=token)
         elif job.type == JobType.SAMPLER.value:
-            return self.__sample(job, circuits, token=token)
+            results, state = self.__sample(job, circuits, token=token)
         elif job.type == JobType.IBM_RUNNER.value:
-            return self.__run_ibm_program(job, token=token)
+            results, state = self.__run_ibm_program(job, token=token)
         elif job.type == JobType.IBM_UPLOAD.value:
-            return self.__upload_ibm_program(job, token=token)
+            results, state = self.__upload_ibm_program(job, token=token)
         else:
-            error = QunicornError("No valid Job Type specified")
-            job.save_error(error)
-            raise error
+            raise QunicornError("No valid Job Type specified")
+
+        job.save_results(results, state)
+        return state
 
     def run(
         self,
         job: JobDataclass,
         circuits: Sequence[Tuple[QuantumProgramDataclass, QuantumCircuit]],
         token: Optional[str] = None,
-    ) -> Tuple[List[ResultDataclass], JobState]:
+    ) -> JobState:
         """Execute a job local using aer simulator or a real backend"""
         if job.id is None:
             raise QunicornError("Job has no database ID and cannot be executed!")
         device = job.executed_on
         if device is None:
-            error = QunicornError("The job does not have any device associated!")
-            job.save_error(error)
-            raise error
+            raise QunicornError("The job does not have any device associated!")
 
         backend: Backend
         if device.is_local:
@@ -117,7 +117,9 @@ class IBMPilot(Pilot):
             if res is not None and "circuit" in res.meta:
                 res.meta.pop("circuit")
 
-        return results, JobState.FINISHED
+        job.save_results(results, JobState.FINISHED)
+
+        return JobState.FINISHED
 
     def cancel_provider_specific(self, job: JobDataclass, token: Optional[str] = None):
         """Cancel a job on an IBM backend using the IBM Pilot"""
@@ -125,7 +127,7 @@ class IBMPilot(Pilot):
         qiskit_job.cancel()
         job.state = JobState.CANCELED.value
         job.save(commit=True)
-        logging.info(f"Cancel job with id {job.id} on {job.executed_on.provider.name} successful.")
+        current_app.logger.info(f"Cancel job with id {job.id} on {job.executed_on.provider.name} successful.")
 
     def __sample(
         self, job: JobDataclass, circuits: Sequence[Tuple[QuantumProgramDataclass, Any]], token: Optional[str] = None
@@ -261,7 +263,7 @@ class IBMPilot(Pilot):
             job.save_error(exception)
             raise exception
 
-        logging.warn("This function is experimental and could not be fully tested yet")
+        current_app.logger.warn("This function is experimental and could not be fully tested yet")
 
     @staticmethod
     def __get_runtime_service(job: JobDataclass, token: Optional[str]) -> QiskitRuntimeService:

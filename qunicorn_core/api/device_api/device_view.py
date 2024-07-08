@@ -18,6 +18,7 @@ from http import HTTPStatus
 from typing import Optional
 
 from flask import jsonify
+from flask.globals import current_app
 from flask.views import MethodView
 from flask_smorest import abort
 
@@ -32,7 +33,6 @@ from ..api_models.device_dtos import (
     DeviceStatusResponseSchema,
 )
 from ...core import device_service
-from ...util import logging
 
 
 @DEVICES_API.route("/")
@@ -44,7 +44,7 @@ class DeviceView(MethodView):
     @DEVICES_API.response(HTTPStatus.OK, SimpleDeviceDtoSchema(many=True))
     def post(self, device_request_data, *, provider: int):
         """Update the devices by retrieving data from the provider and returning the updated devices."""
-        logging.info("Request: update the devices")
+        current_app.logger.info("Request: update the devices")
         token = device_request_data.pop("token", None)
         return device_service.update_devices(provider_id=provider, token=token)
 
@@ -58,7 +58,7 @@ class DeviceView(MethodView):
         is_local: Optional[bool] = None,
     ):
         """Get all devices from the database, for more details get the device by id."""
-        logging.info("Request: get all devices that are in the database")
+        current_app.logger.info("Request: get all devices that are in the database")
         return device_service.get_all_devices(
             provider=provider, min_qubits=min_qubits, is_simulator=is_simulator, is_local=is_local
         )
@@ -71,7 +71,7 @@ class DeviceIdView(MethodView):
     @DEVICES_API.response(HTTPStatus.OK, DeviceDtoSchema())
     def get(self, device_id):
         """Get information about a specific device."""
-        logging.info(f"Request: get information about device with id:{device_id}")
+        current_app.logger.info(f"Request: get information about device with id: {device_id}")
         return device_service.get_device_by_id(device_id)
 
 
@@ -95,7 +95,7 @@ class DevicesStatusStatus(MethodView):
         return self._get_status(device_id=device_id, token=token)
 
     def _get_status(self, device_id, token: Optional[str]):
-        logging.info(f"Request: get availability information of the device with id:{device_id}")
+        current_app.logger.info(f"Request: get availability information of the device with id: {device_id}")
         if not token:
             abort(HTTPStatus.BAD_REQUEST, message="Request is missing the device token.")
         return device_service.check_if_device_available(device_id, token)
@@ -121,7 +121,7 @@ class DevicesCalibrationView(MethodView):
         return self._get_calibration(device_id=device_id, token=token)
 
     def _get_calibration(self, device_id, token: Optional[str]):
-        logging.info(f"Request: get configuration data for device with id:{device_id}")
+        current_app.logger.info(f"Request: get configuration data for device with id: {device_id}")
         if not token:
             abort(HTTPStatus.BAD_REQUEST, message="Request is missing the device token.")
         device = device_service.get_device_data_from_provider(device_id, token)

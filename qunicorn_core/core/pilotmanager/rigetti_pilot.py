@@ -16,6 +16,7 @@ from collections import Counter
 from http import HTTPStatus
 from typing import Any, Optional, Sequence, Tuple, Union
 
+from flask.globals import current_app
 from pyquil.api import get_qc
 
 from qunicorn_core.api.api_models import DeviceDto
@@ -26,10 +27,11 @@ from qunicorn_core.db.models.provider import ProviderDataclass
 from qunicorn_core.db.models.quantum_program import QuantumProgramDataclass
 from qunicorn_core.db.models.result import ResultDataclass
 from qunicorn_core.static.enums.assembler_languages import AssemblerLanguage
+from qunicorn_core.static.enums.job_state import JobState
 from qunicorn_core.static.enums.provider_name import ProviderName
 from qunicorn_core.static.enums.result_type import ResultType
 from qunicorn_core.static.qunicorn_exception import QunicornError
-from qunicorn_core.util import logging, utils
+from qunicorn_core.util import utils
 
 DEFAULT_QUANTUM_CIRCUIT_1 = """from pyquil import Program \n
 from pyquil.gates import * \n
@@ -52,60 +54,59 @@ class RigettiPilot(Pilot):
 
     def run(
         self, job: JobDataclass, circuits: Sequence[Tuple[QuantumProgramDataclass, Any]], token: Optional[str] = None
-    ) -> list[ResultDataclass]:
+    ) -> JobState:
         """Execute the job on a local simulator and saves results in the database"""
         if utils.is_running_in_docker():
-            error = QunicornError(
+            raise QunicornError(
                 "Rigetti Pilot can not be executed in Docker, check the documentation on how to run qunicorn locally to execute jobs on the Rigetti Pilot",  # noqa: E501
                 HTTPStatus.NOT_IMPLEMENTED,
             )
-            job.save_error(error)
-            raise error
-        if job.executed_on.is_local:
-            results = []
+        if not job.executed_on.is_local:
+            raise QunicornError("Device need to be local for RIGETTI")
 
-            for program, circuit in circuits:
-                circuit.wrap_in_numshots_loop(job.shots)
-                qvm = get_qc(job.executed_on.name)
-                qvm_result = qvm.run(qvm.compile(circuit)).get_register_map().get("ro")
-                result_dict = RigettiPilot.result_to_dict(qvm_result)
-                result_dict = RigettiPilot.qubit_binary_string_to_hex(result_dict, job.id)
-                probabilities_dict = RigettiPilot.calculate_probabilities(result_dict)
-                results.append(
-                    ResultDataclass(
-                        program=program,
-                        data=result_dict,
-                        result_type=ResultType.COUNTS,
-                        meta={
-                            "format": "hex",
-                            "shots": qvm_result.shape[0],
-                            "registers": {
-                                "name": "default",
-                                "size": qvm_result.shape[1],
-                            },
+        results = []
+
+        for program, circuit in circuits:
+            circuit.wrap_in_numshots_loop(job.shots)
+            qvm = get_qc(job.executed_on.name)
+            qvm_result = qvm.run(qvm.compile(circuit)).get_register_map().get("ro")
+            result_dict = RigettiPilot.result_to_dict(qvm_result)
+            result_dict = RigettiPilot.qubit_binary_string_to_hex(result_dict, job.id)
+            probabilities_dict = RigettiPilot.calculate_probabilities(result_dict)
+            results.append(
+                ResultDataclass(
+                    program=program,
+                    data=result_dict,
+                    result_type=ResultType.COUNTS,
+                    meta={
+                        "format": "hex",
+                        "shots": qvm_result.shape[0],
+                        "registers": {
+                            "name": "default",
+                            "size": qvm_result.shape[1],
                         },
-                    )
+                    },
                 )
-                results.append(
-                    ResultDataclass(
-                        program=program,
-                        data=probabilities_dict,
-                        result_type=ResultType.PROBABILITIES,
-                        meta={
-                            "format": "hex",
-                            "shots": qvm_result.shape[0],
-                            "registers": {
-                                "name": "default",
-                                "size": qvm_result.shape[1],
-                            },
+            )
+            results.append(
+                ResultDataclass(
+                    program=program,
+                    data=probabilities_dict,
+                    result_type=ResultType.PROBABILITIES,
+                    meta={
+                        "format": "hex",
+                        "shots": qvm_result.shape[0],
+                        "registers": {
+                            "name": "default",
+                            "size": qvm_result.shape[1],
                         },
-                    )
+                    },
                 )
-            return results
-        else:
-            error = QunicornError("Device need to be local for RIGETTI")
-            job.save_error(error)
-            raise error
+            )
+
+        job.save_results(results, JobState.FINISHED)
+
+        return JobState.FINISHED
 
     @staticmethod
     def result_to_dict(results: Sequence[Sequence[int]]) -> dict:
@@ -118,9 +119,7 @@ class RigettiPilot(Pilot):
         self, job: JobDataclass, circuits: Sequence[Tuple[QuantumProgramDataclass, Any]], token: Optional[str] = None
     ):
         """Execute a job of a provider specific type on a backend using a Pilot"""
-        error = QunicornError("No valid Job Type specified")
-        job.save_error(error)
-        raise error
+        raise QunicornError("No valid Job Type specified")
 
     def cancel_provider_specific(self, job: JobDataclass, token: Optional[str] = None):
         raise QunicornError("Canceling not implemented for rigetti pilot yet")
@@ -147,5 +146,5 @@ class RigettiPilot(Pilot):
         return found_provider
 
     def is_device_available(self, device: Union[DeviceDataclass, DeviceDto], token: Optional[str]) -> bool:
-        logging.info("Rigetti local simulator is always available")
+        current_app.logger.info("Rigetti local simulator is always available")
         return True

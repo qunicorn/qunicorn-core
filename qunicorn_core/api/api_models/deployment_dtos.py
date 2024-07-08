@@ -20,6 +20,7 @@ from typing import Optional
 
 from flask import url_for
 import marshmallow as ma
+from marshmallow.validate import Range
 
 from .quantum_program_dtos import (
     QuantumProgramDto,
@@ -106,4 +107,21 @@ class DeploymentFilterParamsSchema(MaBaseSchema):
         load_only=True,
         description="Use % as wildcard and \\ to escape a % wildcard ('QASM%', 'Test 50\\% Entenglement').",
         metadata={"example": "QASM%"},
+    )
+    page = ma.fields.Integer(
+        required=False,
+        missing=1,
+        load_only=True,
+        validate=Range(min=0),
+        description="Page numbers range from 1 for the first page to n.",
+        metadata={"example": 1},
+    )
+    item_count = ma.fields.Integer(
+        data_key="item-count",
+        required=False,
+        missing=100,
+        load_only=True,
+        validate=Range(min=1, max=1000, min_inclusive=True, max_inclusive=True),
+        description="The number of items per page (can be set between 1 and 1000, defaults to 100).",
+        metadata={"example": 100},
     )

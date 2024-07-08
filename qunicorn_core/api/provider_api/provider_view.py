@@ -17,12 +17,12 @@
 from http import HTTPStatus
 from typing import Optional
 
+from flask.globals import current_app
 from flask.views import MethodView
 
 from .blueprint import PROVIDER_API
 from ..api_models.provider_dtos import ProviderDtoSchema, ProviderFilterParamsSchema
 from ...core import provider_service
-from ...util import logging
 
 
 @PROVIDER_API.route("/")
@@ -33,7 +33,7 @@ class ProviderView(MethodView):
     @PROVIDER_API.response(HTTPStatus.OK, ProviderDtoSchema(many=True))
     def get(self, name: Optional[str] = None):
         """Get all providers from the database"""
-        logging.info("Request: get all providers from database")
+        current_app.logger.info("Request: get all providers from database")
         return provider_service.get_all_providers(name=name)
 
 
@@ -44,5 +44,5 @@ class ProviderIDView(MethodView):
     @PROVIDER_API.response(HTTPStatus.OK, ProviderDtoSchema())
     def get(self, provider_id):
         """Get information about a single provider."""
-        logging.info(f"Request: get information about provider with id:{provider_id}")
+        current_app.logger.info(f"Request: get information about provider with id: {provider_id}")
         return provider_service.get_provider_by_id(provider_id)

@@ -29,11 +29,9 @@ import jwt
 from apispec.core import APISpec
 from apispec.utils import deepupdate
 from flask.app import Flask
-from flask.globals import request
+from flask.globals import request, current_app
 from flask_smorest import Api, abort
 from jwt import InvalidTokenError, PyJWKClient
-
-from qunicorn_core.util import logging
 
 """Basic JWT security scheme."""
 JWT_SCHEME = {
@@ -103,7 +101,7 @@ class JWTMixin:
             @wraps(func)
             def wrapper(*args: Any, **kwargs) -> RT:
                 if jwks_client is None:
-                    logging.warn("Skipping JWT check because not JWKS Url is set")
+                    current_app.logger.warn("Skipping JWT check because not JWKS Url is set")
                     jwt_subject = None
                 else:
                     jwt_subject = self._validate_request(_jwt_optional)

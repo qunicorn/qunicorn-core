@@ -17,6 +17,7 @@ from typing import Any, List, Optional, Sequence, Tuple, Union, Dict
 from urllib.parse import urljoin
 
 import requests
+from flask.globals import current_app
 from qiskit import qasm2
 from requests import RequestException
 from tenacity import retry, retry_if_result, wait_exponential, RetryError, stop_after_delay
@@ -33,7 +34,6 @@ from qunicorn_core.static.enums.job_state import JobState
 from qunicorn_core.static.enums.provider_name import ProviderName
 from qunicorn_core.static.enums.result_type import ResultType
 from qunicorn_core.static.qunicorn_exception import QunicornError
-from qunicorn_core.util import logging
 
 DEFAULT_QUANTUM_CIRCUIT = """OPENQASM 2.0;
 include "qelib1.inc";
@@ -69,7 +69,7 @@ class QMwarePilot(Pilot):
         qunicorn_job: JobDataclass,
         circuits: Sequence[Tuple[QuantumProgramDataclass, Any]],
         token: Optional[str] = None,
-    ) -> Tuple[List[ResultDataclass], JobState]:
+    ) -> JobState:
         """Run a job of type RUNNER on a backend using a Pilot"""
         if qunicorn_job.id is None:
             raise QunicornError("Job has no database ID and cannot be executed!")
@@ -99,9 +99,7 @@ class QMwarePilot(Pilot):
             result = response.json()
 
             if not result["jobCreated"]:
-                error = QunicornError(f"Job was not created. ({result['message']})")
-                qunicorn_job.save_error(error)
-                raise error
+                raise QunicornError(f"Job was not created. ({result['message']})")
 
             qmware_job_ids.append(result["id"])
             programs.append(program)
@@ -116,7 +114,9 @@ class QMwarePilot(Pilot):
                 qunicorn_job.save_error(error)
                 raise error
 
-        return results, JobState.FINISHED
+        qunicorn_job.save_results(results, JobState.FINISHED)
+
+        return JobState.FINISHED
 
     @staticmethod
     @retry(
@@ -202,15 +202,12 @@ class QMwarePilot(Pilot):
 
     def execute_provider_specific(
         self, job: JobDataclass, circuits: Sequence[Tuple[QuantumProgramDataclass, Any]], token: Optional[str] = None
-    ) -> Tuple[List[ResultDataclass], JobState]:
+    ) -> JobState:
         """Execute a job of a provider specific type on a backend using a Pilot"""
         if job.id is None:
             raise QunicornError("Job has no database ID and cannot be executed!")
 
-        error = QunicornError("No valid Job Type specified")
-        job.save_error(error)
-
-        raise error
+        raise QunicornError("No valid Job Type specified")
 
     def get_standard_provider(self) -> ProviderDataclass:
         """Create the standard ProviderDataclass Object for the pilot and return it"""
@@ -252,7 +249,7 @@ class QMwarePilot(Pilot):
 
     def cancel_provider_specific(self, job: JobDataclass, token: Optional[str] = None):
         """Cancel execution of a job at the corresponding backend"""
-        logging.warn(
+        current_app.logger.warn(
             f"Cancel job with id {job.id} on {job.executed_on.provider.name} failed."
             f"Canceling while in execution not supported for QMware Jobs"
         )

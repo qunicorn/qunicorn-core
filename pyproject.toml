@@ -30,6 +30,8 @@ qiskit-qasm3-import = "^0.4.0"
 amazon-braket-sdk = "^1.78.0"
 qrisp = "^0.4.5"
 pyquil = "^4.10.0"
+# pin urllib3 to qiskit compatible version
+urllib3 = "^1.26.19"
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.0.0"
@@ -47,7 +49,7 @@ sphinxcontrib-jquery = "^4.1"
 sphinxcontrib-jsmath = "^1.0.1"
 sphinxcontrib-redoc = "^1.6.0"
 sphinxcontrib-serializinghtml = "^1.1.9"
-sphinx-click = "^5.1.0"
+sphinx-click = "^6.0.0"
 sphinx = "^7.3.7"
 myst-parser = "^3.0.0"
 pytest = "^8.2.0"

@@ -42,13 +42,13 @@ class Pilot:
 
     def run(
         self, job: JobDataclass, circuits: Sequence[Tuple[QuantumProgramDataclass, Any]], token: Optional[str] = None
-    ) -> Tuple[List[ResultDataclass], JobState]:
+    ) -> JobState:
         """Run a job of type RUNNER on a backend using a Pilot"""
         raise NotImplementedError()
 
     def execute_provider_specific(
         self, job: JobDataclass, circuits: Sequence[Tuple[QuantumProgramDataclass, Any]], token: Optional[str] = None
-    ) -> Tuple[List[ResultDataclass], JobState]:
+    ) -> JobState:
         """Execute a job of a provider specific type on a backend using a Pilot"""
         raise NotImplementedError()
 
@@ -74,7 +74,7 @@ class Pilot:
 
     def execute(
         self, job: JobDataclass, circuits: Sequence[Tuple[QuantumProgramDataclass, Any]], token: Optional[str] = None
-    ) -> Tuple[List[ResultDataclass], JobState]:
+    ) -> JobState:
         """Execute a job on a backend using a Pilot"""
 
         if job.type == JobType.RUNNER.value:

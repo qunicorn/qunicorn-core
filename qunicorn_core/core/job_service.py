@@ -16,6 +16,8 @@ from os import environ
 from http import HTTPStatus
 from typing import Optional, Sequence
 
+from flask.globals import current_app
+
 from qunicorn_core.api.api_models.job_dtos import (
     JobExecutePythonFileDto,
     JobRequestDto,
@@ -29,11 +31,11 @@ from qunicorn_core.db.db import DB
 from qunicorn_core.db.models.deployment import DeploymentDataclass
 from qunicorn_core.db.models.device import DeviceDataclass
 from qunicorn_core.db.models.job import JobDataclass
+from qunicorn_core.db.models.job_state import TransientJobStateDataclass
 from qunicorn_core.db.models.result import ResultDataclass
 from qunicorn_core.static.enums.job_state import JobState
 from qunicorn_core.static.enums.job_type import JobType
 from qunicorn_core.static.qunicorn_exception import QunicornError
-from qunicorn_core.util import logging
 from qunicorn_core.util.utils import is_running_asynchronously
 
 """
@@ -83,12 +85,17 @@ def create_and_run_job(
 
 def run_job_with_celery(job: JobDataclass, is_asynchronous: bool, token: Optional[str] = None):
     """Serialize the job and run it with celery"""
+    assert len(job._transient) == 0, "jobs should not have any state attached by default"
+    if token is not None:
+        state = TransientJobStateDataclass(job=job, data={"token": token})
+        state.save(commit=True)  # make sure token is immediately available in DB
+
     if is_asynchronous:
-        task = job_manager_service.run_job.delay(job.id, token=token)
+        task = job_manager_service.run_job.delay(job.id)
         job.celery_id = task.id
         job.save(commit=True)
     else:
-        job_manager_service.run_job(job.id, token=token)
+        job_manager_service.run_job(job.id)
 
 
 def re_run_job_by_id(job_id: int, token: Optional[str], user_id: Optional[str] = None) -> SimpleJobDto:
@@ -140,7 +147,12 @@ def delete_job_data_by_id(job_id, user_id: Optional[str]):
 
 
 def get_all_jobs(
-    user_id: Optional[str], status: Optional[str] = None, deployment: Optional[int] = None, device: Optional[int] = None
+    user_id: Optional[str],
+    status: Optional[str] = None,
+    deployment: Optional[int] = None,
+    device: Optional[int] = None,
+    page: int = 1,
+    item_count: int = 100,
 ) -> list[SimpleJobDto]:
     """get all jobs from the db"""
     where = []
@@ -150,16 +162,17 @@ def get_all_jobs(
         where.append(JobDataclass.deployment_id == deployment)
     if device is not None:
         where.append(JobDataclass.executed_on_id == device)
+    page_offset = (page - 1) * item_count
     return [
         job_mapper.dataclass_to_simple(job)
-        for job in JobDataclass.get_all_authenticated(user_id, where=where)
+        for job in JobDataclass.get_all_authenticated(user_id, where=where, limit=item_count, offset=page_offset)
         if job.executed_by is None or job.executed_by == user_id
     ]
 
 
 def cancel_job_by_id(job_id, token: Optional[str], user_id: Optional[str] = None) -> SimpleJobDto:
     """cancel job execution"""
-    logging.info(f"Cancel execution of job with id:{job_id}")
+    current_app.logger.info(f"Cancel execution of job with id: {job_id}")
     job: JobDataclass = JobDataclass.get_by_id_authenticated_or_404(job_id, user_id)
     job_manager_service.cancel_job(job, token, user_id)
     return SimpleJobDto(id=job.id, deployment_id=job.deployment_id, name=job.name, state=JobState.CANCELED)

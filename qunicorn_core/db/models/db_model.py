@@ -40,30 +40,50 @@ class DbModel:
         return query
 
     @classmethod
-    def get_all(cls, where: Optional[WhereClause] = None):
+    def get_all(cls, where: Optional[WhereClause] = None, limit: Optional[int] = None, offset: Optional[int] = None):
         """Get all database objects of this class.
 
         Objects can be filtered by providing a sequence of sql expressions as ``where`` clause.
         All expressions must evaluate to True for an item to be included (i.e., clauses are joined by an AND).
+
+        Limit and offset can be used for pagination.
         """
         q = select(cls)
         if where:
             q = q.where(*where)
+
+        if limit:
+            q = q.limit(limit)
+            if offset:
+                q = q.offset(offset)
         return DB.session.execute(q).scalars().all()
 
     @classmethod
-    def get_all_authenticated(cls, user_id: Optional[str], where: Optional[WhereClause] = None):
+    def get_all_authenticated(
+        cls,
+        user_id: Optional[str],
+        where: Optional[WhereClause] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+    ):
         """Get all database objects of this class that the given user is allowed to access.
 
         Uses the `apply_authentication_filter` method to filter out objects.
 
         Additionally, objects can be filtered by providing a sequence of sql expressions as ``where`` clause.
         All expressions must evaluate to True for an item to be included (i.e., clauses are joined by an AND).
+
+        Limit and offset can be used for pagination.
         """
         inner_q = select(cls)
         if where:
             inner_q = inner_q.where(*where)
         q = cls.apply_authentication_filter(inner_q, user_id)
+
+        if limit:
+            q = q.limit(limit)
+            if offset:
+                q = q.offset(offset)
         return DB.session.execute(q).scalars().all()
 
     @classmethod

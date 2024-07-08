@@ -39,7 +39,7 @@ services:
 
   
   keycloak_postgres:
-    image: postgres:15.3
+    image: postgres:15
     environment:
       PGDATA: /var/lib/postgresql/data/pgdata
       POSTGRES_DB: keycloak
@@ -84,14 +84,14 @@ services:
       - qunicorn
 
   broker:
-    image: redis:7.2.5
+    image: redis:7
     networks:
       - qunicorn
     ports:
       - "6379:6379"
 
   postgres:
-    image: postgres:15.3
+    image: postgres:15
     networks:
       - qunicorn
     environment:
