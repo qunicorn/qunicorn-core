@@ -139,7 +139,7 @@ class QMwarePilot(Pilot):
             qmware_job_id = program_state.data["id"]
             program = program_state.program
 
-            if job_started_at + (24 * 3600) > time():
+            if job_started_at + (24 * 3600) < time():
                 # time out jobs after 24 hours!
                 program_state.delete()
                 error = QunicornError(f"QMware job with id {qmware_job_id} timed out!")
