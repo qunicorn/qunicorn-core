@@ -20,7 +20,7 @@ from urllib.parse import urljoin
 import requests
 from flask.globals import current_app
 from qiskit import qasm2
-from requests import RequestException
+from requests.exceptions import ConnectionError
 
 from qunicorn_core.celery import CELERY
 from qunicorn_core.api.api_models.device_dtos import DeviceDto
@@ -92,12 +92,10 @@ class QMwarePilot(Pilot):
                 "programParameters": [{"name": "shots", "value": str(qunicorn_job.shots)}],
             }
 
-            try:
-                response = requests.post(urljoin(QMWARE_URL, "/v0/requests"), json=data, headers=AUTHORIZATION_HEADERS)
-                response.raise_for_status()
-            except RequestException as re:
-                qunicorn_job.save_error(re)
-                raise re
+            response = requests.post(
+                urljoin(QMWARE_URL, "/v0/requests"), json=data, headers=AUTHORIZATION_HEADERS, timeout=10
+            )
+            response.raise_for_status()
 
             result = response.json()
 
@@ -154,6 +152,7 @@ class QMwarePilot(Pilot):
                     "X-API-KEY": program_state.data["X-API-KEY"],
                     "X-API-KEY-ID": program_state.data["X-API-KEY-ID"],
                 },
+                timeout=10,
             )
             response.raise_for_status()
             result = response.json()
@@ -293,7 +292,7 @@ class QMwarePilot(Pilot):
 
 @CELERY.task(
     ignore_result=True,
-    autoretry_for=(QMWAREResultsPending,),
+    autoretry_for=(QMWAREResultsPending, ConnectionError),
     retry_backoff=True,
     max_retries=None,
 )
