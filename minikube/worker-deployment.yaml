@@ -45,8 +45,9 @@ spec:
                 secretKeyRef:
                   name: qmware-secret
                   key: QMWARE_API_KEY_ID
-            - name: QMWARE_URL
-              value: http://10.186.9.12:9003/
+            # the URL of the QMware API is to be set here
+            # - name: QMWARE_URL
+            #   value: ???
           image: ghcr.io/qunicorn/qunicorn-core:main
           name: worker
           ports:
