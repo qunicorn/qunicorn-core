@@ -14,6 +14,8 @@
 
 """"pytest conftest file"""
 
+from typing import Optional
+
 from dotenv import load_dotenv
 
 from qunicorn_core import create_app
@@ -38,10 +40,12 @@ DEFAULT_TEST_CONFIG = {
 }
 
 
-def set_up_env():
+def set_up_env(test_config: Optional[dict] = None):
     """Set up Flask app and environment and return app"""
-    test_config = {}
-    test_config.update(DEFAULT_TEST_CONFIG)
+    if test_config is None:
+        test_config = dict(DEFAULT_TEST_CONFIG)
+    else:
+        test_config = dict(DEFAULT_TEST_CONFIG).update(test_config)
 
     # We need this to load variables from the .env file during testing
     load_dotenv()
