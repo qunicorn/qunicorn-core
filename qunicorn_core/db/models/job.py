@@ -139,16 +139,31 @@ class JobDataclass(DbModel):
                 f"Finished job with id {self.id} in state {self.state} with {len(self.results)} results."
             )
 
-    def save_error(self, exception: BaseException, program: Optional["quantum_program.QuantumProgramDataclass"] = None):
+    def save_error(
+        self,
+        exception: BaseException,
+        program: Optional["quantum_program.QuantumProgramDataclass"] = None,
+        extra_data: Optional[dict] = None,
+        extra_meta: Optional[dict] = None,
+    ):
         exception_message: str = str(exception)
         stack_trace: str = "".join(traceback.format_exception(exception))
+
+        data = {"exception_message": exception_message}
+        meta = {"stack_trace": stack_trace}
+
+        if extra_data:
+            data.update(extra_data)
+
+        if extra_meta:
+            meta.update(extra_meta)
 
         error_result = ResultDataclass(
             result_type=ResultType.ERROR.value,
             job=self,
             program=program,
-            data={"exception_message": exception_message},
-            meta={"stack_trace": stack_trace},
+            data=data,
+            meta=meta,
         )
         self.results.append(error_result)
 

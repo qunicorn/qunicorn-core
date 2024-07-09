@@ -163,48 +163,56 @@ class QMwarePilot(Pilot):
             if result["status"] in ("ERROR", "TIMEOUT", "CANCELED"):
                 program_state.delete()
                 error = QunicornError(f"QMware job with id {qmware_job_id} returned status {result['status']}")
-                qunicorn_job.save_error(error, program=program)
+                qunicorn_job.save_error(error, program=program, extra_data={"qmware_result": result})
+                continue
 
             if result["status"] != "SUCCESS":
                 program_state.delete()
                 error = QunicornError(f"QMware job with id {qmware_job_id} returned unknown status {result['status']}")
-                qunicorn_job.save_error(error, program=program)
+                qunicorn_job.save_error(error, program=program, extra_data={"qmware_result": result})
+                continue
 
-            measurements: List[Dict] = json.loads(result["out"]["value"])
-            results: List[List[Dict[str, int]]] = [measurement["result"] for measurement in measurements]
-            hex_counts = {}
-            hex_probabilities = {}
+            try:
+                measurements: List[Dict] = json.loads(result["out"]["value"])
+                results: List[List[Dict[str, int]]] = [measurement["result"] for measurement in measurements]
+                hex_counts = {}
+                hex_probabilities = {}
 
-            for single_result in zip(*results):
-                hex_measurements = []
-                hits = None
-                register: Dict[str, int]
+                for single_result in zip(*results):
+                    hex_measurements = []
+                    hits = None
+                    register: Dict[str, int]
 
-                for register in single_result:
-                    hex_measurements.append(hex(register["number"]))
+                    for register in single_result:
+                        hex_measurements.append(hex(register["number"]))
+
+                        if hits is None:
+                            hits = register["hits"]
+                        else:
+                            assert hits == register["hits"], "results have different number of hits"
 
                     if hits is None:
-                        hits = register["hits"]
-                    else:
-                        assert hits == register["hits"], "results have different number of hits"
+                        hits = 0
 
-                if hits is None:
-                    hits = 0
+                    hex_measurement = " ".join(hex_measurements)
+                    hex_counts[hex_measurement] = hits
+                    hex_probabilities[hex_measurement] = hits / qunicorn_job.shots
 
-                hex_measurement = " ".join(hex_measurements)
-                hex_counts[hex_measurement] = hits
-                hex_probabilities[hex_measurement] = hits / qunicorn_job.shots
+                circuit = qasm2.loads(program_state.data["circuit"])
+                register_metadata = []
 
-            circuit = qasm2.loads(program_state.data["circuit"])
-            register_metadata = []
-
-            for classical_register in circuit.cregs:
-                register_metadata.append(
-                    {
-                        "name": classical_register.name,
-                        "size": classical_register.size,
-                    }
-                )
+                for classical_register in circuit.cregs:
+                    register_metadata.append(
+                        {
+                            "name": classical_register.name,
+                            "size": classical_register.size,
+                        }
+                    )
+            except Exception as err:
+                program_state.delete()
+                error = QunicornError(f"QMware job with id {qmware_job_id} returned bad result.")
+                qunicorn_job.save_error(err, program=program, extra_data={"qmware_result": result})
+                continue
 
             ResultDataclass(
                 job=qunicorn_job,
