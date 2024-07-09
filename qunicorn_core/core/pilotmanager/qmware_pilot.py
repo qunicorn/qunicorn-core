@@ -210,7 +210,6 @@ class QMwarePilot(Pilot):
                     )
             except Exception as err:
                 program_state.delete()
-                error = QunicornError(f"QMware job with id {qmware_job_id} returned bad result.")
                 qunicorn_job.save_error(err, program=program, extra_data={"qmware_result": result})
                 continue
 
