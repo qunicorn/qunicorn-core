@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""test in-request execution for aws"""
+"""test job execution flow for qmware pilot"""
 
 import pytest
 
@@ -40,7 +40,7 @@ _QMWARE_RESPONSE = {"status": "ERROR", "value": "UNKNOWN"}
 @patch("qunicorn_core.core.pilotmanager.qmware_pilot.requests.get")
 @patch("qunicorn_core.core.pilotmanager.qmware_pilot.requests.post")
 @patch("qunicorn_core.core.pilotmanager.qmware_pilot.watch_qmware_results")
-def test_aws_local_simulator_braket_job_results(watch_task: MagicMock, post_job: MagicMock, get_job: MagicMock):
+def test_qmware_pilot_job_execution(watch_task: MagicMock, post_job: MagicMock, get_job: MagicMock):
     app = set_up_env()
 
     signature = Mock()
