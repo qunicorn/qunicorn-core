@@ -13,19 +13,21 @@
 # limitations under the License.
 import json
 import os
+from time import time
 from typing import Any, List, Optional, Sequence, Tuple, Union, Dict
 from urllib.parse import urljoin
 
 import requests
 from flask.globals import current_app
 from qiskit import qasm2
-from requests import RequestException
-from tenacity import retry, retry_if_result, wait_exponential, RetryError, stop_after_delay
+from requests.exceptions import ConnectionError
 
+from qunicorn_core.celery import CELERY
 from qunicorn_core.api.api_models.device_dtos import DeviceDto
 from qunicorn_core.core.pilotmanager.base_pilot import Pilot
 from qunicorn_core.db.models.device import DeviceDataclass
 from qunicorn_core.db.models.job import JobDataclass
+from qunicorn_core.db.models.job_state import TransientJobStateDataclass
 from qunicorn_core.db.models.provider import ProviderDataclass
 from qunicorn_core.db.models.quantum_program import QuantumProgramDataclass
 from qunicorn_core.db.models.result import ResultDataclass
@@ -58,6 +60,10 @@ AUTHORIZATION_HEADERS = {
 }
 
 
+class QMWAREResultsPending(Exception):
+    pass
+
+
 class QMwarePilot(Pilot):
     """Base class for Pilots"""
 
@@ -74,9 +80,6 @@ class QMwarePilot(Pilot):
         if qunicorn_job.id is None:
             raise QunicornError("Job has no database ID and cannot be executed!")
 
-        qmware_job_ids = []
-        programs = []
-
         job_name = "Qunicorn request"
 
         for program, qasm_circuit in circuits:
@@ -89,96 +92,129 @@ class QMwarePilot(Pilot):
                 "programParameters": [{"name": "shots", "value": str(qunicorn_job.shots)}],
             }
 
-            try:
-                response = requests.post(urljoin(QMWARE_URL, "/v0/requests"), json=data, headers=AUTHORIZATION_HEADERS)
-                response.raise_for_status()
-            except RequestException as re:
-                qunicorn_job.save_error(re)
-                raise re
+            response = requests.post(
+                urljoin(QMWARE_URL, "/v0/requests"), json=data, headers=AUTHORIZATION_HEADERS, timeout=10
+            )
+            response.raise_for_status()
 
             result = response.json()
 
             if not result["jobCreated"]:
                 raise QunicornError(f"Job was not created. ({result['message']})")
 
-            qmware_job_ids.append(result["id"])
-            programs.append(program)
+            program_state = TransientJobStateDataclass(
+                job=qunicorn_job,
+                program=program,
+                data={
+                    "id": result["id"],
+                    "started_at": int(time()),
+                    "X-API-KEY": QMWARE_API_KEY,
+                    "X-API-KEY-ID": QMWARE_API_KEY_ID,
+                    "circuit": qasm_circuit,
+                },
+            )
+            program_state.save()
 
-        results = []
+        qunicorn_job.state = JobState.RUNNING.value
+        qunicorn_job.save(commit=True)  # make sure transient state is available
 
-        for qmware_job_id, program in zip(qmware_job_ids, programs):
-            try:
-                results.extend(QMwarePilot._get_job_results(qunicorn_job, qmware_job_id, program))
-            except RetryError:
-                error = QunicornError("QMware job timed out")
-                qunicorn_job.save_error(error)
-                raise error
+        watch_task = watch_qmware_results.s(job_id=qunicorn_job.id).delay()
+        qunicorn_job.celery_id = watch_task.id
+        qunicorn_job.save(commit=True)  # commit new celery id
 
-        qunicorn_job.save_results(results, JobState.FINISHED)
-
-        return JobState.FINISHED
+        return JobState.RUNNING
 
     @staticmethod
-    @retry(
-        retry=retry_if_result(lambda output: output is None),
-        stop=stop_after_delay(3600),
-        wait=wait_exponential(multiplier=1, exp_base=1.5),
-    )
-    def _get_job_results(
-        qunicorn_job: JobDataclass, qmware_job_id: str, program: QuantumProgramDataclass
-    ) -> List[ResultDataclass] | None:
-        response = requests.get(urljoin(QMWARE_URL, f"/v0/jobs/{qmware_job_id}"), headers=AUTHORIZATION_HEADERS)
-        response.raise_for_status()
-        result = response.json()
+    def _get_job_results(qunicorn_job_id: int) -> List[ResultDataclass] | None:  # noqa: C901
+        qunicorn_job = JobDataclass.get_by_id(qunicorn_job_id)
 
-        if result["status"] in ("WAITING", "PREPARING", "RUNNING"):
-            return None
+        if qunicorn_job is None:
+            raise ValueError("Unknown Qunicorn job id {qunicorn_job_id}!")
 
-        if result["status"] in ("ERROR", "TIMEOUT", "CANCELED"):
-            error = QunicornError(f"QMware job returned status {result['status']}")
-            qunicorn_job.save_error(error)
-            raise error
+        for program_state in tuple(qunicorn_job._transient):
+            if program_state.program is None:
+                continue  # only process program related transient state
 
-        if result["status"] != "SUCCESS":
-            error = QunicornError(f"QMware job returned unknown status {result['status']}")
-            qunicorn_job.save_error(error)
-            raise error
+            job_started_at = program_state.data["started_at"]
+            qmware_job_id = program_state.data["id"]
+            program = program_state.program
 
-        measurements: List[Dict] = json.loads(result["out"]["value"])
-        results: List[List[Dict[str, int]]] = [measurement["result"] for measurement in measurements]
-        hex_counts = {}
-        hex_probabilities = {}
+            if job_started_at + (24 * 3600) < time():
+                # time out jobs after 24 hours!
+                program_state.delete()
+                error = QunicornError(f"QMware job with id {qmware_job_id} timed out!")
+                qunicorn_job.save_error(error, program=program)
+                continue
 
-        for single_result in zip(*results):
-            hex_measurements = []
-            hits = None
-            register: Dict[str, int]
-
-            for register in single_result:
-                hex_measurements.append(hex(register["number"]))
-
-                if hits is None:
-                    hits = register["hits"]
-                else:
-                    assert hits == register["hits"], "results have different number of hits"
-
-            hex_measurement = " ".join(hex_measurements)
-            hex_counts[hex_measurement] = hits
-            hex_probabilities[hex_measurement] = hits / qunicorn_job.shots
-
-        circuit = qasm2.loads(program.quantum_circuit)
-        register_metadata = []
-
-        for classical_register in circuit.cregs:
-            register_metadata.append(
-                {
-                    "name": classical_register.name,
-                    "size": classical_register.size,
-                }
+            response = requests.get(
+                urljoin(QMWARE_URL, f"/v0/jobs/{qmware_job_id}"),
+                headers={
+                    "X-API-KEY": program_state.data["X-API-KEY"],
+                    "X-API-KEY-ID": program_state.data["X-API-KEY-ID"],
+                },
+                timeout=10,
             )
+            response.raise_for_status()
+            result = response.json()
 
-        return [
+            if result["status"] in ("WAITING", "PREPARING", "RUNNING"):
+                raise QMWAREResultsPending()
+
+            if result["status"] in ("ERROR", "TIMEOUT", "CANCELED"):
+                program_state.delete()
+                error = QunicornError(f"QMware job with id {qmware_job_id} returned status {result['status']}")
+                qunicorn_job.save_error(error, program=program, extra_data={"qmware_result": result})
+                continue
+
+            if result["status"] != "SUCCESS":
+                program_state.delete()
+                error = QunicornError(f"QMware job with id {qmware_job_id} returned unknown status {result['status']}")
+                qunicorn_job.save_error(error, program=program, extra_data={"qmware_result": result})
+                continue
+
+            try:
+                measurements: List[Dict] = json.loads(result["out"]["value"])
+                results: List[List[Dict[str, int]]] = [measurement["result"] for measurement in measurements]
+                hex_counts = {}
+                hex_probabilities = {}
+
+                for single_result in zip(*results):
+                    hex_measurements = []
+                    hits = None
+                    register: Dict[str, int]
+
+                    for register in single_result:
+                        hex_measurements.append(hex(register["number"]))
+
+                        if hits is None:
+                            hits = register["hits"]
+                        else:
+                            assert hits == register["hits"], "results have different number of hits"
+
+                    if hits is None:
+                        hits = 0
+
+                    hex_measurement = " ".join(hex_measurements)
+                    hex_counts[hex_measurement] = hits
+                    hex_probabilities[hex_measurement] = hits / qunicorn_job.shots
+
+                circuit = qasm2.loads(program_state.data["circuit"])
+                register_metadata = []
+
+                for classical_register in circuit.cregs:
+                    register_metadata.append(
+                        {
+                            "name": classical_register.name,
+                            "size": classical_register.size,
+                        }
+                    )
+            except Exception as err:
+                program_state.delete()
+                qunicorn_job.save_error(err, program=program, extra_data={"qmware_result": result})
+                continue
+
             ResultDataclass(
+                job=qunicorn_job,
                 program=program,
                 data=hex_counts,
                 result_type=ResultType.COUNTS,
@@ -187,7 +223,7 @@ class QMwarePilot(Pilot):
                     "shots": qunicorn_job.shots,
                     "registers": register_metadata,
                 },
-            ),
+            ).save()
             ResultDataclass(
                 program=program,
                 data=hex_probabilities,
@@ -197,8 +233,13 @@ class QMwarePilot(Pilot):
                     "shots": qunicorn_job.shots,
                     "registers": register_metadata,
                 },
-            ),
-        ]
+            ).save()
+            program_state.delete(commit=True)
+
+        # all programs have results
+        if qunicorn_job.state == JobState.RUNNING.value:
+            # all jobs have finished without errors
+            qunicorn_job.state = JobState.FINISHED
 
     def execute_provider_specific(
         self, job: JobDataclass, circuits: Sequence[Tuple[QuantumProgramDataclass, Any]], token: Optional[str] = None
@@ -254,3 +295,13 @@ class QMwarePilot(Pilot):
             f"Canceling while in execution not supported for QMware Jobs"
         )
         raise QunicornError("Canceling not supported on QMware devices")
+
+
+@CELERY.task(
+    ignore_result=True,
+    autoretry_for=(QMWAREResultsPending, ConnectionError),
+    retry_backoff=True,
+    max_retries=None,
+)
+def watch_qmware_results(job_id: int):
+    QMwarePilot._get_job_results(job_id)
