@@ -152,4 +152,4 @@ cython_debug/
 # Intellij Idea Project Folder
 .idea/*
 
-./tmp/*
+tmp/*
