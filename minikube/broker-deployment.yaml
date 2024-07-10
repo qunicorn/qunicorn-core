@@ -28,6 +28,6 @@ spec:
           command: ["redis-server", "--requirepass", "$(BROKER_PASSWORD)"]
           ports:
             - containerPort: 6379
-              hostPort: 6379
+              #hostPort: 6379
               protocol: TCP
       restartPolicy: Always

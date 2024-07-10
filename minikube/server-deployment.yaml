@@ -51,6 +51,6 @@ spec:
           name: server
           ports:
             - containerPort: 8081
-              hostPort: 8081
+              #hostPort: 8081
               protocol: TCP
       restartPolicy: Always
