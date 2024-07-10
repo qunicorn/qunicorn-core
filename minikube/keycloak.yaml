@@ -65,10 +65,10 @@ spec:
               value: kc_user
           ports:
             - containerPort: 8080
-              hostPort: 8080
+              #hostPort: 8080
           volumeMounts:
             - name: keycloak-volume
-              mountPath: /import
+              mountPath: /opt/keycloak/data/import/
       volumes:
         - name: keycloak-volume
           configMap:

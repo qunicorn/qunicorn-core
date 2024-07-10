@@ -28,6 +28,6 @@ spec:
           name: postgres
           ports:
             - containerPort: 5432
-              hostPort: 5432
+              #hostPort: 5432
               protocol: TCP
       restartPolicy: Always
