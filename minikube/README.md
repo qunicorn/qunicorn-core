@@ -1,4 +1,4 @@
-## Minikube Deployment
+# Minikube Deployment
 
 To start the deployment, the broker and server need secrets.
 These can be created with the following commands:
