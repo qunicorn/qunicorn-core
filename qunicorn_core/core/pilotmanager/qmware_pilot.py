@@ -225,6 +225,7 @@ class QMwarePilot(Pilot):
                 },
             ).save()
             ResultDataclass(
+                job=qunicorn_job,
                 program=program,
                 data=hex_probabilities,
                 result_type=ResultType.PROBABILITIES,
@@ -239,8 +240,7 @@ class QMwarePilot(Pilot):
         # all programs have results
         if qunicorn_job.state == JobState.RUNNING.value:
             # all jobs have finished without errors
-            qunicorn_job.state = JobState.FINISHED
-            qunicorn_job.save(commit=True)
+            qunicorn_job.save_results([], JobState.FINISHED)
 
     def execute_provider_specific(
         self, job: JobDataclass, circuits: Sequence[Tuple[QuantumProgramDataclass, Any]], token: Optional[str] = None
