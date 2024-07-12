@@ -127,7 +127,7 @@ class JobDataclass(DbModel):
         """Update the job to include the results and commit everything to the database and delete transient state."""
         self.finished_at = datetime.now(timezone.utc)
         self.progress = 100
-        self.results = results
+        self.results = self.results + results
         self.state = job_state.value if isinstance(job_state, JobState) else job_state
         for result in results:
             result.save()  # add nested objects to db session
