@@ -240,6 +240,7 @@ class QMwarePilot(Pilot):
         if qunicorn_job.state == JobState.RUNNING.value:
             # all jobs have finished without errors
             qunicorn_job.state = JobState.FINISHED
+            qunicorn_job.save(commit=True)
 
     def execute_provider_specific(
         self, job: JobDataclass, circuits: Sequence[Tuple[QuantumProgramDataclass, Any]], token: Optional[str] = None
