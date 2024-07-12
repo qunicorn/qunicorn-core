@@ -301,7 +301,8 @@ class QMwarePilot(Pilot):
 @CELERY.task(
     ignore_result=True,
     autoretry_for=(QMWAREResultsPending, ConnectionError),
-    retry_backoff=True,
+    retry_backoff=1.2,
+    retry_backoff_max=60,
     max_retries=None,
 )
 def watch_qmware_results(job_id: int):
