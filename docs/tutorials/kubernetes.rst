@@ -26,9 +26,9 @@ Installation / Starting Minikube (tested for windows)
 
 5. Navigate to the location where the docker-compose file is. It should be under 'C:\...\qunicorn-core'.
 6. Now check if a minikube folder has been created under 'C:\...\qunicorn-core'.
-    If not, create the kubernetes configuration files.
-    This will generate a folder called minikube with all the kubernetes configuration files based on the docker-compose.
-    However this might overwrite custom changes made to the files, if already existing. Proceed with caution.
+   If not, create the kubernetes configuration files.
+   This will generate a folder called minikube with all the kubernetes configuration files based on the docker-compose.
+   However this might overwrite custom changes made to the files, if already existing. Proceed with caution.
 
 .. code-block:: bash
 
@@ -43,13 +43,13 @@ Installation / Starting Minikube (tested for windows)
 
 9. Set minikube as docker env
 
-    Minikube needs to be set as docker environment to be able to build images for minikube. Otherwise Minikube would not be able to find the images. This needs to be done every time a new terminal is opened.
+   Minikube needs to be set as docker environment to be able to build images for minikube. Otherwise Minikube would not be able to find the images. This needs to be done every time a new terminal is opened.
 
 .. code-block:: bash
 
     minikube docker-env | Invoke-Expression
-   
-  You can also load local images into Minikube with
+    
+You can also load local images into Minikube with
 
 .. code-block:: bash
 
@@ -74,7 +74,7 @@ Installation / Starting Minikube (tested for windows)
 
     minikube tunnel
 
-   Alternatively, you can access the qunicorn service with the following command.
+Alternatively, you can access the qunicorn service with the following command.
 
 .. code-block:: bash
 
