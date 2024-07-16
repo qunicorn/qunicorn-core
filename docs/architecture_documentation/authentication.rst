@@ -19,15 +19,14 @@ After login the realm has to switched to qunicorn in the top left dropdown menu.
 
 Start Keycloak
 --------------
-The Keycloak Docker Compose: :file:`keycloak-docker-compose.yml` can be started by executing the following command:
+To start Keycloak, run the Docker Compose: :file:`docker-compose.yml` with the following command:
 
 .. code-block:: bash
 
-    docker compose -f keycloak-docker-compose.yaml -p qunicorn-core up -d
+    docker compose -f docker-compose.yaml -p qunicorn-core up -d
 
 After it has been started it should be possible to access Keycloak http://localhost:8081.
 
-Alternatively the Keycloak service can be started by using the general :file:`docker-compose.yaml`.
 After changing the environment variables which are mentioned in the `Start Qunicorn`_-Section the docker needs to be restarted.
 Then afterwards qunicorn must not be started locally anymore, but it can also not be debugged.
 
