@@ -19,18 +19,15 @@ To uninstall the chart:
 :code:`helm delete <my-chart-name>`
 
 
-------------------------------------------------------------------------------------------------------------------------------------
-
-
-Converting YAML Files Into Helm Charts
+Converting YAML files into helm charts
 ##############################
 
 Using helmify
 
 
-1) Step1 . Installation of helmify
+1. Step1 . Installation of helmify
 
-2) Step2. Convert YAML files to Helm chart
+2. Step2. Convert YAML files to Helm chart
 For single yaml file: 
 
 :code:`cat <your-yamlfile-name>.yaml | helmify <chart-name>`
