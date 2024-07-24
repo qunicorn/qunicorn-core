@@ -8,15 +8,15 @@ helm installation
 
 Once Helm has been set up correctly, then we need:
 
-To install the <chart-name> chart:
+1. To install the <chart-name> chart:
 
-:code:`cd <helm-chart-folder>`
+    :code:`cd <helm-chart-folder>`
 
-:code:`helm install <my-chart-name> .`
+    :code:`helm install <my-chart-name> .`
 
-To uninstall the chart:
+2. To uninstall the chart:
 
-:code:`helm delete <my-chart-name>`
+    :code:`helm delete <my-chart-name>`
 
 
 Converting YAML files into helm charts
