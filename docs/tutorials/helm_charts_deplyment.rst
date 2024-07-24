@@ -26,13 +26,9 @@ Using helmify
 
 
 1. Step1 . Installation of helmify
-
 2. Step2 . Convert YAML files to Helm chart
-a. For single yaml file: 
-   :code:`cat <your-yamlfile-name>.yaml | helmify <chart-name>`
-
-b. From directory with yamls:
-   :code:`awk 'FNR==1 && NR!=1  {print "---"}{print}' /<my_directory>/*.yaml | helmify <helmchart-folder-name>`
+a. For single yaml file: :code:`cat <your-yamlfile-name>.yaml | helmify <chart-name>`
+b. From directory with yamls: :code:`awk 'FNR==1 && NR!=1  {print "---"}{print}' /<my_directory>/*.yaml | helmify <helmchart-folder-name>`
 
 
 
