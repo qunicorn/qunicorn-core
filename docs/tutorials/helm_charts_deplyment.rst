@@ -10,32 +10,34 @@ Once Helm has been set up correctly, then we need:
 
 To install the <chart-name> chart:
 
-`cd <helm-chart-folder>`
+:code:`cd <helm-chart-folder>`
 
-`helm install <my-chart-name> .`
+:code:`helm install <my-chart-name> .`
 
 To uninstall the chart:
 
-`helm delete <my-chart-name>`
+:code:`helm delete <my-chart-name>`
 
 
 ------------------------------------------------------------------------------------------------------------------------------------
 
 
-##Converting YAML Files Into Helm Charts
+Converting YAML Files Into Helm Charts
+##############################
 
-###Using helmify
+Using helmify
+
 
 1) Step1 . Installation of helmify
 
 2) Step2. Convert YAML files to Helm chart
 For single yaml file: 
 
-`cat <your-yamlfile-name>.yaml | helmify <chart-name>`
+:code:`cat <your-yamlfile-name>.yaml | helmify <chart-name>`
 
 From directory with yamls:
 
-`awk 'FNR==1 && NR!=1  {print "---"}{print}' /<my_directory>/*.yaml | helmify <helmchart-folder-name>`
+:code:`awk 'FNR==1 && NR!=1  {print "---"}{print}' /<my_directory>/*.yaml | helmify <helmchart-folder-name>`
 
 
 
