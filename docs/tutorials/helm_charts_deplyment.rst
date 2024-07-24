@@ -1,5 +1,5 @@
-# A tutorial on how to deploy the helm charts
-
+A tutorial on how to deploy the helm charts
+=====================
 
 ## helm installation
 
