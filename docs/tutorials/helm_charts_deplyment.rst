@@ -26,6 +26,9 @@ Using helmify
 
 
 1. Step1 . Installation of helmify
+
+   :code:`https://formulae.brew.sh/formula/helmify`
+
 2. Step2 . Convert YAML files to Helm chart
 
     a . For single yaml file: 
