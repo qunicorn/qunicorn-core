@@ -201,7 +201,9 @@ class QMwarePilot(Pilot):
                 try:
                     circuit = qasm2.loads(program_state.data["circuit"])
                 except qasm2.exceptions.QASM2ParseError:
-                    circuit = qasm2.loads(program_state.data["circuit"], custom_instructions=qasm2.LEGACY_CUSTOM_INSTRUCTIONS)
+                    circuit = qasm2.loads(
+                        program_state.data["circuit"], custom_instructions=qasm2.LEGACY_CUSTOM_INSTRUCTIONS
+                    )
 
                 register_metadata = []
 
