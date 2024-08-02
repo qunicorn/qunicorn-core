@@ -17,7 +17,8 @@ from typing import Any
 
 
 from qiskit import QuantumCircuit, qpy
-from qiskit.qasm2 import loads as loads2, dumps as dumps2
+from qiskit.qasm2 import loads as loads2, dumps as dumps2, LEGACY_CUSTOM_INSTRUCTIONS
+from qiskit.qasm2.exceptions import QASM2ParseError
 from qiskit.qasm3 import loads as loads3, dumps as dumps3
 
 from .circuit_transpiler import CircuitTranspiler
@@ -27,7 +28,10 @@ class Qasm2ToQiskit(CircuitTranspiler, source="QASM2", target="QISKIT", cost=1):
 
     def transpile_circuit(self, circuit: Any) -> QuantumCircuit:
         assert isinstance(circuit, str)
-        return loads2(circuit)
+        try:
+            return loads2(circuit)
+        except QASM2ParseError:
+            return loads2(circuit, custom_instructions=LEGACY_CUSTOM_INSTRUCTIONS)
 
 
 class QiskitToQasm2(CircuitTranspiler, source="QISKIT", target="QASM2", cost=1):
