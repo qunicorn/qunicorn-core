@@ -11,6 +11,7 @@ Submodules
    qunicorn_core.db.models.deployment
    qunicorn_core.db.models.device
    qunicorn_core.db.models.job
+   qunicorn_core.db.models.job_state
    qunicorn_core.db.models.provider
    qunicorn_core.db.models.provider_assembler_language
    qunicorn_core.db.models.quantum_program
