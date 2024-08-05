@@ -118,46 +118,52 @@ Other useful commands
     minikube dashboard
 
 
-
 ================================================================
 
 A tutorial on how to deploy the helm charts
 =====================
 
-helm installation
-#################
+* helm installation
 
-[Helm](https://helm.sh) must be installed to use the charts.  Please refer to Helm's [documentation](https://helm.sh/docs) to get started.
+`Helm <https://helm.sh>`_ must be installed to use the charts.  Please refer to Helm's `documentation <https://helm.sh/docs>`_ to get started.
 
 Once Helm has been set up correctly, then we need:
 
 1. To install the <chart-name> chart:
 
-    :code:`cd <helm-chart-folder>`
+.. code-block::
+    
+    cd <helm-chart-folder>
 
-    :code:`helm install <my-chart-name> .`
+.. code-block::
+
+    helm install <my-chart-name> .
 
 2. To uninstall the chart:
 
-    :code:`helm delete <my-chart-name>`
+.. code-block::
+
+    helm delete <my-chart-name>
 
 
-Converting YAML files into helm charts
-##############################
-
+* Converting YAML files into helm charts
 Using helmify
 
 
-1. Step1 . Installation of helmify
+1. Installation of `helmify <https://formulae.brew.sh/formula/helmify>`_
 
-   (https://formulae.brew.sh/formula/helmify)
 
-2. Step2 . Convert YAML files to Helm chart
+2. Convert YAML files to Helm chart
 
-    a . For single yaml file: 
+a. For single yaml file: 
+
+.. code-block::
+
+        cat <your-yamlfile-name>.yaml | helmify <chart-name>
+
+    
+b. From directory with yamls: 
         
-        :code:`cat <your-yamlfile-name>.yaml | helmify <chart-name>`
+.. code-block::
 
-    b . From directory with yamls: 
-        
-        :code:`awk 'FNR==1 && NR!=1  {print "---"}{print}' /<my_directory>/*.yaml | helmify <helmchart-folder-name>`
+        `awk 'FNR==1 && NR!=1  {print "---"}{print}' /<my_directory>/*.yaml | helmify <helmchart-folder-name>`
