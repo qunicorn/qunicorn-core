@@ -16,6 +16,7 @@ from http import HTTPStatus
 from typing import Any, Optional, TypeVar, Sequence, TypeAlias
 
 from sqlalchemy.orm import declared_attr
+from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.sql import Select, select
 from sqlalchemy.sql._typing import _ColumnExpressionArgument
 
@@ -36,6 +37,13 @@ class DbModel:
         return self.__name__.replace("Dataclass", "")
 
     @classmethod
+    def apply_ordering(cls, query: Select[T]) -> Select[T]:
+        id_ = getattr(cls, "id", None)
+        if isinstance(id_, InstrumentedAttribute):
+            return query.order_by(id_)
+        return query
+
+    @classmethod
     def apply_authentication_filter(cls, query: Select[T], user_id: Optional[str]) -> Select[T]:
         return query
 
@@ -49,6 +57,7 @@ class DbModel:
         Limit and offset can be used for pagination.
         """
         q = select(cls)
+        q = cls.apply_ordering(q)
         if where:
             q = q.where(*where)
 
@@ -76,6 +85,7 @@ class DbModel:
         Limit and offset can be used for pagination.
         """
         inner_q = select(cls)
+        inner_q = cls.apply_ordering(inner_q)
         if where:
             inner_q = inner_q.where(*where)
         q = cls.apply_authentication_filter(inner_q, user_id)

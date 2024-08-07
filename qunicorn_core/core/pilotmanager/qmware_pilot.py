@@ -198,7 +198,13 @@ class QMwarePilot(Pilot):
                     hex_counts[hex_measurement] = hits
                     hex_probabilities[hex_measurement] = hits / qunicorn_job.shots
 
-                circuit = qasm2.loads(program_state.data["circuit"])
+                try:
+                    circuit = qasm2.loads(program_state.data["circuit"])
+                except qasm2.exceptions.QASM2ParseError:
+                    circuit = qasm2.loads(
+                        program_state.data["circuit"], custom_instructions=qasm2.LEGACY_CUSTOM_INSTRUCTIONS
+                    )
+
                 register_metadata = []
 
                 for classical_register in circuit.cregs:
