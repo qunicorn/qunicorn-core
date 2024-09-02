@@ -11,21 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from datetime import datetime, timezone
-from typing import Union
-
-from qunicorn_core.api.api_models import DeploymentDto, DeploymentUpdateDto
+from qunicorn_core.api.api_models import DeploymentDto
 from qunicorn_core.core.mapper import quantum_program_mapper
 from qunicorn_core.db.models.deployment import DeploymentDataclass
-
-
-def new_dto_to_dataclass(deployment: Union[DeploymentDto, DeploymentUpdateDto]) -> DeploymentDataclass:
-    return DeploymentDataclass(
-        name=deployment.name,
-        deployed_at=datetime.now(timezone.utc),
-        deployed_by=deployment.deployed_by,
-        programs=[quantum_program_mapper.dto_to_dataclass(qc) for qc in deployment.programs],
-    )
 
 
 def dataclass_to_dto(deployment: DeploymentDataclass) -> DeploymentDto:
