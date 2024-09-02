@@ -99,7 +99,7 @@ class CircuitTranspiler:
 
     @staticmethod
     def _get_transpiler_chain(  # noqa: C901
-        source: Union[str, Sequence[str]],
+        source: Union[str, Sequence[Union[str, tuple[str, int]]]],
         target: str,
         *,
         cost: Callable[["CircuitTranspiler"], float],
@@ -158,7 +158,7 @@ class CircuitTranspiler:
 
     @staticmethod
     def get_transpilers_limit_depth(
-        source: Union[str, Sequence[str]],
+        source: Union[str, Sequence[Union[str, tuple[str, int]]]],
         target: str,
         *,
         exclude: Optional[set[Union[str, Type["CircuitTranspiler"]]]] = None,
@@ -197,10 +197,11 @@ class CircuitTranspiler:
 
 def transpile_circuit(
     target: str,
-    *circuit: tuple[str, Any],
+    *circuit: tuple[str, Any, int],
     exclude: Optional[set[Union[str, Type[CircuitTranspiler]]]] = None,
     exclude_formats: Optional[set[str]] = None,
     exclude_unsafe: bool = False,
+    visitor: Optional[Callable[[str, Any, int], None]] = None,
 ) -> Any:
     """Transpile a circuit available in one or more source formats to a specific target format.
 
@@ -212,6 +213,7 @@ def transpile_circuit(
         Applies to both source and target formats!
         exclude_unsafe (bool, optional): exclude unsafe transpilers from transpilation.
         Defaults to False.
+        visitor (Callable[[str, Any, int], None]], optional): gets called for every translated circuit.
 
     Raises:
         ValueError: If no circuit is provided or either the target format or all
@@ -227,9 +229,9 @@ def transpile_circuit(
     elif len(circuit) == 1:
         source_format = circuit[0][0]
     else:
-        source_format = [c[0] for c in circuit]
+        source_format = [(c[0], c[2]) for c in circuit]
 
-    for source, c in circuit:
+    for source, c, _ in circuit:
         if source == target:
             # return fast if target format is already available
             return c
@@ -247,16 +249,16 @@ def transpile_circuit(
     # get the format the transpiler chain starts with
     first_circuit_format = transpiler_chain[0].source if transpiler_chain else target
 
-    current_circuit = next(c for s, c in circuit if s == first_circuit_format)
+    current_circuit, current_cost = next((c, cost) for s, c, cost in circuit if s == first_circuit_format)
 
     for transpiler in transpiler_chain:
         try:
             current_circuit = transpiler.transpile_circuit(current_circuit)
+            current_cost += transpiler.cost
         except Exception as err:
             raise TranspilationError(transpiler, current_circuit) from err
 
-        if isinstance(current_circuit, (str, bytes)):
-            # circuit is in a format that can be safely stored in the database
-            pass  # TODO implement persistence
+        if visitor:
+            visitor(transpiler.target, current_circuit, current_cost)
 
     return current_circuit

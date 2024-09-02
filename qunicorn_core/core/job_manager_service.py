@@ -22,7 +22,7 @@ from qunicorn_core.core.pilotmanager import pilot_manager
 from qunicorn_core.core.pilotmanager.base_pilot import Pilot
 from qunicorn_core.core.transpiler import transpile_circuit, TranspilationError
 from qunicorn_core.db.models.job import JobDataclass
-from qunicorn_core.db.models.quantum_program import QuantumProgramDataclass
+from qunicorn_core.db.models.quantum_program import QuantumProgramDataclass, TranslatedProgramDataclass
 from qunicorn_core.db.models.result import ResultDataclass
 from qunicorn_core.static.enums.job_state import JobState
 from qunicorn_core.static.qunicorn_exception import QunicornError
@@ -91,6 +91,27 @@ def _transpile_circuits(  # noqa: C901
             transpiled_circuits.append((program, program.quantum_circuit))
             continue
 
+        existing_translations = [
+            (t.assembler_language, t.circuit, t.translation_distance) for t in program.translations
+        ]
+
+        def persist_translation(assembler_language: str, quantum_circuit: Any, translation_distance: int):
+            if isinstance(quantum_circuit, (str, bytes)):
+                # circuit is in a format that can be safely stored in the database
+                if any(t.assembler_language == assembler_language for t in program.translations):
+                    return  # already persisted
+                is_string = isinstance(quantum_circuit, str)
+                if is_string:
+                    quantum_circuit = quantum_circuit.encode()
+                translated = TranslatedProgramDataclass(
+                    quantum_circuit=quantum_circuit,
+                    is_string=is_string,
+                    assembler_language=assembler_language,
+                    translation_distance=translation_distance,
+                    program=program,
+                )
+                translated.save(commit=True)
+
         try:
             # Preprocess a string to a circuit object if necessary
             last_error = None
@@ -98,10 +119,12 @@ def _transpile_circuits(  # noqa: C901
                 try:
                     circuit = transpile_circuit(
                         target,
-                        (src_language, program.quantum_circuit),
+                        (src_language, program.quantum_circuit, 0),
+                        *existing_translations,
                         exclude=config.get("EXCLUDE_TRANSPILERS", None),
                         exclude_formats=config.get("EXCLUDE_FORMATS", None),
                         exclude_unsafe=config.get("EXCLUDE_UNSAFE_TRANSPILERS", True),
+                        visitor=persist_translation,
                     )
                     transpiled_circuits.append((program, circuit))
                     break  # break inner loop after first successfull transpilation
