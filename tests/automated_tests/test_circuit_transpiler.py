@@ -24,25 +24,25 @@ from qunicorn_core.core.transpiler.qiskit_transpiler import Qasm3ToQiskit, Qiski
 
 def test_no_transpile():
     circuit = QuantumCircuit()
-    transpiled = transpile_circuit("QISKIT", ("QISKIT", circuit))
+    transpiled = transpile_circuit("QISKIT", ("QISKIT", circuit, 0))
     assert transpiled is circuit
 
 
 def test_no_transpile_multiple():
     circuit = QuantumCircuit()
-    transpiled = transpile_circuit("QISKIT", ("QASM2", "test"), ("QISKIT", circuit), ("QASM3", "test2"))
+    transpiled = transpile_circuit("QISKIT", ("QASM2", "test", 0), ("QISKIT", circuit, 0), ("QASM3", "test2", 0))
     assert transpiled is circuit
 
 
 def test_qasm2_roundtrip():
     circuit = QuantumCircuit(1)
     circuit.h(0)
-    qasm2 = transpile_circuit("QASM2", ("QISKIT", circuit))
+    qasm2 = transpile_circuit("QASM2", ("QISKIT", circuit, 0))
     assert isinstance(qasm2, str)
     assert "OPENQASM 2.0;" in qasm2
     assert "h q[0];" in qasm2
     assert "measure" not in qasm2
-    transpiled = transpile_circuit("QISKIT", ("QASM2", qasm2))
+    transpiled = transpile_circuit("QISKIT", ("QASM2", qasm2, 0))
     assert isinstance(transpiled, QuantumCircuit)
     assert transpiled.num_qubits == circuit.num_qubits
     for t_gate, c_gate in zip([g for g in transpiled], [g for g in circuit]):
