@@ -11,9 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import uuid
 from http import HTTPStatus
 from typing import Optional, Union
+
+import requests
+from flask import current_app
 
 from qunicorn_core.api.api_models import DeviceDto
 from qunicorn_core.core.pilotmanager.aws_pilot import AWSPilot
@@ -28,6 +31,7 @@ from qunicorn_core.db.models.provider import ProviderDataclass
 from qunicorn_core.static.qunicorn_exception import QunicornError
 
 PILOTS: list[Pilot] = [IBMPilot(), AWSPilot(), RigettiPilot(), QMwarePilot()]
+provider_name_map = {"IBM": "ibmq"}  # "<Qunicorn Provider Name>: <QPROV Provider Name>"
 
 """"This Class is responsible for managing the pilots and their data, all pilots are saved in the PILOTS list"""
 
@@ -47,6 +51,37 @@ def update_devices_from_provider(provider_id: int, token: Optional[str]):
     provider: ProviderDataclass = ProviderDataclass.get_by_id_or_404(provider_id)
     pilot: Pilot = get_matching_pilot(provider.name)
     pilot.save_devices_from_provider(token)
+
+    updated_provider = ProviderDataclass.get_by_id_or_404(provider_id)
+    qprov_provider_name = provider_name_map[updated_provider.name]
+    qprov_root_url = current_app.config.get("QPROV_URL")
+
+    if qprov_root_url is None:
+        current_app.logger.info("QPROV_URL not set, skipping QPROV update")
+        return
+
+    response = requests.get(f"{qprov_root_url}/providers")
+    response.raise_for_status()
+    qprov_providers = response.json()["_embedded"]["providerDtoes"]
+
+    for qprov_provider in qprov_providers:
+        if qprov_provider["name"] == qprov_provider_name:
+            qprov_id = qprov_provider["id"]
+            provider.qprov_id = uuid.UUID(qprov_id)
+
+            response = requests.get(f"{qprov_root_url}/qprov/providers/{qprov_id}/qpus")
+            response.raise_for_status()
+            qprov_qpus = response.json()["_embedded"]["qpuDtoes"]
+            qpu_name_id_map = {}
+
+            for qpu in qprov_qpus:
+                qpu_name_id_map[qpu["name"]] = qpu["id"]
+
+            for device in updated_provider.devices:
+                if device.name in qpu_name_id_map:
+                    device.qprov_id = uuid.UUID(qpu_name_id_map[device.name])
+
+            provider.save(commit=True)
 
 
 def check_if_device_available_from_provider(device: Union[DeviceDataclass, DeviceDto], token: Optional[str]) -> bool:

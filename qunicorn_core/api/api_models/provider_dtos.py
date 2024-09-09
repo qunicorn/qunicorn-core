@@ -16,7 +16,7 @@
 """Module containing all Dtos and their Schemas  for tasks in the Services API."""
 from dataclasses import dataclass
 
-from flask import url_for
+from flask import url_for, current_app
 import marshmallow as ma
 
 from ..flask_api_utils import MaBaseSchema
@@ -38,6 +38,7 @@ class ProviderDtoSchema(MaBaseSchema):
     with_token = ma.fields.Boolean(required=False, allow_none=True)
     supported_languages = ma.fields.List(ma.fields.Enum(required=True, allow_none=False, enum=AssemblerLanguage))
     name = ma.fields.Str(required=True, allow_none=False)
+    qprov_link = ma.fields.Function(lambda obj: create_qprov_provider_link(obj))
     self = ma.fields.Function(lambda obj: url_for("provider-api.ProviderIDView", provider_id=obj.id))
     devices = ma.fields.Function(lambda obj: url_for("device-api.DeviceView", provider=obj.id))
 
@@ -53,3 +54,21 @@ class ProviderFilterParamsSchema(MaBaseSchema):
         load_only=True,
         description="Use % as wildcard and \\ to escape a % wildcard.",
     )
+
+
+def create_qprov_provider_link(provider: ProviderDto):
+    from ...db.models.provider import ProviderDataclass
+
+    qprov_id = ProviderDataclass.get_by_id_or_404(provider.id).qprov_id
+
+    if qprov_id is None:
+        return ma.missing
+
+    qprov_root_url = current_app.config.get("QPROV_URL")
+
+    if qprov_root_url is None:
+        return ma.missing
+
+    qprov_link = f"{qprov_root_url}/qprov/providers/{qprov_id}"
+
+    return qprov_link
