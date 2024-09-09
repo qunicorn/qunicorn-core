@@ -13,8 +13,11 @@
 # limitations under the License.
 
 """test circuit transpilers"""
+from itertools import pairwise
+
 import pytest
 from qiskit import QuantumCircuit
+from qiskit.qasm2 import dumps as qasm2_dumps
 
 from qunicorn_core.core.transpiler import transpile_circuit
 from qunicorn_core.core.transpiler.braket_transpiler import Qasm3ToBraket, BraketToQasm3
@@ -53,6 +56,31 @@ def test_qasm2_roundtrip():
         assert len(t_gate.clbits) == len(c_gate.clbits)
         for t_clbit, c_clbit in zip(t_gate.clbits, c_gate.clbits):
             assert repr(t_clbit) == repr(c_clbit)
+
+
+def test_visitor():
+    circuit = QuantumCircuit(1)
+    circuit.h(0)
+
+    in_between = []
+
+    def visitor(format_: str, circuit, cost: int):
+        in_between.append((format_, circuit, cost))
+
+    transpiled = transpile_circuit("BRAKET", ("QASM2", qasm2_dumps(circuit), 0), visitor=visitor)
+
+    assert transpiled is not None, "transpilation failed"
+    assert len(in_between) > 1, "visitor failed"
+    assert len(in_between) <= len(
+        CircuitTranspiler.get_known_formats()
+    ), "transpilation should never require more steps than there are known formats!"
+    assert transpiled is in_between[-1][1], "last visited reulst should be result of transpilation"
+    assert "BRAKET" == in_between[-1][0], "last visited result should have correct format"
+    assert all(a[2] > 0 for a in in_between), "transpilation cost must be positive!"
+    assert all(a[2] < b[2] for a, b in pairwise(in_between)), "transpilation cost shoud be strictly increasing!"
+    assert any(
+        isinstance(a[1], (str, bytes)) for a in in_between
+    ), "transpilation for this specific path should require at least one serializable in between format."
 
 
 qasm3_circuit_no_gates = """include "stdgates.inc";
