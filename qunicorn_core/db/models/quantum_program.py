@@ -50,6 +50,14 @@ class QuantumProgramDataclass(DbModel):
         lambda: deployment_model.DeploymentDataclass, back_populates="programs", lazy="selectin", default=None
     )
 
+    translations: Mapped[list["TranslatedProgramDataclass"]] = relationship(
+        lambda: TranslatedProgramDataclass,
+        back_populates="program",
+        lazy="select",
+        cascade="all, delete-orphan",
+        default_factory=list,
+    )
+
     # Experimental
     python_file_path: Mapped[Optional[str]] = mapped_column(sql.String(500), default=None, nullable=True)
     python_file_metadata: Mapped[Optional[str]] = mapped_column(sql.String(500), default=None, nullable=True)
@@ -67,3 +75,37 @@ class QuantumProgramDataclass(DbModel):
                 deployment_model.DeploymentDataclass.deployed_by == user_id,
             )
         )
+
+
+@REGISTRY.mapped_as_dataclass
+class TranslatedProgramDataclass(DbModel):
+    """Dataclass for storing Translated QuantumPrograms
+
+    Attributes:
+        id (int): The ID of the quantum program. (set by the database)
+        quantum_circuit (bytes|None): Quantum code that needs to be executed.
+        assembler_language (str|None): Assembler language in which the code should be interpreted.
+        translation_distance (int): The distance of this translation from the source.
+        program_id (QuantumProgramDataclass, optional): The QuanrumProgram this translation is based on.
+    """
+
+    # non-default arguments
+    id: Mapped[int] = mapped_column(sql.INTEGER(), primary_key=True, autoincrement=True, init=False)
+    quantum_circuit: Mapped[bytes] = mapped_column(sql.BLOB(), nullable=False)
+    is_string: Mapped[bool] = mapped_column(sql.BOOLEAN(), nullable=False)
+    assembler_language: Mapped[str] = mapped_column(sql.String(50), nullable=False)
+    translation_distance: Mapped[int] = mapped_column(sql.INTEGER(), nullable=False)
+
+    # default arguments
+    program_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey(QuantumProgramDataclass.id, ondelete="CASCADE"), default=None, nullable=True, init=False
+    )
+    program: Mapped[Optional[QuantumProgramDataclass]] = relationship(
+        QuantumProgramDataclass, back_populates="translations", lazy="select", default=None
+    )
+
+    @property
+    def circuit(self) -> str | bytes:
+        if self.is_string:
+            return self.quantum_circuit.decode()
+        return self.quantum_circuit
