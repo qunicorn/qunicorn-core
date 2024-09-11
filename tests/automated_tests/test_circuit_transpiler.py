@@ -83,6 +83,24 @@ def test_visitor():
     ), "transpilation for this specific path should require at least one serializable in between format."
 
 
+def test_tranpile_with_cached_results():
+    circuit = QuantumCircuit(1)
+    circuit.h(0)
+
+    in_between = []
+
+    def visitor(format_: str, circuit, cost: int):
+        in_between.append((format_, circuit, cost))
+
+    transpile_circuit("BRAKET", ("QASM2", qasm2_dumps(circuit), 0), visitor=visitor)
+
+    extra_circuits = in_between[:-1]  # remove last target circuit
+
+    transpiled = transpile_circuit("BRAKET", ("QASM2", qasm2_dumps(circuit), 0), *extra_circuits)
+
+    assert transpiled is not None, "transpilation with cached transpilation results failed"
+
+
 qasm3_circuit_no_gates = """include "stdgates.inc";
 qubit[1] q;
 bit[1] c;
