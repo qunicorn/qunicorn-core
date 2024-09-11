@@ -229,7 +229,7 @@ def transpile_circuit(
     elif len(circuit) == 1:
         source_format = circuit[0][0]
     else:
-        source_format = [(c[0], c[2]) for c in circuit]
+        source_format = [c[0] for c in circuit]
 
     for source, c, _ in circuit:
         if source == target:
