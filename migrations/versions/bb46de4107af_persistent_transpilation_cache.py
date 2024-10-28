@@ -22,7 +22,7 @@ def upgrade():
     op.create_table(
         "TranslatedProgram",
         sa.Column("id", sa.INTEGER(), autoincrement=True, nullable=False),
-        sa.Column("quantum_circuit", sa.BLOB(), nullable=False),
+        sa.Column("quantum_circuit", sa.LargeBinary(), nullable=False),
         sa.Column("is_string", sa.BOOLEAN(), nullable=False),
         sa.Column("assembler_language", sa.String(length=50), nullable=False),
         sa.Column("translation_distance", sa.INTEGER(), nullable=False),
