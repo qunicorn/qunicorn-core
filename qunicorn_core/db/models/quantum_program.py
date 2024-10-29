@@ -91,7 +91,7 @@ class TranslatedProgramDataclass(DbModel):
 
     # non-default arguments
     id: Mapped[int] = mapped_column(sql.INTEGER(), primary_key=True, autoincrement=True, init=False)
-    quantum_circuit: Mapped[bytes] = mapped_column(sql.BLOB(), nullable=False)
+    quantum_circuit: Mapped[bytes] = mapped_column(sql.LargeBinary(), nullable=False)
     is_string: Mapped[bool] = mapped_column(sql.BOOLEAN(), nullable=False)
     assembler_language: Mapped[str] = mapped_column(sql.String(50), nullable=False)
     translation_distance: Mapped[int] = mapped_column(sql.INTEGER(), nullable=False)
