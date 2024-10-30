@@ -12,17 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Any, List, Optional, Sequence, Tuple
+from typing import Any, List, Optional, Sequence
 
 from flask import current_app
 
 from qunicorn_core.celery import CELERY
 from qunicorn_core.core.mapper import result_mapper
 from qunicorn_core.core.pilotmanager import pilot_manager
-from qunicorn_core.core.pilotmanager.base_pilot import Pilot
+from qunicorn_core.core.pilotmanager.base_pilot import Pilot, PilotJob
 from qunicorn_core.core.transpiler import transpile_circuit, TranspilationError
 from qunicorn_core.db.models.job import JobDataclass
-from qunicorn_core.db.models.quantum_program import QuantumProgramDataclass, TranslatedProgramDataclass
+from qunicorn_core.db.models.quantum_program import TranslatedProgramDataclass
 from qunicorn_core.db.models.result import ResultDataclass
 from qunicorn_core.static.enums.job_state import JobState
 from qunicorn_core.static.qunicorn_exception import QunicornError
@@ -54,7 +54,7 @@ def run_job(job_id: int):
         circuits = _transpile_circuits(job, pilot.supported_languages)
 
         current_app.logger.info(f"Run job with id {job_id} on {pilot.__class__}")
-        pilot.execute(job, circuits, token=token)
+        pilot.execute(circuits, token=token)
 
     except Exception as err:
         if isinstance(err, QunicornError) and err.data.get("message", "").startswith("Transpilation Error"):
@@ -66,9 +66,7 @@ def run_job(job_id: int):
         raise err
 
 
-def _transpile_circuits(  # noqa: C901
-    job: JobDataclass, dest_languages: Sequence[str]
-) -> Sequence[Tuple[QuantumProgramDataclass, Any]]:
+def _transpile_circuits(job: JobDataclass, dest_languages: Sequence[str]) -> Sequence[PilotJob]:  # noqa: C901
     """Transforms all circuits of the deployment into the circuits in the destination language"""
     current_app.logger.info(f"Transpile all circuits of job with id {job.id}")
     error_results: list[ResultDataclass] = []
@@ -78,7 +76,7 @@ def _transpile_circuits(  # noqa: C901
 
     config = current_app.config
 
-    transpiled_circuits: List[Tuple[QuantumProgramDataclass, Any]] = []
+    transpiled_circuits: List[PilotJob] = []
 
     # Transform each circuit into a transpiled circuit for the necessary language
     for program in job.deployment.programs:
@@ -88,7 +86,9 @@ def _transpile_circuits(  # noqa: C901
 
         if src_language is None:
             # source language is not known, try circuit as is
-            transpiled_circuits.append((program, program.quantum_circuit))
+            transpiled_circuits.append(
+                PilotJob(circuit=program.quantum_circuit, job=job, program=program, circuit_fragment_id=None)
+            )
             continue
 
         existing_translations = [
@@ -126,7 +126,9 @@ def _transpile_circuits(  # noqa: C901
                         exclude_unsafe=config.get("EXCLUDE_UNSAFE_TRANSPILERS", True),
                         visitor=persist_translation,
                     )
-                    transpiled_circuits.append((program, circuit))
+                    transpiled_circuits.append(
+                        PilotJob(circuit=circuit, job=job, program=program, circuit_fragment_id=None)
+                    )
                     break  # break inner loop after first successfull transpilation
                 except KeyError:
                     pass  # did not find a valid transpiler chain

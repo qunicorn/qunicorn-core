@@ -16,12 +16,13 @@ import os
 from datetime import datetime
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any, List, Optional, Sequence, Tuple, Union, Generator
+from typing import Any, List, Optional, Sequence, Tuple, Union, Generator, NamedTuple, Dict
 
 from celery.states import PENDING
 
 from qunicorn_core.api.api_models.device_dtos import DeviceDto
 from qunicorn_core.celery import CELERY
+from qunicorn_core.db.db import DB
 from qunicorn_core.db.models.deployment import DeploymentDataclass
 from qunicorn_core.db.models.device import DeviceDataclass
 from qunicorn_core.db.models.job import JobDataclass
@@ -30,8 +31,22 @@ from qunicorn_core.db.models.quantum_program import QuantumProgramDataclass
 from qunicorn_core.db.models.result import ResultDataclass
 from qunicorn_core.static.enums.job_state import JobState
 from qunicorn_core.static.enums.job_type import JobType
+from qunicorn_core.static.enums.result_type import ResultType
 from qunicorn_core.static.qunicorn_exception import QunicornError
 from qunicorn_core.util.utils import is_running_asynchronously
+
+
+class PilotJob(NamedTuple):
+    circuit: Any
+    job: JobDataclass
+    program: QuantumProgramDataclass
+    circuit_fragment_id: Optional[int]
+
+
+class PilotJobResult(NamedTuple):
+    data: Any
+    meta: Dict[str, Any]
+    result_type: ResultType
 
 
 class Pilot:
@@ -40,15 +55,11 @@ class Pilot:
     provider_name: str
     supported_languages: Sequence[str]
 
-    def run(
-        self, job: JobDataclass, circuits: Sequence[Tuple[QuantumProgramDataclass, Any]], token: Optional[str] = None
-    ) -> JobState:
+    def run(self, jobs: Sequence[PilotJob], token: Optional[str] = None):
         """Run a job of type RUNNER on a backend using a Pilot"""
         raise NotImplementedError()
 
-    def execute_provider_specific(
-        self, job: JobDataclass, circuits: Sequence[Tuple[QuantumProgramDataclass, Any]], token: Optional[str] = None
-    ) -> JobState:
+    def execute_provider_specific(self, jobs: Sequence[PilotJob], job_type: str, token: Optional[str] = None):
         """Execute a job of a provider specific type on a backend using a Pilot"""
         raise NotImplementedError()
 
@@ -72,15 +83,18 @@ class Pilot:
         """Get device data for a specific device from the provider"""
         raise NotImplementedError()
 
-    def execute(
-        self, job: JobDataclass, circuits: Sequence[Tuple[QuantumProgramDataclass, Any]], token: Optional[str] = None
-    ) -> JobState:
+    def execute(self, jobs: Sequence[PilotJob], token: Optional[str] = None):
         """Execute a job on a backend using a Pilot"""
 
-        if job.type == JobType.RUNNER.value:
-            return self.run(job, circuits, token=token)
+        job_types = set(j.job.type for j in jobs)
+        assert len(job_types) == 1, "All jobs must have the same type!"
+
+        job_type = job_types.pop()
+
+        if job_type == JobType.RUNNER.value:
+            self.run(jobs, token=token)
         else:
-            return self.execute_provider_specific(job, circuits, token=token)
+            self.execute_provider_specific(jobs, job_type=job_type, token=token)
 
     def cancel(self, job_id: Optional[int], user_id: Optional[str], token: Optional[str] = None):
         """Cancel the execution of a job, locally or if that is not possible at the backend"""
@@ -103,6 +117,51 @@ class Pilot:
     def cancel_provider_specific(self, job: JobDataclass, token: Optional[str] = None):
         """Cancel execution of a job at the corresponding backend"""
         raise NotImplementedError()
+
+    def save_results(self, job: PilotJob, results: Sequence[PilotJobResult], commit: bool = False):
+        contains_error = False
+
+        for result in results:
+            if result.result_type == ResultType.ERROR:
+                contains_error = True
+
+            if job.circuit_fragment_id is not None:
+                pass  # FIXME handle fragmented jobs (i.e. split circuit results)
+
+            else:
+                res = ResultDataclass(
+                    job=job.job,
+                    program=job.program,
+                    data=result.data,
+                    meta=result.meta,
+                    result_type=result.result_type,
+                )
+                res.save()
+
+        if contains_error:
+            job.job.state = JobState.ERROR
+            job.job.save(commit=commit)
+            return
+
+        new_state = self.determine_db_job_state(db_job=job.job)
+        if job.job.state != new_state:
+            job.job.state = new_state
+            job.job.save()
+
+        if commit:
+            DB.session.commit()
+
+    def determine_db_job_state(self, db_job: JobDataclass) -> JobState:
+        if db_job.state in (JobState.CANCELED, JobState.ERROR, JobState.FINISHED):
+            return db_job.state
+
+        if db_job.deployment:
+            all_programs = set(p.id for p in db_job.deployment.programs)
+            programs_with_results = set(r.program.id for r in db_job.results if r.program)
+            if programs_with_results >= all_programs:
+                return JobState.FINISHED
+
+        return JobState(db_job.state)
 
     def has_same_provider(self, provider_name: str) -> bool:
         """Check if the provider name is the same as the pilot provider name"""
