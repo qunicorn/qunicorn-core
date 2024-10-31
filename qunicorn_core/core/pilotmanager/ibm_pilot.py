@@ -15,6 +15,7 @@
 import traceback
 from http import HTTPStatus
 from os import environ
+from itertools import groupby
 from pathlib import Path
 from typing import Any, List, Optional, Sequence, Tuple, Union, Dict
 
@@ -37,12 +38,14 @@ from qiskit_ibm_runtime import (
 )
 
 from qunicorn_core.api.api_models import DeviceDto
-from qunicorn_core.core.pilotmanager.base_pilot import Pilot
+from qunicorn_core.core.pilotmanager.base_pilot import Pilot, PilotJob, PilotJobResult
+from qunicorn_core.db.db import DB
 from qunicorn_core.db.models.device import DeviceDataclass
 from qunicorn_core.db.models.job import JobDataclass
 from qunicorn_core.db.models.provider import ProviderDataclass
 from qunicorn_core.db.models.quantum_program import QuantumProgramDataclass
 from qunicorn_core.db.models.result import ResultDataclass
+from qunicorn_core.db.models.job_state import TransientJobStateDataclass
 from qunicorn_core.static.enums.assembler_languages import AssemblerLanguage
 from qunicorn_core.static.enums.job_state import JobState
 from qunicorn_core.static.enums.job_type import JobType
@@ -81,45 +84,58 @@ class IBMPilot(Pilot):
 
     def run(
         self,
-        job: JobDataclass,
-        circuits: Sequence[Tuple[QuantumProgramDataclass, QuantumCircuit]],
-        token: Optional[str] = None,
-    ) -> JobState:
+        jobs: Sequence[PilotJob],
+        token: Optional[str] = None
+    ):
         """Execute a job local using aer simulator or a real backend"""
-        if job.id is None:
-            raise QunicornError("Job has no database ID and cannot be executed!")
-        device = job.executed_on
-        if device is None:
-            raise QunicornError("The job does not have any device associated!")
+        batched_jobs = groupby(jobs, lambda j: j.job)
 
-        backend: Backend
-        if device.is_local:
-            backend = qiskit_aer.Aer.get_backend("aer_simulator")
-        else:
-            provider = self.__get_provider_login_and_update_job(token, job)
-            backend = provider.get_backend(device.name)
+        for db_job, pilot_jobs in batched_jobs:
+            device = db_job.executed_on
+            if device is None:
+                db_job.save_error(
+                    QunicornError("The job does not have any device associated!")
+                )
+                continue  # one job failing should not affect other jobs
 
-        programs = [p for p, _ in circuits]
-        transpiled_circuits = [c for _, c in circuits]
+            backend: Backend
+            if device.is_local:
+                backend = qiskit_aer.Aer.get_backend("aer_simulator")
+            else:
+                provider = self.__get_provider_login_and_update_job(token, db_job)
+                backend = provider.get_backend(device.name)
 
-        backend_specific_circuits = transpile(transpiled_circuits, backend)
-        qiskit_job = backend.run(backend_specific_circuits, shots=job.shots)
-        job.provider_specific_id = qiskit_job.job_id()
-        job.save(commit=True)
+            pilot_jobs = list(pilot_jobs)
 
-        result = qiskit_job.result()
-        results: list[ResultDataclass] = IBMPilot.__map_runner_results_to_dataclass(
-            result, job, programs, backend_specific_circuits
-        )
+            backend_specific_circuits = transpile([j.circuit for j in pilot_jobs], backend)
+            qiskit_job = backend.run(backend_specific_circuits, shots=db_job.shots)
 
-        # AerCircuit is not serializable and needs to be removed
-        for res in results:
-            if res is not None and "circuit" in res.meta:
-                res.meta.pop("circuit")
+            job_state: Optional[TransientJobStateDataclass] = None
 
-        job.save_results(results, JobState.FINISHED)
+            for state in db_job._transient:
+                if state.program is not None and isinstance(state.data, dict):
+                    if state.data.get("type") == "IBM":
+                        job_state = state
+                        break
+            else:
+                job_state = TransientJobStateDataclass(db_job, data={"type": "IBM"})
 
-        return JobState.FINISHED
+            provider_specific_ids = job_state.data.get("provider_ids", [])
+            provider_specific_ids.append(qiskit_job.job_id())
+            job_state.data = dict(job_state.data) | {"provider_ids": provider_specific_ids}
+            job_state.save()
+
+            db_job.state = JobState.RUNNING.value
+            db_job.save(commit=True)
+
+            result = qiskit_job.result()
+            mapped_results: list[Sequence[PilotJobResult]] = IBMPilot.__map_runner_results(
+                result, backend_specific_circuits
+            )
+
+            for pilot_results, pilot_job in zip(mapped_results, pilot_jobs):
+                self.save_results(pilot_job, pilot_results)
+            DB.session.commit()
 
     def cancel_provider_specific(self, job: JobDataclass, token: Optional[str] = None):
         """Cancel a job on an IBM backend using the IBM Pilot"""
@@ -177,7 +193,7 @@ class IBMPilot(Pilot):
 
         self.__get_provider_login_and_update_job(token, job.id)
         service: QiskitRuntimeService = QiskitRuntimeService()
-        return service.job(job.provider_specific_id)
+        return service.job(job.provider_specific_id)  # FIXME use ids from transient state!
 
     @staticmethod
     def get_ibm_provider_and_login(token: Optional[str]) -> QiskitRuntimeService:
@@ -276,13 +292,11 @@ class IBMPilot(Pilot):
         return service
 
     @staticmethod
-    def __map_runner_results_to_dataclass(
+    def __map_runner_results(
         ibm_result: Result,
-        job: JobDataclass,
-        programs: Sequence[QuantumProgramDataclass],
         circuits: List[QuantumCircuit] = None,
-    ) -> list[ResultDataclass]:
-        results: list[ResultDataclass] = []
+    ) -> list[Sequence[PilotJobResult]]:
+        results: list[Sequence[PilotJobResult]] = []
 
         try:
             binary_counts = ibm_result.get_counts()
@@ -293,6 +307,9 @@ class IBMPilot(Pilot):
             binary_counts = [binary_counts]
 
         for i, result in enumerate(ibm_result.results):
+            pilot_results: list[PilotJobResult] = []
+            results.append(pilot_results)
+
             metadata = result.to_dict()
             metadata["format"] = "hex"
             classical_registers_metadata = []
@@ -307,9 +324,8 @@ class IBMPilot(Pilot):
 
             hex_counts = IBMPilot._binary_counts_to_hex(binary_counts[i])
 
-            results.append(
-                ResultDataclass(
-                    program=programs[i],
+            pilot_results.append(
+                PilotJobResult(
                     result_type=ResultType.COUNTS,
                     data=hex_counts if hex_counts else {"": 0},
                     meta=metadata,
@@ -318,9 +334,8 @@ class IBMPilot(Pilot):
 
             probabilities: dict = Pilot.calculate_probabilities(hex_counts) if hex_counts else {"": 0}
 
-            results.append(
-                ResultDataclass(
-                    program=programs[i],
+            pilot_results.append(
+                PilotJobResult(
                     result_type=ResultType.PROBABILITIES,
                     data=probabilities,
                     meta=metadata,
