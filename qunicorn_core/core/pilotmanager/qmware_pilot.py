@@ -260,9 +260,7 @@ class QMwarePilot(Pilot):
             return JobState.FINISHED
         return super().determine_db_job_state(db_job)
 
-    def execute_provider_specific(
-        self, jobs: Sequence[PilotJob], job_type: str, token: Optional[str] = None
-    ) -> JobState:
+    def execute_provider_specific(self, jobs: Sequence[PilotJob], job_type: str, token: Optional[str] = None):
         """Execute a job of a provider specific type on a backend using a Pilot"""
         raise QunicornError("No valid Job Type specified. QMware Pilot does not support provider specific job types.")
 
