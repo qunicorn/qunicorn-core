@@ -69,6 +69,6 @@ def create_qprov_provider_link(provider: ProviderDto):
     if qprov_root_url is None:
         return ma.missing
 
-    qprov_link = f"{qprov_root_url}/qprov/providers/{qprov_id}"
+    qprov_link = f"{qprov_root_url}/providers/{qprov_id}"
 
     return qprov_link
