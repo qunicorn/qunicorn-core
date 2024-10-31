@@ -14,7 +14,7 @@
 import json
 import os
 from time import time
-from typing import Any, List, Optional, Sequence, Tuple, Union, Dict
+from typing import List, Optional, Sequence, Union, Dict
 from urllib.parse import urljoin
 
 import requests
@@ -24,13 +24,12 @@ from requests.exceptions import ConnectionError
 
 from qunicorn_core.celery import CELERY
 from qunicorn_core.api.api_models.device_dtos import DeviceDto
-from qunicorn_core.core.pilotmanager.base_pilot import Pilot
+from qunicorn_core.core.pilotmanager.base_pilot import Pilot, PilotJob, PilotJobResult
+from qunicorn_core.db.db import DB
 from qunicorn_core.db.models.device import DeviceDataclass
 from qunicorn_core.db.models.job import JobDataclass
 from qunicorn_core.db.models.job_state import TransientJobStateDataclass
 from qunicorn_core.db.models.provider import ProviderDataclass
-from qunicorn_core.db.models.quantum_program import QuantumProgramDataclass
-from qunicorn_core.db.models.result import ResultDataclass
 from qunicorn_core.static.enums.assembler_languages import AssemblerLanguage
 from qunicorn_core.static.enums.job_state import JobState
 from qunicorn_core.static.enums.provider_name import ProviderName
@@ -70,26 +69,23 @@ class QMwarePilot(Pilot):
     provider_name = ProviderName.QMWARE
     supported_languages = tuple([AssemblerLanguage.QASM2])
 
-    def run(
-        self,
-        qunicorn_job: JobDataclass,
-        circuits: Sequence[Tuple[QuantumProgramDataclass, Any]],
-        token: Optional[str] = None,
-    ) -> JobState:
+    def run(self, jobs: Sequence[PilotJob], token: Optional[str] = None):
         """Run a job of type RUNNER on a backend using a Pilot"""
-        if qunicorn_job.id is None:
-            raise QunicornError("Job has no database ID and cannot be executed!")
-
         job_name = "Qunicorn request"
 
-        for program, qasm_circuit in circuits:
+        jobs_to_watch = {}
+
+        for job in jobs:
+            job_name = f"{job_name}_{job.job.id}_{job.program.id}"
+            if job.circuit_fragment_id:
+                job_name = f"{job_name}-{job.circuit_fragment_id}"
             data = {
-                "name": f"{job_name}",
+                "name": job_name,
                 "maxExecutionTimeInMs": 60_000,
                 "ttlAfterFinishedInMs": 1_200_000,
-                "code": {"type": "qasm2", "code": qasm_circuit},
+                "code": {"type": "qasm2", "code": job.circuit},
                 "selectionParameters": [],
-                "programParameters": [{"name": "shots", "value": str(qunicorn_job.shots)}],
+                "programParameters": [{"name": "shots", "value": str(job.job.shots)}],
             }
 
             response = requests.post(
@@ -100,32 +96,37 @@ class QMwarePilot(Pilot):
             result = response.json()
 
             if not result["jobCreated"]:
+                # TODO save job/program specific error in DB
                 raise QunicornError(f"Job was not created. ({result['message']})")
 
             program_state = TransientJobStateDataclass(
-                job=qunicorn_job,
-                program=program,
+                job=job.job,
+                program=job.program,
+                circuit_fragment_id=job.circuit_fragment_id,
                 data={
+                    "type": "QMWARE",
                     "id": result["id"],
                     "started_at": int(time()),
                     "X-API-KEY": QMWARE_API_KEY,
                     "X-API-KEY-ID": QMWARE_API_KEY_ID,
-                    "circuit": qasm_circuit,
+                    "circuit": job.circuit,
                 },
             )
             program_state.save()
 
-        qunicorn_job.state = JobState.RUNNING.value
-        qunicorn_job.save(commit=True)  # make sure transient state is available
+            jobs_to_watch[job.job.id] = job.job
 
-        watch_task = watch_qmware_results.s(job_id=qunicorn_job.id).delay()
-        qunicorn_job.celery_id = watch_task.id
-        qunicorn_job.save(commit=True)  # commit new celery id
+            if job.job.state not in (JobState.FINISHED, JobState.ERROR, JobState.CANCELED, JobState.BLOCKED):
+                job.job.state = JobState.RUNNING.value
+                job.job.save()
+        DB.session.commit()
 
-        return JobState.RUNNING
+        for qunicorn_job in jobs_to_watch.values():
+            watch_task = watch_qmware_results.s(job_id=qunicorn_job.id).delay()
+            qunicorn_job.celery_id = watch_task.id
+            qunicorn_job.save(commit=True)  # commit new celery id
 
-    @staticmethod
-    def _get_job_results(qunicorn_job_id: int) -> List[ResultDataclass] | None:  # noqa: C901
+    def _get_job_results(self, qunicorn_job_id: int) -> None:  # noqa: C901
         qunicorn_job = JobDataclass.get_by_id(qunicorn_job_id)
 
         if qunicorn_job is None:
@@ -134,6 +135,9 @@ class QMwarePilot(Pilot):
         for program_state in tuple(qunicorn_job._transient):
             if program_state.program is None:
                 continue  # only process program related transient state
+
+            if not isinstance(program_state.data, dict) or program_state.data.get("type", None) != "QMWARE":
+                continue  # only process transient state created by this pilot
 
             job_started_at = program_state.data["started_at"]
             qmware_job_id = program_state.data["id"]
@@ -219,43 +223,48 @@ class QMwarePilot(Pilot):
                 qunicorn_job.save_error(err, program=program, extra_data={"qmware_result": result})
                 continue
 
-            ResultDataclass(
-                job=qunicorn_job,
-                program=program,
-                data=hex_counts,
-                result_type=ResultType.COUNTS,
-                meta={
-                    "format": "hex",
-                    "shots": qunicorn_job.shots,
-                    "registers": register_metadata,
-                },
-            ).save()
-            ResultDataclass(
-                job=qunicorn_job,
-                program=program,
-                data=hex_probabilities,
-                result_type=ResultType.PROBABILITIES,
-                meta={
-                    "format": "hex",
-                    "shots": qunicorn_job.shots,
-                    "registers": register_metadata,
-                },
-            ).save()
+            pilot_job = PilotJob(
+                circuit=program_state.data["circuit"],
+                job=program_state.job,
+                program=program_state.program,
+                circuit_fragment_id=program_state.circuit_fragment_id,
+            )
+
+            pilot_results = [
+                PilotJobResult(
+                    data=hex_counts,
+                    result_type=ResultType.COUNTS,
+                    meta={
+                        "format": "hex",
+                        "shots": qunicorn_job.shots,
+                        "registers": register_metadata,
+                    },
+                ),
+                PilotJobResult(
+                    data=hex_probabilities,
+                    result_type=ResultType.PROBABILITIES,
+                    meta={
+                        "format": "hex",
+                        "shots": qunicorn_job.shots,
+                        "registers": register_metadata,
+                    },
+                ),
+            ]
+            self.save_results(pilot_job, pilot_results)
             program_state.delete(commit=True)
 
-        # all programs have results
-        if qunicorn_job.state == JobState.RUNNING.value:
-            # all jobs have finished without errors
-            qunicorn_job.save_results([], JobState.FINISHED)
+    def determine_db_job_state(self, db_job: JobDataclass) -> JobState:
+        if db_job.state == JobState.RUNNING.value:
+            if any(t.data.get("type") == "QMWARE" for t in db_job._transient if isinstance(t.data, dict)):
+                return JobState.RUNNING
+            return JobState.FINISHED
+        return super().determine_db_job_state(db_job)
 
     def execute_provider_specific(
-        self, job: JobDataclass, circuits: Sequence[Tuple[QuantumProgramDataclass, Any]], token: Optional[str] = None
+        self, jobs: Sequence[PilotJob], job_type: str, token: Optional[str] = None
     ) -> JobState:
         """Execute a job of a provider specific type on a backend using a Pilot"""
-        if job.id is None:
-            raise QunicornError("Job has no database ID and cannot be executed!")
-
-        raise QunicornError("No valid Job Type specified")
+        raise QunicornError("No valid Job Type specified. QMware Pilot does not support provider specific job types.")
 
     def get_standard_provider(self) -> ProviderDataclass:
         """Create the standard ProviderDataclass Object for the pilot and return it"""
@@ -297,7 +306,7 @@ class QMwarePilot(Pilot):
 
     def cancel_provider_specific(self, job: JobDataclass, token: Optional[str] = None):
         """Cancel execution of a job at the corresponding backend"""
-        current_app.logger.warn(
+        current_app.logger.warning(
             f"Cancel job with id {job.id} on {job.executed_on.provider.name} failed."
             f"Canceling while in execution not supported for QMware Jobs"
         )
@@ -312,4 +321,4 @@ class QMwarePilot(Pilot):
     max_retries=None,
 )
 def watch_qmware_results(job_id: int):
-    QMwarePilot._get_job_results(job_id)
+    QMwarePilot()._get_job_results(job_id)
