@@ -36,6 +36,7 @@ from qiskit_ibm_runtime import (
     Sampler,
     SamplerOptions,
     RuntimeJobV2,
+    EstimatorOptions,
 )
 
 from qunicorn_core.api.api_models import DeviceDto
@@ -171,13 +172,32 @@ class IBMPilot(Pilot):
     ) -> Tuple[List[ResultDataclass], JobState]:
         """Uses the Estimator to execute a job on an IBM backend using the IBM Pilot"""
         observables = [(SparsePauliOp("Y" * c.num_qubits)) for _, c in circuits]
+        options = EstimatorOptions()
+
+        if job.error_mitigation == ErrorMitigationMethod.none.value:
+            pass
+        elif job.error_mitigation == ErrorMitigationMethod.dynamical_decoupling.value:
+            options.dynamical_decoupling.enable = True
+        elif job.error_mitigation == ErrorMitigationMethod.pauli_twirling.value:
+            options.enable_gates = True
+        elif job.error_mitigation == ErrorMitigationMethod.twirled_readout_error_extinction:
+            options.resilience.measure_mitigation = True
+        elif job.error_mitigation == ErrorMitigationMethod.zero_noise_extrapolation:
+            options.resilience.zne_mitigation = True
+        elif job.error_mitigation == ErrorMitigationMethod.probabilistic_error_amplification:
+            options.resilience.zne_mitigation = True
+            options.resilience.zne.amplifier = "pea"
+        elif job.error_mitigation == ErrorMitigationMethod.probabilistic_error_cancellation:
+            options.resilience.pec_mitigation = True
+        else:
+            raise QunicornError(f"Error mitigation method {job.error_mitigation} not supported by IBM estimator.")
 
         if job.executed_on.is_local:
             backend = AerSimulator()
         else:
             backend = self.__get_qiskit_runtime_backend(job, token=token)
 
-        estimator = Estimator(backend)
+        estimator = Estimator(backend, options=options)
 
         job_from_ibm = estimator.run([(c, o) for ((_, c), o) in zip(circuits, observables)])
         ibm_result: PrimitiveResult = job_from_ibm.result()
