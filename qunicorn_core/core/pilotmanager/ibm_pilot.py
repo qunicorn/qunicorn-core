@@ -18,10 +18,11 @@ from os import environ
 from pathlib import Path
 from typing import Any, List, Optional, Sequence, Tuple, Union, Dict
 
+import numpy as np
 from flask.globals import current_app
 import qiskit_aer
 from qiskit import transpile, QuantumCircuit, QiskitError
-from qiskit.primitives import Estimator as LocalEstimator, PrimitiveResult
+from qiskit.primitives import Estimator as LocalEstimator, PrimitiveResult, PubResult
 from qiskit.primitives import EstimatorResult
 from qiskit.providers import Backend, QiskitBackendNotFoundError, BackendV2
 from qiskit.quantum_info import SparsePauliOp
@@ -163,18 +164,24 @@ class IBMPilot(Pilot):
         return results, JobState.FINISHED
 
     def __estimate(
-        self, job: JobDataclass, circuits: Sequence[Tuple[QuantumProgramDataclass, Any]], token: Optional[str] = None
+        self,
+        job: JobDataclass,
+        circuits: Sequence[Tuple[QuantumProgramDataclass, QuantumCircuit]],
+        token: Optional[str] = None,
     ) -> Tuple[List[ResultDataclass], JobState]:
         """Uses the Estimator to execute a job on an IBM backend using the IBM Pilot"""
-        observables: list = [SparsePauliOp("IY"), SparsePauliOp("IY")]
+        observables = [(SparsePauliOp("Y" * c.num_qubits)) for _, c in circuits]
+
         if job.executed_on.is_local:
-            estimator = LocalEstimator()
+            backend = AerSimulator()
         else:
             backend = self.__get_qiskit_runtime_backend(job, token=token)
-            estimator = Estimator(session=backend)
-        job_from_ibm = estimator.run([c for _, c in circuits], observables=observables)
-        ibm_result: EstimatorResult = job_from_ibm.result()
-        results = IBMPilot._map_estimator_results_to_dataclass(ibm_result, [p for p, _ in circuits], job, "IY")
+
+        estimator = Estimator(backend)
+
+        job_from_ibm = estimator.run([(c, o) for ((_, c), o) in zip(circuits, observables)])
+        ibm_result: PrimitiveResult = job_from_ibm.result()
+        results = IBMPilot._map_estimator_results_to_dataclass(ibm_result, [p for p, _ in circuits], job, observables)
         return results, JobState.FINISHED
 
     def __get_qiskit_runtime_backend(self, job: JobDataclass, token: Optional[str]) -> BackendV2:
@@ -368,18 +375,25 @@ class IBMPilot(Pilot):
 
     @staticmethod
     def _map_estimator_results_to_dataclass(
-        ibm_result: EstimatorResult, programs: Sequence[QuantumProgramDataclass], job: JobDataclass, observer: str
+        ibm_result: PrimitiveResult,
+        programs: Sequence[QuantumProgramDataclass],
+        job: JobDataclass,
+        observables: List[SparsePauliOp],
     ) -> list[ResultDataclass]:
         result_dtos: list[ResultDataclass] = []
-        for i in range(len(ibm_result.metadata)):  # FIXME test this
-            value: float = ibm_result.values[i]
-            variance: float = ibm_result.metadata[i]["variance"]
+
+        for i in range(len(ibm_result)):
+            pub_result: PubResult = ibm_result[i]
+            expectation_values: np.ndarray = pub_result.data.evs
+            standard_deviations: np.ndarray = pub_result.data.stds
+            variance = standard_deviations * standard_deviations
+
             result_dtos.append(
                 ResultDataclass(
                     program=programs[i],
-                    result_dict={"value": str(value), "variance": str(variance)},
-                    data=ResultType.VALUE_AND_VARIANCE,
-                    meta={"observer": f"SparsePauliOp-{observer}"},
+                    data={"value": str(expectation_values.item()), "variance": str(variance.item())},
+                    meta={"observer": f"SparsePauliOp-{observables[i].paulis}"},
+                    result_type=ResultType.VALUE_AND_VARIANCE,
                 )
             )
         return result_dtos
