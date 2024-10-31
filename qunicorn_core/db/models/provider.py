@@ -11,7 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import List
+import uuid
+from typing import List, Optional
 
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -73,6 +74,8 @@ class ProviderDataclass(DbModel):
         default_factory=list,
         init=False,
     )
+    # default arguments
+    qprov_id: Mapped[Optional[uuid.UUID]] = mapped_column(sql.UUID, nullable=True, default=None)
 
     @classmethod
     def get_by_name(cls, name: str):

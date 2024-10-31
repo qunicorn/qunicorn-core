@@ -16,12 +16,13 @@
 """Module containing all Dtos and their Schemas for tasks in the Devices API."""
 from dataclasses import dataclass
 
-from flask import url_for
+from flask import url_for, current_app
 import marshmallow as ma
 from marshmallow.validate import OneOf
 
 from qunicorn_core.api.api_models.provider_dtos import ProviderDto, ProviderDtoSchema
 from qunicorn_core.api.flask_api_utils import MaBaseSchema
+
 from qunicorn_core.static.enums.provider_name import ProviderName
 
 __all__ = [
@@ -54,6 +55,7 @@ class DeviceDtoSchema(MaBaseSchema):
     is_simulator = ma.fields.Boolean(required=True, allow_none=False)
     is_local = ma.fields.Boolean(required=True, allow_none=False)
     provider = ma.fields.Nested(ProviderDtoSchema())
+    qprov_link = ma.fields.Function(lambda obj: create_qprov_device_link(obj))
     self = ma.fields.Function(lambda obj: url_for("device-api.DeviceIdView", device_id=obj.id))
 
 
@@ -92,3 +94,27 @@ class DeviceUpdateFilterParamsSchema(MaBaseSchema):
 
 class DeviceStatusResponseSchema(MaBaseSchema):
     available = ma.fields.Bool(dump_only=True)
+
+
+def create_qprov_device_link(device: DeviceDto):
+    from qunicorn_core.db.models.device import DeviceDataclass
+    from qunicorn_core.db.models.provider import ProviderDataclass
+
+    provider_qprov_id = ProviderDataclass.get_by_id_or_404(device.provider.id).qprov_id
+
+    if provider_qprov_id is None:
+        return ma.missing
+
+    device_qprov_id = DeviceDataclass.get_by_id_or_404(device.id).qprov_id
+
+    if device_qprov_id is None:
+        return ma.missing
+
+    qprov_root_url = current_app.config.get("QPROV_URL")
+
+    if qprov_root_url is None:
+        return ma.missing
+
+    qprov_link = f"{qprov_root_url}/providers/{provider_qprov_id}/qpus/{device_qprov_id}"
+
+    return qprov_link

@@ -40,6 +40,9 @@ celery worker and execute all tasks synchronously.
 Set the `ENABLE_EXPERIMENTAL_FEATURES` in your .env file to True, if you want to use experimental features like
 the qasm to quil transpilation, and IBM File_Runner and File_Upload job types.
 
+If you want to have QPROV links inside the returned providers and devices, set `QPROV_URL` to the root URL of QPROV
+e.g. `http://localhost:5020/qprov` so that Qunicorn can fetch the required IDs from QPROV and construct the links.
+
 ### Available endpoints are:
 
 * **JOBS**

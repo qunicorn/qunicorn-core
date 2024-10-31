@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import uuid
 from typing import Optional, Union
 
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -49,6 +49,7 @@ class DeviceDataclass(DbModel):
     provider_id: Mapped[int] = mapped_column(
         ForeignKey(ProviderDataclass.id, ondelete="SET NULL"), nullable=True, default=None, init=False
     )
+    qprov_id: Mapped[Optional[uuid.UUID]] = mapped_column(sql.UUID, nullable=True, default=None)
 
     @classmethod
     def get_by_name(cls, name: str, provider: Optional[Union[int, str, ProviderDataclass]] = None):
