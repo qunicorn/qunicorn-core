@@ -14,20 +14,18 @@
 
 from collections import Counter
 from http import HTTPStatus
-from typing import Any, Optional, Sequence, Tuple, Union
+from typing import Optional, Sequence, Union
 
 from flask.globals import current_app
 from pyquil.api import get_qc
 
 from qunicorn_core.api.api_models import DeviceDto
-from qunicorn_core.core.pilotmanager.base_pilot import Pilot
+from qunicorn_core.core.pilotmanager.base_pilot import Pilot, PilotJob, PilotJobResult
+from qunicorn_core.db.db import DB
 from qunicorn_core.db.models.device import DeviceDataclass
 from qunicorn_core.db.models.job import JobDataclass
 from qunicorn_core.db.models.provider import ProviderDataclass
-from qunicorn_core.db.models.quantum_program import QuantumProgramDataclass
-from qunicorn_core.db.models.result import ResultDataclass
 from qunicorn_core.static.enums.assembler_languages import AssemblerLanguage
-from qunicorn_core.static.enums.job_state import JobState
 from qunicorn_core.static.enums.provider_name import ProviderName
 from qunicorn_core.static.enums.result_type import ResultType
 from qunicorn_core.static.qunicorn_exception import QunicornError
@@ -52,30 +50,28 @@ class RigettiPilot(Pilot):
 
     supported_languages: list[str] = [AssemblerLanguage.QUIL.value]
 
-    def run(
-        self, job: JobDataclass, circuits: Sequence[Tuple[QuantumProgramDataclass, Any]], token: Optional[str] = None
-    ) -> JobState:
+    def run(self, jobs: Sequence[PilotJob], token: Optional[str] = None):
         """Execute the job on a local simulator and saves results in the database"""
         if utils.is_running_in_docker():
             raise QunicornError(
                 "Rigetti Pilot can not be executed in Docker, check the documentation on how to run qunicorn locally to execute jobs on the Rigetti Pilot",  # noqa: E501
                 HTTPStatus.NOT_IMPLEMENTED,
             )
-        if not job.executed_on.is_local:
+        if any(not j.job.executed_on or not j.job.executed_on.is_local for j in jobs):
             raise QunicornError("Device need to be local for RIGETTI")
 
-        results = []
-
-        for program, circuit in circuits:
-            circuit.wrap_in_numshots_loop(job.shots)
-            qvm = get_qc(job.executed_on.name)
-            qvm_result = qvm.run(qvm.compile(circuit)).get_register_map().get("ro")
+        for job in jobs:
+            job.circuit.wrap_in_numshots_loop(job.job.shots)
+            qvm = get_qc(job.job.executed_on.name)
+            qvm_result = qvm.run(qvm.compile(job.circuit)).get_register_map().get("ro")
             result_dict = RigettiPilot.result_to_dict(qvm_result)
-            result_dict = RigettiPilot.qubit_binary_string_to_hex(result_dict, job.id)
+            result_dict = RigettiPilot.qubit_binary_string_to_hex(
+                result_dict, reverse_qubit_order=True
+            )  # FIXME: test qubit order with qasm testsuite!
             probabilities_dict = RigettiPilot.calculate_probabilities(result_dict)
-            results.append(
-                ResultDataclass(
-                    program=program,
+
+            pilot_results = [
+                PilotJobResult(
                     data=result_dict,
                     result_type=ResultType.COUNTS,
                     meta={
@@ -86,11 +82,8 @@ class RigettiPilot(Pilot):
                             "size": qvm_result.shape[1],
                         },
                     },
-                )
-            )
-            results.append(
-                ResultDataclass(
-                    program=program,
+                ),
+                PilotJobResult(
                     data=probabilities_dict,
                     result_type=ResultType.PROBABILITIES,
                     meta={
@@ -101,12 +94,11 @@ class RigettiPilot(Pilot):
                             "size": qvm_result.shape[1],
                         },
                     },
-                )
-            )
+                ),
+            ]
+            self.save_results(job, pilot_results)
 
-        job.save_results(results, JobState.FINISHED)
-
-        return JobState.FINISHED
+        DB.session.commit()
 
     @staticmethod
     def result_to_dict(results: Sequence[Sequence[int]]) -> dict:
@@ -115,9 +107,7 @@ class RigettiPilot(Pilot):
         result_counter = Counter(results_as_strings)
         return dict(result_counter)
 
-    def execute_provider_specific(
-        self, job: JobDataclass, circuits: Sequence[Tuple[QuantumProgramDataclass, Any]], token: Optional[str] = None
-    ):
+    def execute_provider_specific(self, jobs: Sequence[PilotJob], job_type: str, token: Optional[str] = None):
         """Execute a job of a provider specific type on a backend using a Pilot"""
         raise QunicornError("No valid Job Type specified")
 
