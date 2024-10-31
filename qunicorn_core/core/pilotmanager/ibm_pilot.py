@@ -17,7 +17,7 @@ from http import HTTPStatus
 from os import environ
 from itertools import groupby
 from pathlib import Path
-from typing import Any, List, Optional, Sequence, Tuple, Union, Dict
+from typing import List, Optional, Sequence, Tuple, Union, Dict
 
 from flask.globals import current_app
 import qiskit_aer
@@ -43,7 +43,6 @@ from qunicorn_core.db.db import DB
 from qunicorn_core.db.models.device import DeviceDataclass
 from qunicorn_core.db.models.job import JobDataclass
 from qunicorn_core.db.models.provider import ProviderDataclass
-from qunicorn_core.db.models.quantum_program import QuantumProgramDataclass
 from qunicorn_core.db.models.result import ResultDataclass
 from qunicorn_core.db.models.job_state import TransientJobStateDataclass
 from qunicorn_core.static.enums.assembler_languages import AssemblerLanguage
@@ -61,41 +60,28 @@ class IBMPilot(Pilot):
     provider_name = ProviderName.IBM.value
     supported_languages = tuple([AssemblerLanguage.QISKIT.value])
 
-    def execute_provider_specific(
-        self, job: JobDataclass, circuits: Sequence[Tuple[QuantumProgramDataclass, Any]], token: Optional[str] = None
-    ) -> JobState:
+    def execute_provider_specific(self, jobs: Sequence[PilotJob], job_type: str, token: Optional[str] = None):
         """Execute a job of a provider specific type on a backend using a Pilot"""
-        if job.id is None:
-            raise QunicornError("Job has no database ID and cannot be executed!")
 
-        if job.type == JobType.ESTIMATOR.value:
-            results, state = self.__estimate(job, circuits, token=token)
-        elif job.type == JobType.SAMPLER.value:
-            results, state = self.__sample(job, circuits, token=token)
-        elif job.type == JobType.IBM_RUNNER.value:
-            results, state = self.__run_ibm_program(job, token=token)
-        elif job.type == JobType.IBM_UPLOAD.value:
-            results, state = self.__upload_ibm_program(job, token=token)
+        if job_type == JobType.ESTIMATOR.value:
+            self.__estimate(jobs, token=token)
+        elif job_type == JobType.SAMPLER.value:
+            self.__sample(jobs, token=token)
+        elif job_type == JobType.IBM_RUNNER.value:
+            self.__run_ibm_program(jobs, token=token)
+        elif job_type == JobType.IBM_UPLOAD.value:
+            self.__upload_ibm_program(jobs, token=token)
         else:
             raise QunicornError("No valid Job Type specified")
 
-        job.save_results(results, state)
-        return state
-
-    def run(
-        self,
-        jobs: Sequence[PilotJob],
-        token: Optional[str] = None
-    ):
+    def run(self, jobs: Sequence[PilotJob], token: Optional[str] = None):
         """Execute a job local using aer simulator or a real backend"""
         batched_jobs = groupby(jobs, lambda j: j.job)
 
         for db_job, pilot_jobs in batched_jobs:
             device = db_job.executed_on
             if device is None:
-                db_job.save_error(
-                    QunicornError("The job does not have any device associated!")
-                )
+                db_job.save_error(QunicornError("The job does not have any device associated!"))
                 continue  # one job failing should not affect other jobs
 
             backend: Backend
@@ -145,34 +131,46 @@ class IBMPilot(Pilot):
         job.save(commit=True)
         current_app.logger.info(f"Cancel job with id {job.id} on {job.executed_on.provider.name} successful.")
 
-    def __sample(
-        self, job: JobDataclass, circuits: Sequence[Tuple[QuantumProgramDataclass, Any]], token: Optional[str] = None
-    ) -> Tuple[List[ResultDataclass], JobState]:
+    def __sample(self, jobs: Sequence[PilotJob], token: Optional[str] = None) -> Tuple[List[ResultDataclass], JobState]:
         """Uses the Sampler to execute a job on an IBM backend using the IBM Pilot"""
-        if job.executed_on.is_local:
-            sampler = LocalSampler()
-        else:
-            backend = self.__get_qiskit_runtime_backend(job, token=token)
-            sampler = Sampler(session=backend)
-        job_from_ibm: RuntimeJob = sampler.run([c for _, c in circuits])
-        ibm_result: SamplerResult = job_from_ibm.result()
-        results = IBMPilot._map_sampler_results_to_dataclass(ibm_result, [p for p, _ in circuits], job)
-        return results, JobState.FINISHED
+        batched_jobs = groupby(jobs, lambda j: j.job)
 
-    def __estimate(
-        self, job: JobDataclass, circuits: Sequence[Tuple[QuantumProgramDataclass, Any]], token: Optional[str] = None
-    ) -> Tuple[List[ResultDataclass], JobState]:
+        for db_job, pilot_jobs in batched_jobs:
+            if db_job.executed_on.is_local:
+                sampler = LocalSampler()
+            else:
+                backend = self.__get_qiskit_runtime_backend(db_job, token=token)
+                sampler = Sampler(session=backend)
+
+            pilot_jobs = list(pilot_jobs)
+            job_from_ibm: RuntimeJob = sampler.run([j.circuit for j in pilot_jobs])
+            ibm_result: SamplerResult = job_from_ibm.result()
+            mapped_results = IBMPilot._map_sampler_results(ibm_result)
+
+            for pilot_results, pilot_job in zip(mapped_results, pilot_jobs):
+                self.save_results(pilot_job, pilot_results)
+            DB.session.commit()
+
+    def __estimate(self, jobs: Sequence[PilotJob], token: Optional[str] = None):
         """Uses the Estimator to execute a job on an IBM backend using the IBM Pilot"""
         observables: list = [SparsePauliOp("IY"), SparsePauliOp("IY")]
-        if job.executed_on.is_local:
-            estimator = LocalEstimator()
-        else:
-            backend = self.__get_qiskit_runtime_backend(job, token=token)
-            estimator = Estimator(session=backend)
-        job_from_ibm = estimator.run([c for _, c in circuits], observables=observables)
-        ibm_result: EstimatorResult = job_from_ibm.result()
-        results = IBMPilot._map_estimator_results_to_dataclass(ibm_result, [p for p, _ in circuits], job, "IY")
-        return results, JobState.FINISHED
+        batched_jobs = groupby(jobs, lambda j: j.job)
+
+        for db_job, pilot_jobs in batched_jobs:
+            if db_job.executed_on.is_local:
+                estimator = LocalEstimator()
+            else:
+                backend = self.__get_qiskit_runtime_backend(db_job, token=token)
+                estimator = Estimator(session=backend)
+
+            pilot_jobs = list(pilot_jobs)
+            job_from_ibm = estimator.run([j.circuit for j in pilot_jobs], observables=observables)
+            ibm_result: EstimatorResult = job_from_ibm.result()
+            mapped_results = IBMPilot._map_estimator_results(ibm_result, "IY")
+
+            for pilot_results, pilot_job in zip(mapped_results, pilot_jobs):
+                self.save_results(pilot_job, pilot_results)
+            DB.session.commit()
 
     def __get_qiskit_runtime_backend(self, job: JobDataclass, token: Optional[str]) -> Backend:
         """Instantiate all important configurations and updates the job_state"""
@@ -226,44 +224,47 @@ class IBMPilot(Pilot):
         file_path = working_directory_path / "resources" / "upload_files" / file_name
         return str(file_path)
 
-    def __upload_ibm_program(self, job: JobDataclass, token: Optional[str]) -> Tuple[List[ResultDataclass], JobState]:
+    def __upload_ibm_program(self, jobs: Sequence[PilotJob], token: Optional[str]):
         """EXPERIMENTAL -- Upload and then run a quantum program on the QiskitRuntimeService"""
+        for job in jobs:
+            self.check_if_env_variable_true_for_experimental(job.job)
 
-        self.check_if_env_variable_true_for_experimental(job)
+            service = self.__get_runtime_service(job.job, token=token)
 
-        service = self.__get_runtime_service(job, token=token)
-        ibm_program_ids = []
-        for program in job.deployment.programs:
-            python_file_path = self.__get_file_path_to_resources(program.python_file_path)
-            python_file_metadata_path = self.__get_file_path_to_resources(program.python_file_metadata)
-            ibm_program_ids.append(service.upload_program(python_file_path, python_file_metadata_path))
+            # FIXME refactor: this should only upload a single program per pilot job!!!
+            ibm_program_ids = []
+            for program in job.job.deployment.programs:
+                python_file_path = self.__get_file_path_to_resources(program.python_file_path)
+                python_file_metadata_path = self.__get_file_path_to_resources(program.python_file_metadata)
+                ibm_program_ids.append(service.upload_program(python_file_path, python_file_metadata_path))
 
-        job.type = JobType.IBM_RUNNER.value
-        job.save(commit=True)
-        result_type: ResultType = ResultType.UPLOAD_SUCCESSFUL
-        ibm_results = [ResultDataclass(data={"ibm_job_id": ibm_program_ids[0]}, result_type=result_type)]
-        return ibm_results, JobState.READY
+            job.job.type = JobType.IBM_RUNNER.value
+            job.job.save(commit=True)
+            result_type: ResultType = ResultType.UPLOAD_SUCCESSFUL
+            ibm_results = [PilotJobResult(data={"ibm_job_id": ibm_program_ids[0]}, meta={}, result_type=result_type)]
+            # FIXME save results
+            # FIXME set job state to ready once all programs are uploaded?
 
-    def __run_ibm_program(self, job: JobDataclass, token: Optional[str]) -> Tuple[List[ResultDataclass], JobState]:
+    def __run_ibm_program(self, jobs: Sequence[PilotJob], token: Optional[str]):
         """EXPERIMENTAL -- Run a program previously uploaded to the IBM Backend"""
-        self.check_if_env_variable_true_for_experimental(job)
+        for job in jobs:
+            self.check_if_env_variable_true_for_experimental(job.job)
 
-        service = self.__get_runtime_service(job, token=token)
-        options_dict: Optional[dict] = None  # job.ibm_file_options  # FIXME
-        input_dict: Optional[dict] = None  # job.ibm_file_inputs  # FIXME
-        ibm_job_id = job.results[0].result_dict["ibm_job_id"]  # FIXME
+            service = self.__get_runtime_service(job.job, token=token)
+            options_dict: Optional[dict] = None  # job.ibm_file_options  # FIXME
+            input_dict: Optional[dict] = None  # job.ibm_file_inputs  # FIXME
+            ibm_job_id = job.job.results[0].data["ibm_job_id"]  # FIXME
 
-        try:
-            result: RuntimeJob = service.run(ibm_job_id, inputs=input_dict, options=options_dict).result()
-        except IBMRuntimeError as exception:
-            job.save_error(exception)
-            raise QunicornError(type(exception).__name__, HTTPStatus.INTERNAL_SERVER_ERROR)
+            try:
+                result: RuntimeJob = service.run(ibm_job_id, inputs=input_dict, options=options_dict).result()
+            except IBMRuntimeError as exception:
+                job.job.save_error(exception)
+                raise QunicornError(type(exception).__name__, HTTPStatus.INTERNAL_SERVER_ERROR)
 
-        # use assert to pacify linter for now...
-        assert result  # FIXME: actually use result object
-        ibm_results = [ResultDataclass()]  # FIXME: map result to list of ResultDataclass
-
-        return ibm_results, JobState.FINISHED
+            # use assert to pacify linter for now...
+            assert result  # FIXME: actually use result object
+            ibm_results: list[PilotJobResult] = []  # FIXME: map result to list of ResultDataclass
+            # FIXME save results in db
 
     @staticmethod
     def check_if_env_variable_true_for_experimental(job: JobDataclass):
@@ -293,8 +294,7 @@ class IBMPilot(Pilot):
 
     @staticmethod
     def __map_runner_results(
-        ibm_result: Result,
-        circuits: List[QuantumCircuit] = None,
+        ibm_result: Result, circuits: List[QuantumCircuit] = None
     ) -> list[Sequence[PilotJobResult]]:
         results: list[Sequence[PilotJobResult]] = []
 
@@ -363,53 +363,46 @@ class IBMPilot(Pilot):
         return hex_counts
 
     @staticmethod
-    def _map_estimator_results_to_dataclass(
-        ibm_result: EstimatorResult, programs: Sequence[QuantumProgramDataclass], job: JobDataclass, observer: str
-    ) -> list[ResultDataclass]:
-        result_dtos: list[ResultDataclass] = []
+    def _map_estimator_results(ibm_result: EstimatorResult, observer: str) -> list[Sequence[PilotJobResult]]:
+        mapped_results: list[Sequence[PilotJobResult]] = []
         for i in range(len(ibm_result.metadata)):  # FIXME test this
             value: float = ibm_result.values[i]
             variance: float = ibm_result.metadata[i]["variance"]
-            result_dtos.append(
-                ResultDataclass(
-                    program=programs[i],
-                    result_dict={"value": str(value), "variance": str(variance)},
-                    data=ResultType.VALUE_AND_VARIANCE,
-                    meta={"observer": f"SparsePauliOp-{observer}"},
-                )
+            mapped_results.append(
+                [
+                    PilotJobResult(
+                        data={"value": str(value), "variance": str(variance)},
+                        meta={"observer": f"SparsePauliOp-{observer}"},
+                        result_type=ResultType.VALUE_AND_VARIANCE,
+                    )
+                ]
             )
-        return result_dtos
+        return mapped_results
 
     @staticmethod
-    def _map_sampler_results_to_dataclass(
-        ibm_result: SamplerResult, programs: Sequence[QuantumProgramDataclass], job: JobDataclass
-    ) -> list[ResultDataclass]:
-        results: list[ResultDataclass] = []
-        contains_errors = False
+    def _map_sampler_results(ibm_result: SamplerResult) -> list[Sequence[PilotJobResult]]:
+        mapped_results: list[Sequence[PilotJobResult]] = []
         for i in range(len(ibm_result.quasi_dists)):
+            pilot_results: list[PilotJobResult] = []
             try:
-                results.append(
-                    ResultDataclass(
-                        program=programs[i],
+                pilot_results.append(
+                    PilotJobResult(
                         data=Pilot.qubits_integer_to_hex(ibm_result.quasi_dists[i]),
+                        meta={},
                         result_type=ResultType.QUASI_DIST,
                     )
                 )
             except QunicornError as err:
                 exception_message: str = str(err)
                 stack_trace: str = "".join(traceback.format_exception(err))
-                results.append(
-                    ResultDataclass(
-                        result_type=ResultType.ERROR.value,
-                        job=job,
-                        program=programs[i],
+                pilot_results.append(
+                    PilotJobResult(
+                        result_type=ResultType.ERROR,
                         data={"exception_message": exception_message},
                         meta={"stack_trace": stack_trace},
                     )
                 )
-                contains_errors = True
-        job.save_results(results, JobState.ERROR if contains_errors else JobState.FINISHED)
-        return results
+        return mapped_results
 
     def get_standard_provider(self) -> ProviderDataclass:
         found_provider = ProviderDataclass.get_by_name(self.provider_name)
