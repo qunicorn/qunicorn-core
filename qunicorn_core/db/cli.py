@@ -105,10 +105,11 @@ def load_db_function(app: Flask, if_not_exists=True):
 
 def create_default_qasm2_deployment() -> DeploymentDataclass:
     language = AssemblerLanguage.QASM2
-    programs = [QuantumProgramDataclass(quantum_circuit=utils.get_default_qasm2_string(1), assembler_language=language)]
+    program = QuantumProgramDataclass(quantum_circuit=utils.get_default_qasm2_string(1), assembler_language=language)
+    DB.session.add(program)
     return DeploymentDataclass(
         deployed_by=None,
-        programs=programs,
+        programs=[program],
         deployed_at=datetime.datetime.now(),
         name="QASM2Deployment",
     )
@@ -119,9 +120,10 @@ def create_default_qasm3_deployment() -> DeploymentDataclass:
     qasm3_str: str = (
         "OPENQASM 3; \nqubit[3] q;\nbit[3] c;\nh q[0];\ncnot q[0], q[1];\ncnot q[1], q[2];\nc = " "measure q;"
     )
-    programs = [QuantumProgramDataclass(quantum_circuit=qasm3_str, assembler_language=language)]
+    program = QuantumProgramDataclass(quantum_circuit=qasm3_str, assembler_language=language)
+    DB.session.add(program)
     return DeploymentDataclass(
-        deployed_by=None, programs=programs, deployed_at=datetime.datetime.now(), name="QASM3Deployment"
+        deployed_by=None, programs=[program], deployed_at=datetime.datetime.now(), name="QASM3Deployment"
     )
 
 
