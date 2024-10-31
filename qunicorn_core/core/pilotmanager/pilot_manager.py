@@ -69,7 +69,7 @@ def update_devices_from_provider(provider_id: int, token: Optional[str]):
             qprov_id = qprov_provider["id"]
             provider.qprov_id = uuid.UUID(qprov_id)
 
-            response = requests.get(f"{qprov_root_url}/qprov/providers/{qprov_id}/qpus")
+            response = requests.get(f"{qprov_root_url}/providers/{qprov_id}/qpus")
             response.raise_for_status()
             qprov_qpus = response.json()["_embedded"]["qpuDtoes"]
             qpu_name_id_map = {}
