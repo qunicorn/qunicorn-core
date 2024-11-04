@@ -403,8 +403,8 @@ class IBMPilot(Pilot):
 
         for i in range(len(ibm_result)):
             pub_result: PubResult = ibm_result[i]
-            expectation_values: np.ndarray = pub_result.data.evs
-            standard_deviations: np.ndarray = pub_result.data.stds
+            expectation_values: np.ndarray = pub_result.data["evs"]
+            standard_deviations: np.ndarray = pub_result.data["stds"]
             variance = standard_deviations * standard_deviations
 
             result_dtos.append(
