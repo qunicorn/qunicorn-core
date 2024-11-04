@@ -45,10 +45,9 @@ class AWSPilot(Pilot):
         if any(not j.job.executed_on or not j.job.executed_on.is_local for j in jobs):
             raise QunicornError("Device not found, device needs to be local for AWS")
 
-        batches = list(groupby(jobs, key=lambda j: j.job.shots))
+        batches = [(k, list(j)) for k, j in groupby(jobs, key=lambda j: j.job.shots)]
 
-        for batch in batches:
-            shots, jobs = batch[0], list(batch[1])
+        for shots, jobs in batches:
             # Since QASM is stored as a string, it needs to be converted to a QASM program before execution
             # FIXME: support circuits where not all qubits have gates
             preprocessed_circuits = [
