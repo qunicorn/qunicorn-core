@@ -166,7 +166,7 @@ class IBMPilot(Pilot):
                 self.save_results(pilot_job, pilot_results)
             DB.session.commit()
 
-    def __estimate(self, jobs: Sequence[PilotJob], token: Optional[str] = None):
+    def __estimate(self, jobs: Sequence[PilotJob], token: Optional[str] = None):  # noqa: C901
         """Uses the Estimator to execute a job on an IBM backend using the IBM Pilot"""
         batched_jobs = [(db_job, list(pilot_jobs)) for db_job, pilot_jobs in groupby(jobs, lambda j: j.job)]
 
@@ -286,6 +286,7 @@ class IBMPilot(Pilot):
             job.job.save(commit=True)
             result_type: ResultType = ResultType.UPLOAD_SUCCESSFUL
             ibm_results = [PilotJobResult(data={"ibm_job_id": ibm_program_ids[0]}, meta={}, result_type=result_type)]
+            print(ibm_results)
             # FIXME save results
             # FIXME set job state to ready once all programs are uploaded?
 
@@ -308,6 +309,7 @@ class IBMPilot(Pilot):
             # use assert to pacify linter for now...
             assert result  # FIXME: actually use result object
             ibm_results: list[PilotJobResult] = []  # FIXME: map result to list of ResultDataclass
+            print(ibm_results)
             # FIXME save results in db
 
     @staticmethod
