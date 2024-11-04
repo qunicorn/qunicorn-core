@@ -145,11 +145,28 @@ class Pilot:
 
         new_state = self.determine_db_job_state(db_job=job.job)
         if job.job.state != new_state:
-            job.job.state = new_state
+            job.job.state = new_state.value
+            job.job.save()
+
+        new_progress = self.determine_db_job_progress(db_job=job.job)
+        if job.job.progress != new_progress:
+            job.job.progress = new_progress
             job.job.save()
 
         if commit:
             DB.session.commit()
+
+    def determine_db_job_progress(self, db_job: JobDataclass) -> int:
+        if db_job.state in (JobState.CANCELED, JobState.ERROR, JobState.FINISHED):
+            return 100
+
+        if db_job.deployment:
+            all_programs = set(p.id for p in db_job.deployment.programs)
+            programs_with_results = set(r.program.id for r in db_job.results if r.program)
+            ratio = int((len(programs_with_results) / len(all_programs)) * 100)
+            return min(100, max(0, ratio))
+
+        return 0
 
     def determine_db_job_state(self, db_job: JobDataclass) -> JobState:
         if db_job.state in (JobState.CANCELED, JobState.ERROR, JobState.FINISHED):

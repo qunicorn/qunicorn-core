@@ -103,6 +103,7 @@ class AWSPilot(Pilot):
                         result_type=ResultType.PROBABILITIES,
                     )
                 )
+                results.append(job_results)
 
             except QunicornError as err:
                 exception_message: str = str(err)
