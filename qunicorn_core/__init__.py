@@ -96,6 +96,9 @@ def create_app(test_config: Optional[Dict[str, Any]] = None):
         if "REVERSE_PROXY_COUNT" in environ:
             config["REVERSE_PROXY_COUNT"] = int(environ["REVERSE_PROXY_COUNT"])
             apply_reverse_proxy_fix(app)
+
+        if "QPROV_URL" in environ:
+            config["QPROV_URL"] = environ["QPROV_URL"]
     else:
         # load the test config if passed in
         config.from_mapping(test_config)
