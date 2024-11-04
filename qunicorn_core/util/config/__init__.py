@@ -44,6 +44,8 @@ class ProductionConfig(SQLAchemyProductionConfig, SmorestProductionConfig):
 
     CELERY = CELERY_PRODUCTION_CONFIG
 
+    QPROV_URL = None
+
 
 class DebugConfig(ProductionConfig, SQLAchemyDebugConfig, SmorestDebugConfig):
     ENV = "development"
