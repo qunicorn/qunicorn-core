@@ -19,22 +19,24 @@ from itertools import groupby
 from pathlib import Path
 from typing import List, Optional, Sequence, Tuple, Union, Dict
 
+import numpy as np
 from flask.globals import current_app
 import qiskit_aer
 from qiskit import transpile, QuantumCircuit, QiskitError
-from qiskit.primitives import Estimator as LocalEstimator
-from qiskit.primitives import EstimatorResult
-from qiskit.primitives import Sampler as LocalSampler
-from qiskit.primitives import SamplerResult
-from qiskit.providers import Backend, QiskitBackendNotFoundError
+from qiskit.primitives import PrimitiveResult, PubResult
+from qiskit.providers import BackendV2, QiskitBackendNotFoundError
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.result import Result
+from qiskit_aer import AerSimulator
 from qiskit_ibm_runtime import (
-    Estimator,
+    EstimatorV2,
     IBMRuntimeError,
     QiskitRuntimeService,
     RuntimeJob,
     Sampler,
+    SamplerOptions,
+    RuntimeJobV2,
+    EstimatorOptions,
 )
 
 from qunicorn_core.api.api_models import DeviceDto
@@ -46,6 +48,7 @@ from qunicorn_core.db.models.provider import ProviderDataclass
 from qunicorn_core.db.models.result import ResultDataclass
 from qunicorn_core.db.models.job_state import TransientJobStateDataclass
 from qunicorn_core.static.enums.assembler_languages import AssemblerLanguage
+from qunicorn_core.static.enums.error_mitigation import ErrorMitigationMethod
 from qunicorn_core.static.enums.job_state import JobState
 from qunicorn_core.static.enums.job_type import JobType
 from qunicorn_core.static.enums.provider_name import ProviderName
@@ -84,12 +87,12 @@ class IBMPilot(Pilot):
                 db_job.save_error(QunicornError("The job does not have any device associated!"))
                 continue  # one job failing should not affect other jobs
 
-            backend: Backend
+            backend: BackendV2
             if device.is_local:
                 backend = qiskit_aer.Aer.get_backend("aer_simulator")
             else:
                 provider = self.__get_provider_login_and_update_job(token, db_job)
-                backend = provider.get_backend(device.name)
+                backend = provider.backend(device.name)
 
             pilot_jobs = list(pilot_jobs)
 
@@ -134,16 +137,29 @@ class IBMPilot(Pilot):
     def __sample(self, jobs: Sequence[PilotJob], token: Optional[str] = None) -> Tuple[List[ResultDataclass], JobState]:
         """Uses the Sampler to execute a job on an IBM backend using the IBM Pilot"""
         batched_jobs = [(db_job, list(pilot_jobs)) for db_job, pilot_jobs in groupby(jobs, lambda j: j.job)]
+        db_job: JobDataclass
 
         for db_job, pilot_jobs in batched_jobs:
+            options = SamplerOptions()
+
+            if db_job.error_mitigation == ErrorMitigationMethod.none.value:
+                pass
+            elif db_job.error_mitigation == ErrorMitigationMethod.dynamical_decoupling.value:
+                options.dynamical_decoupling.enable = True
+            elif db_job.error_mitigation == ErrorMitigationMethod.pauli_twirling.value:
+                options.enable_gates = True
+            else:
+                raise QunicornError(f"Error mitigation method {db_job.error_mitigation} not supported by IBM sampler.")
+
             if db_job.executed_on.is_local:
-                sampler = LocalSampler()
+                backend = AerSimulator()
             else:
                 backend = self.__get_qiskit_runtime_backend(db_job, token=token)
-                sampler = Sampler(session=backend)
 
-            job_from_ibm: RuntimeJob = sampler.run([j.circuit for j in pilot_jobs])
-            ibm_result: SamplerResult = job_from_ibm.result()
+            sampler = Sampler(backend, options=options)
+
+            job_from_ibm: RuntimeJobV2 = sampler.run([j.circuit for j in pilot_jobs])
+            ibm_result: PrimitiveResult = job_from_ibm.result()
             mapped_results = IBMPilot._map_sampler_results(ibm_result)
 
             for pilot_results, pilot_job in zip(mapped_results, pilot_jobs):
@@ -152,33 +168,57 @@ class IBMPilot(Pilot):
 
     def __estimate(self, jobs: Sequence[PilotJob], token: Optional[str] = None):
         """Uses the Estimator to execute a job on an IBM backend using the IBM Pilot"""
-        observables: list = [SparsePauliOp("IY"), SparsePauliOp("IY")]
         batched_jobs = [(db_job, list(pilot_jobs)) for db_job, pilot_jobs in groupby(jobs, lambda j: j.job)]
 
         for db_job, pilot_jobs in batched_jobs:
+            observables = [SparsePauliOp("Y" * job.circuit.num_qubits) for job in pilot_jobs]
+            options = EstimatorOptions()
+
+            if db_job.error_mitigation == ErrorMitigationMethod.none.value:
+                pass
+            elif db_job.error_mitigation == ErrorMitigationMethod.dynamical_decoupling.value:
+                options.dynamical_decoupling.enable = True
+            elif db_job.error_mitigation == ErrorMitigationMethod.pauli_twirling.value:
+                options.enable_gates = True
+            elif db_job.error_mitigation == ErrorMitigationMethod.twirled_readout_error_extinction:
+                options.resilience.measure_mitigation = True
+            elif db_job.error_mitigation == ErrorMitigationMethod.zero_noise_extrapolation:
+                options.resilience.zne_mitigation = True
+            elif db_job.error_mitigation == ErrorMitigationMethod.probabilistic_error_amplification:
+                options.resilience.zne_mitigation = True
+                options.resilience.zne.amplifier = "pea"
+            elif db_job.error_mitigation == ErrorMitigationMethod.probabilistic_error_cancellation:
+                options.resilience.pec_mitigation = True
+            else:
+                raise QunicornError(
+                    f"Error mitigation method {db_job.error_mitigation} not supported by IBM estimator."
+                )
+
             if db_job.executed_on.is_local:
-                estimator = LocalEstimator()
+                backend = AerSimulator()
             else:
                 backend = self.__get_qiskit_runtime_backend(db_job, token=token)
-                estimator = Estimator(session=backend)
 
-            job_from_ibm = estimator.run([j.circuit for j in pilot_jobs], observables=observables)
-            ibm_result: EstimatorResult = job_from_ibm.result()
-            mapped_results = IBMPilot._map_estimator_results(ibm_result, "IY")
+            estimator = EstimatorV2(backend, options=options)
+            circuits = [j.circuit for j in pilot_jobs]
+
+            job_from_ibm = estimator.run(list(zip(circuits, observables)))
+            ibm_result: PrimitiveResult = job_from_ibm.result()
+            mapped_results = IBMPilot._map_estimator_results(ibm_result, observables)
 
             for pilot_results, pilot_job in zip(mapped_results, pilot_jobs):
                 self.save_results(pilot_job, pilot_results)
             DB.session.commit()
 
-    def __get_qiskit_runtime_backend(self, job: JobDataclass, token: Optional[str]) -> Backend:
+    def __get_qiskit_runtime_backend(self, job: JobDataclass, token: Optional[str]) -> BackendV2:
         """Instantiate all important configurations and updates the job_state"""
 
         # If the token is empty the token is taken from the environment variables.
         if not token and (t := environ.get("IBM_TOKEN")):
             token = t
 
-        self.__get_provider_login_and_update_job(token, job.id)
-        return QiskitRuntimeService().get_backend(job.executed_on.name)
+        self.__get_provider_login_and_update_job(token, job)
+        return QiskitRuntimeService().backend(job.executed_on.name)
 
     def __get_qiskit_job_from_qiskit_runtime(self, job: JobDataclass, token: Optional[str]) -> RuntimeJob:
         """Returns the job of the provider specific ID created on the given account"""
@@ -361,33 +401,41 @@ class IBMPilot(Pilot):
         return hex_counts
 
     @staticmethod
-    def _map_estimator_results(ibm_result: EstimatorResult, observer: str) -> list[Sequence[PilotJobResult]]:
+    def _map_estimator_results(
+        ibm_result: PrimitiveResult, observables: List[SparsePauliOp]
+    ) -> list[Sequence[PilotJobResult]]:
         mapped_results: list[Sequence[PilotJobResult]] = []
-        for i in range(len(ibm_result.metadata)):  # FIXME test this
-            value: float = ibm_result.values[i]
-            variance: float = ibm_result.metadata[i]["variance"]
+
+        for i in range(len(ibm_result)):
+            pub_result: PubResult = ibm_result[i]
+            expectation_values: np.ndarray = pub_result.data["evs"]
+            standard_deviations: np.ndarray = pub_result.data["stds"]
+            variance = standard_deviations * standard_deviations
+
             mapped_results.append(
                 [
                     PilotJobResult(
-                        data={"value": str(value), "variance": str(variance)},
-                        meta={"observer": f"SparsePauliOp-{observer}"},
+                        data={"value": str(expectation_values.item()), "variance": str(variance.item())},
+                        meta={"observer": f"SparsePauliOp-{observables[i].paulis}"},
                         result_type=ResultType.VALUE_AND_VARIANCE,
                     )
                 ]
             )
+
         return mapped_results
 
     @staticmethod
-    def _map_sampler_results(ibm_result: SamplerResult) -> list[Sequence[PilotJobResult]]:
+    def _map_sampler_results(ibm_result: PrimitiveResult) -> list[Sequence[PilotJobResult]]:
         mapped_results: list[Sequence[PilotJobResult]] = []
-        for i in range(len(ibm_result.quasi_dists)):
+
+        for i in range(len(ibm_result)):
             pilot_results: list[PilotJobResult] = []
             try:
                 pilot_results.append(
                     PilotJobResult(
-                        data=Pilot.qubits_integer_to_hex(ibm_result.quasi_dists[i]),
+                        data=Pilot.qubit_binary_string_to_hex(ibm_result[i].data["c"].get_counts()),
                         meta={},
-                        result_type=ResultType.QUASI_DIST,
+                        result_type=ResultType.COUNTS,
                     )
                 )
             except QunicornError as err:
@@ -400,6 +448,9 @@ class IBMPilot(Pilot):
                         meta={"stack_trace": stack_trace},
                     )
                 )
+
+            mapped_results.append(pilot_results)
+
         return mapped_results
 
     def get_standard_provider(self) -> ProviderDataclass:

@@ -71,7 +71,7 @@ def check_if_job_sample_result_correct(job: JobDataclass):
 
     for i in range(len(count_results)):
         result: ResultDataclass = count_results[i]
-        assert result.meta is None
+        assert len(result.meta) == 0
         counts: dict = result.data
         shots = 0
 

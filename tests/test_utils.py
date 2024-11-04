@@ -156,8 +156,8 @@ def check_simple_job_dto(return_dto: SimpleJobDto):
 
 def check_if_job_finished(job: JobDataclass):
     assert job.id == EXPECTED_ID
-    assert job.progress == JOB_FINISHED_PROGRESS
     assert job.state == JobState.FINISHED
+    assert job.progress == JOB_FINISHED_PROGRESS
 
 
 def check_if_job_runner_result_correct(job: JobDataclass):
