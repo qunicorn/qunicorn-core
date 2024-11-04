@@ -241,9 +241,15 @@ class IBMPilot(Pilot):
 
         # Try to save the account. Update job_dto to job_state = Error, if it is not possible
         # FIXME test and use job specific name for saving credentials??
-        QiskitRuntimeService.save_account(channel="ibm_quantum", token=token, overwrite=True, name="TODO")
+        file_path = Path(current_app.instance_path) / "qiskit_accounts"
+        file_path.mkdir(exist_ok=True, parents=True)
+        file_path /= "ibm_account.json"
 
-        return QiskitRuntimeService(channel="ibm_quantum", name="TODO")  # FIXME change name
+        QiskitRuntimeService.save_account(
+            channel="ibm_quantum", token=token, overwrite=True, name="TODO", filename=str(file_path)
+        )
+
+        return QiskitRuntimeService(channel="ibm_quantum", name="TODO", filename=str(file_path))  # FIXME change name
 
     @staticmethod
     def __get_provider_login_and_update_job(token: str, job: JobDataclass) -> QiskitRuntimeService:
