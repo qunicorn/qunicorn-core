@@ -21,6 +21,7 @@ from qunicorn_core.db.models.result import ResultDataclass
 from qunicorn_core.static.enums.assembler_languages import AssemblerLanguage
 from qunicorn_core.static.enums.job_type import JobType
 from qunicorn_core.static.enums.provider_name import ProviderName
+from qunicorn_core.static.enums.result_type import ResultType
 from tests import test_utils
 from tests.conftest import set_up_env
 from tests.test_utils import (
@@ -60,15 +61,30 @@ def create_and_run_sampler_with_device(device_name: str):
 
 def check_if_job_sample_result_correct(job: JobDataclass):
     test_utils.check_job_data(job)
+    count_results = []
 
-    for i in range(len(job.results)):
-        result: ResultDataclass = job.results[i]
+    for result in job.results:
+        if result.result_type == ResultType.COUNTS:
+            count_results.append(result)
+
+    assert len(count_results) == 2
+
+    for i in range(len(count_results)):
+        result: ResultDataclass = count_results[i]
         assert result.meta is None
-        probs: dict = result.data
+        counts: dict = result.data
+        shots = 0
+
+        for count in counts.values():
+            shots += count
 
         if i == 0:
-            assert test_utils.compare_values_with_tolerance(PROBABILITY_1 / 2, probs[BIT_0], PROBABILITY_TOLERANCE)
-            assert test_utils.compare_values_with_tolerance(PROBABILITY_1 / 2, probs[BIT_3], PROBABILITY_TOLERANCE)
-            assert probs[BIT_3] + probs[BIT_0] > PROBABILITY_1 - PROBABILITY_TOLERANCE
+            assert test_utils.compare_values_with_tolerance(
+                PROBABILITY_1 / 2, counts[BIT_0] / shots, PROBABILITY_TOLERANCE
+            )
+            assert test_utils.compare_values_with_tolerance(
+                PROBABILITY_1 / 2, counts[BIT_3] / shots, PROBABILITY_TOLERANCE
+            )
+            assert counts[BIT_3] + counts[BIT_0] > PROBABILITY_1 - PROBABILITY_TOLERANCE
         else:
-            assert probs[BIT_0] > PROBABILITY_1 - PROBABILITY_TOLERANCE
+            assert (counts[BIT_0] / shots) > PROBABILITY_1 - PROBABILITY_TOLERANCE

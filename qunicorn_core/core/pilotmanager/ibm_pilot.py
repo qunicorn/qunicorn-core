@@ -22,9 +22,8 @@ import numpy as np
 from flask.globals import current_app
 import qiskit_aer
 from qiskit import transpile, QuantumCircuit, QiskitError
-from qiskit.primitives import Estimator as LocalEstimator, PrimitiveResult, PubResult
-from qiskit.primitives import EstimatorResult
-from qiskit.providers import Backend, QiskitBackendNotFoundError, BackendV2
+from qiskit.primitives import PrimitiveResult, PubResult
+from qiskit.providers import QiskitBackendNotFoundError, BackendV2
 from qiskit.quantum_info import SparsePauliOp
 from qiskit.result import Result
 from qiskit_aer import AerSimulator
@@ -96,12 +95,12 @@ class IBMPilot(Pilot):
         if device is None:
             raise QunicornError("The job does not have any device associated!")
 
-        backend: Backend
+        backend: BackendV2
         if device.is_local:
             backend = qiskit_aer.Aer.get_backend("aer_simulator")
         else:
             provider = self.__get_provider_login_and_update_job(token, job)
-            backend = provider.get_backend(device.name)
+            backend = provider.backend(device.name)
 
         programs = [p for p, _ in circuits]
         transpiled_circuits = [c for _, c in circuits]
@@ -429,7 +428,7 @@ class IBMPilot(Pilot):
                 results.append(
                     ResultDataclass(
                         program=programs[i],
-                        data=Pilot.qubit_binary_string_to_hex(ibm_result[i].data.meas.get_counts()),
+                        data=Pilot.qubit_binary_string_to_hex(ibm_result[i].data["c"].get_counts()),
                         result_type=ResultType.COUNTS,
                     )
                 )
