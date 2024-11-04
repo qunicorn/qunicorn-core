@@ -26,10 +26,6 @@ from tests import test_utils
 from tests.conftest import set_up_env
 from tests.test_utils import (
     IS_ASYNCHRONOUS,
-    PROBABILITY_1,
-    PROBABILITY_TOLERANCE,
-    BIT_3,
-    BIT_0,
     IBM_LOCAL_SIMULATOR,
 )
 
