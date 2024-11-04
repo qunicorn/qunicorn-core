@@ -41,6 +41,8 @@ __all__ = [
     "JobCommandSchema",
 ]
 
+from ...static.enums.error_mitigation import ErrorMitigationMethod
+
 from ...static.enums.job_state import JobState
 from ...static.enums.job_type import JobType
 from ...static.enums.provider_name import ProviderName
@@ -55,6 +57,7 @@ class JobRequestDto:
     device_name: str
     shots: int
     token: str
+    error_mitigation: ErrorMitigationMethod
     type: JobType
     deployment_id: int
 
@@ -99,6 +102,9 @@ class JobRequestDtoSchema(MaBaseSchema):
         required=False,
         allow_none=True,
         metadata={"example": 4000, "label": "shots", "description": "number of shots", "input_type": "number"},
+    )
+    error_mitigation = ma.fields.Enum(
+        required=True, metadata={"example": ErrorMitigationMethod.none}, enum=ErrorMitigationMethod
     )
     token = ma.fields.String(required=True, metadata={"example": ""})
     type = ma.fields.Enum(required=True, metadata={"example": JobType.RUNNER}, enum=JobType)

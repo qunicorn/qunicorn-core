@@ -5,5 +5,6 @@
   "token": "",
   "device_name": "aer_simulator",
   "shots": 4000,
-  "deployment_id": 1
+  "deployment_id": 1,
+  "error_mitigation": "none"
 }

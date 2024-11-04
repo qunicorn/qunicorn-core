@@ -66,6 +66,7 @@ def create_and_run_job(
     job: JobDataclass = JobDataclass(
         name=job_request_dto.name,
         shots=job_request_dto.shots,
+        error_mitigation=job_request_dto.error_mitigation,
         type=job_request_dto.type.name,
         executed_by=user_id,
         executed_on=device,
