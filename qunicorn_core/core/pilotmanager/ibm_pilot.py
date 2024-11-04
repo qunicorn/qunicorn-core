@@ -76,7 +76,7 @@ class IBMPilot(Pilot):
 
     def run(self, jobs: Sequence[PilotJob], token: Optional[str] = None):
         """Execute a job local using aer simulator or a real backend"""
-        batched_jobs = groupby(jobs, lambda j: j.job)
+        batched_jobs = [(db_job, list(pilot_jobs)) for db_job, pilot_jobs in groupby(jobs, lambda j: j.job)]
 
         for db_job, pilot_jobs in batched_jobs:
             device = db_job.executed_on
@@ -133,7 +133,7 @@ class IBMPilot(Pilot):
 
     def __sample(self, jobs: Sequence[PilotJob], token: Optional[str] = None) -> Tuple[List[ResultDataclass], JobState]:
         """Uses the Sampler to execute a job on an IBM backend using the IBM Pilot"""
-        batched_jobs = groupby(jobs, lambda j: j.job)
+        batched_jobs = [(db_job, list(pilot_jobs)) for db_job, pilot_jobs in groupby(jobs, lambda j: j.job)]
 
         for db_job, pilot_jobs in batched_jobs:
             if db_job.executed_on.is_local:
@@ -142,7 +142,6 @@ class IBMPilot(Pilot):
                 backend = self.__get_qiskit_runtime_backend(db_job, token=token)
                 sampler = Sampler(session=backend)
 
-            pilot_jobs = list(pilot_jobs)
             job_from_ibm: RuntimeJob = sampler.run([j.circuit for j in pilot_jobs])
             ibm_result: SamplerResult = job_from_ibm.result()
             mapped_results = IBMPilot._map_sampler_results(ibm_result)
@@ -154,7 +153,7 @@ class IBMPilot(Pilot):
     def __estimate(self, jobs: Sequence[PilotJob], token: Optional[str] = None):
         """Uses the Estimator to execute a job on an IBM backend using the IBM Pilot"""
         observables: list = [SparsePauliOp("IY"), SparsePauliOp("IY")]
-        batched_jobs = groupby(jobs, lambda j: j.job)
+        batched_jobs = [(db_job, list(pilot_jobs)) for db_job, pilot_jobs in groupby(jobs, lambda j: j.job)]
 
         for db_job, pilot_jobs in batched_jobs:
             if db_job.executed_on.is_local:
@@ -163,7 +162,6 @@ class IBMPilot(Pilot):
                 backend = self.__get_qiskit_runtime_backend(db_job, token=token)
                 estimator = Estimator(session=backend)
 
-            pilot_jobs = list(pilot_jobs)
             job_from_ibm = estimator.run([j.circuit for j in pilot_jobs], observables=observables)
             ibm_result: EstimatorResult = job_from_ibm.result()
             mapped_results = IBMPilot._map_estimator_results(ibm_result, "IY")
