@@ -192,7 +192,12 @@ class Pilot:
         if program_state.data.get("type") == "CUT_CIRCUIT":
             try:
                 prepared_results = prepare_results(all_results, circuit_fragments)
-                combine_results(prepared_results, program_state.data["cut_data"], program_state.data["origninal_circuit"], program_state.data["circuit_format"])
+                combine_results(
+                    prepared_results,
+                    program_state.data["cut_data"],
+                    program_state.data["origninal_circuit"],
+                    program_state.data["circuit_format"],
+                )
                 pass  # FIXME implement
             except Exception as err:
                 pass  # FIXME save error
