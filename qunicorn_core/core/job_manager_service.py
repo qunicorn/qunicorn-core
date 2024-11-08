@@ -169,7 +169,7 @@ def _get_circuit_cutting_params(program: QuantumProgramDataclass, max_qubits: in
     if num_qubits <= max_qubits:
         return
 
-    max_circuits: int = ceil(num_qubits / max_qubits)
+    max_circuits: int = ceil(num_qubits / (max_qubits + 1))
     max_allowed_cuts: int = {2: 3, 3: 6, 4: 10}.get(max_circuits, 10)
 
     if max_circuits > 4:
