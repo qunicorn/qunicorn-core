@@ -22,10 +22,12 @@ from celery.states import PENDING
 
 from qunicorn_core.api.api_models.device_dtos import DeviceDto
 from qunicorn_core.celery import CELERY
+from qunicorn_core.core.circuit_cutting_service import prepare_results, combine_results
 from qunicorn_core.db.db import DB
 from qunicorn_core.db.models.deployment import DeploymentDataclass
 from qunicorn_core.db.models.device import DeviceDataclass
 from qunicorn_core.db.models.job import JobDataclass
+from qunicorn_core.db.models.job_state import TransientJobStateDataclass
 from qunicorn_core.db.models.provider import ProviderDataclass
 from qunicorn_core.db.models.quantum_program import QuantumProgramDataclass
 from qunicorn_core.db.models.result import ResultDataclass
@@ -128,6 +130,7 @@ class Pilot:
 
             if job.circuit_fragment_id is not None:
                 pass  # FIXME handle fragmented jobs (i.e. split circuit results)
+                self._save_fragment_results(job, results)
 
             else:
                 res = ResultDataclass(
@@ -156,6 +159,43 @@ class Pilot:
 
         if commit:
             DB.session.commit()
+
+    def _save_fragment_results(self, job: PilotJob, results: Sequence[PilotJobResult]):
+        transient_state = TransientJobStateDataclass(
+            job.job,
+            job.program,
+            job.circuit_fragment_id,
+            {"type": "FRAGMENT_RESULT", "results": [r._asdict() for r in results]},
+        )
+        transient_state.save()
+
+        program_state = job.job.get_transient_state(
+            program=job.program.id, filter_=lambda s: isinstance(s.data, dict) and "circuit_fragment_ids" in s.data
+        )
+        circuit_fragments = program_state.data.get("circuit_fragment_ids", default=None) if program_state else None
+        if not circuit_fragments or not program_state:
+            return  # no transient state present to tell how to handle fragment results!
+
+        def is_related_result(s: TransientJobStateDataclass):
+            if s.program != job.program or s.circuit_fragment_id is None:
+                return False
+            if not isinstance(s.data, dict):
+                return False
+            return s.data.get("type") == "FRAGMENT_RESULT"
+
+        all_results = {s.circuit_fragment_id: s.data for s in job.job._transient if is_related_result(s)}
+
+        if set(circuit_fragments) > all_results.keys():
+            # not all required results present
+            return
+
+        if program_state.data.get("type") == "CUT_CIRCUIT":
+            try:
+                prepared_results = prepare_results(all_results, circuit_fragments)
+                combine_results(prepared_results, program_state.data["cut_data"], program_state.data["origninal_circuit"], program_state.data["circuit_format"])
+                pass  # FIXME implement
+            except Exception as err:
+                pass  # FIXME save error
 
     def determine_db_job_progress(self, db_job: JobDataclass) -> int:
         if db_job.state in (JobState.CANCELED, JobState.ERROR, JobState.FINISHED):

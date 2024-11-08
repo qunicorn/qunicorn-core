@@ -14,7 +14,7 @@
 
 import traceback
 from datetime import datetime, timezone
-from typing import List, Optional, Union, Any
+from typing import List, Optional, Union, Any, Callable
 
 from flask import current_app
 
@@ -118,11 +118,30 @@ class JobDataclass(DbModel):
             q = q.where(cls.deployment == deployment)
         return DB.session.execute(q).scalars().all()
 
-    def get_transient_state(self, key: str, default: Optional[Any] = ..., *, program: Optional[int] = None):
+    def get_transient_state(
+        self,
+        *,
+        program: Optional[int] = None,
+        circuit_fragment_id: Optional[int] = None,
+        filter_: Optional[Callable[[TransientJobStateDataclass], bool]] = None,
+    ):
         for state in self._transient:
-            if state.program_id == program:
-                if isinstance(state.data, dict) and key in state.data:
-                    return state.data[key]
+            if state.program_id == program and state.circuit_fragment_id == circuit_fragment_id:
+                if filter_ is None or filter_(state):
+                    return state
+
+    def get_transient_state_key(
+        self,
+        key: str,
+        default: Optional[Any] = ...,
+        *,
+        program: Optional[int] = None,
+        circuit_fragment_id: Optional[int] = None,
+        filter_: Optional[Callable[[TransientJobStateDataclass], bool]] = None,
+    ):
+        state = self.get_transient_state(program=program, circuit_fragment_id=circuit_fragment_id)
+        if state is not None and isinstance(state.data, dict) and key in state.data:
+            return state.data[key]
         if default == ...:
             raise KeyError(f"Key '{key}' not found in transient job state!")
         return default
