@@ -31,13 +31,24 @@ def cut_circuit(cutting_params: dict, circuit_cutting_service: Optional[str] = N
     return cut_result.json()
 
 
-def prepare_results(fragment_results: Dict[int, List[dict]], circuit_fragment_ids: Sequence[int]):
+def prepare_results(fragment_results: Dict[int, List[dict]], circuit_fragment_ids: Sequence[int]) -> List[List[float]]:
+    """Prepares qunicorn style subcircuit results in the format required for combining results with the cutting service.
+
+    The results for the cutting service are a probability distribution over all possible measurements.
+    Probabilities are stored as a list, where the list index corresponds to the measurement
+    (i.e. ``0b00`` = ``l[0]`` and ``0b10`` = ``l[2]``).
+    """
+    subcircuit_results: List[List[float]] = []
     # FIXME implement this
-    return fragment_results
+    return subcircuit_results
 
 
 def combine_results(
-    results, cut_data: dict, original_circuit: str, circuit_format: str, circuit_cutting_service: Optional[str] = None
+    results: List[List[float]],
+    cut_data: dict,
+    original_circuit: str,
+    circuit_format: str,
+    circuit_cutting_service: Optional[str] = None,
 ):
     if circuit_cutting_service is None:
         circuit_cutting_service = current_app.config.get("CIRCUIT_CUTTING_URL", None)
@@ -47,15 +58,18 @@ def combine_results(
         "circuit": original_circuit,
         "subcircuit_results": results,
         "cuts": {
-            "individual_subcircuits": cut_data["individual_subcircuits"],
+            "max_subcircuit_width": cut_data["max_subcircuit_width"],
             "subcircuits": cut_data["subcircuits"],
             "complete_path_map": cut_data["complete_path_map"],
-            "init_meas_subcircuit_map": cut_data["init_meas_subcircuit_map"],
             "num_cuts": cut_data["num_cuts"],
+            "counter": cut_data["counter"],
+            "classical_cost": cut_data["classical_cost"],
+            "individual_subcircuits": cut_data["individual_subcircuits"],
+            "init_meas_subcircuit_map": cut_data["init_meas_subcircuit_map"],
         },
         "circuit_format": circuit_format,
-        "unnormalized_results": "True",
-        "shot_scaling_factor": 100,
+        # "unnormalized_results": "True",
+        # "shot_scaling_factor": 100,
     }
     combined_result = post(urljoin(circuit_cutting_service, "/combineResults"), json=data)
     combined_result.raise_for_status()
