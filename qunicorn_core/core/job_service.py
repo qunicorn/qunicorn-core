@@ -36,6 +36,7 @@ from qunicorn_core.db.models.result import ResultDataclass
 from qunicorn_core.static.enums.job_state import JobState
 from qunicorn_core.static.enums.job_type import JobType
 from qunicorn_core.static.qunicorn_exception import QunicornError
+from qunicorn_core.static.enums.error_mitigation import ErrorMitigationMethod
 from qunicorn_core.util.utils import is_running_asynchronously
 
 """
@@ -67,6 +68,7 @@ def create_and_run_job(
         name=job_request_dto.name,
         shots=job_request_dto.shots,
         error_mitigation=job_request_dto.error_mitigation,
+        cut_to_width=job_request_dto.cut_to_width,
         type=job_request_dto.type.name,
         executed_by=user_id,
         executed_on=device,
@@ -112,6 +114,8 @@ def re_run_job_by_id(job_id: int, token: Optional[str], user_id: Optional[str] =
         shots=job.shots,
         token=token,
         type=JobType(job.type),
+        error_mitigation=ErrorMitigationMethod(job.error_mitigation),
+        cut_to_width=job.cut_to_width,
     )
     return create_and_run_job(job_request)
 
