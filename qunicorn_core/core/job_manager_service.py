@@ -177,7 +177,13 @@ def _get_circuit_cutting_params(program: QuantumProgramDataclass, max_qubits: in
 
     existing_translations = [(t.assembler_language, t.circuit, t.translation_distance) for t in program.translations]
 
-    for target in ("QASM2", "QASM3"):
+    target_formats = ("QASM2", "QASM3")
+
+    if src_language == "QASM3":
+        # prefer qasm 3 if circuit was originally qasm3
+        target_formats = target_formats[::-1]
+
+    for target in target_formats:
         try:
             transpiled_circuit = transpile_circuit(
                 target,
@@ -235,7 +241,7 @@ def _cut_circuit(
 
     source_format = "QASM2" if cutting_params["circuit_format"] == "openqasm2" else "QASM3"
 
-    for circuit_fragment_id, circuit in cut_data["individual_subcircuits"]:
+    for circuit_fragment_id, circuit in enumerate(cut_data["individual_subcircuits"]):
         pilot_jobs.extend(
             _transpile_circuit(
                 job=job,

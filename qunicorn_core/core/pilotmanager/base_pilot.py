@@ -172,7 +172,7 @@ class Pilot:
         program_state = job.job.get_transient_state(
             program=job.program.id, filter_=lambda s: isinstance(s.data, dict) and "circuit_fragment_ids" in s.data
         )
-        circuit_fragments = program_state.data.get("circuit_fragment_ids", default=None) if program_state else None
+        circuit_fragments = program_state.data.get("circuit_fragment_ids", None) if program_state else None
         if not circuit_fragments or not program_state:
             return  # no transient state present to tell how to handle fragment results!
 
