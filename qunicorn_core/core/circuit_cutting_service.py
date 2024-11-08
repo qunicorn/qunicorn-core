@@ -1,0 +1,62 @@
+# Copyright 2024 University of Stuttgart
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+from urllib.parse import urljoin
+from typing import Optional, List, Dict, Sequence
+
+from flask.globals import current_app
+from requests import post
+
+
+def cut_circuit(cutting_params: dict, circuit_cutting_service: Optional[str] = None) -> dict:
+    if circuit_cutting_service is None:
+        circuit_cutting_service = current_app.config.get("CIRCUIT_CUTTING_URL", None)
+    if circuit_cutting_service is None:
+        raise ValueError("URL for circuit cutting service must not be None!")
+
+    cut_result = post(urljoin(circuit_cutting_service, "/cutCircuits"), json=cutting_params, timeout=300)
+    cut_result.raise_for_status()
+    return cut_result.json()
+
+
+def prepare_results(fragment_results: Dict[int, List[dict]], circuit_fragment_ids: Sequence[int]):
+    # FIXME implement this
+    return fragment_results
+
+
+def combine_results(
+    results, cut_data: dict, original_circuit: str, circuit_format: str, circuit_cutting_service: Optional[str] = None
+):
+    if circuit_cutting_service is None:
+        circuit_cutting_service = current_app.config.get("CIRCUIT_CUTTING_URL", None)
+    if circuit_cutting_service is None:
+        raise ValueError("URL for circuit cutting service must not be None!")
+    data = {
+        "circuit": original_circuit,
+        "subcircuit_results": results,
+        "cuts": {
+            "individual_subcircuits": cut_data["individual_subcircuits"],
+            "subcircuits": cut_data["subcircuits"],
+            "complete_path_map": cut_data["complete_path_map"],
+            "init_meas_subcircuit_map": cut_data["init_meas_subcircuit_map"],
+            "num_cuts": cut_data["num_cuts"],
+        },
+        "circuit_format": circuit_format,
+        "unnormalized_results": "True",
+        "shot_scaling_factor": 100,
+    }
+    combined_result = post(urljoin(circuit_cutting_service, "/combineResults"), json=data)
+    combined_result.raise_for_status()
+    return combined_result.json()
