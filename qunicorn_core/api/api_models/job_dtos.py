@@ -107,7 +107,7 @@ class JobRequestDtoSchema(MaBaseSchema):
     error_mitigation = ma.fields.Enum(
         required=True, metadata={"example": ErrorMitigationMethod.none}, enum=ErrorMitigationMethod
     )
-    cut_to_width = ma.fields.Int(required=False, allow_none=True, missing=None)
+    cut_to_width = ma.fields.Int(required=False, allow_none=True, missing=None, metadata={"example": None})
     token = ma.fields.String(required=True, metadata={"example": ""})
     type = ma.fields.Enum(required=True, metadata={"example": JobType.RUNNER}, enum=JobType)
     deployment_id = ma.fields.Integer(required=False, allow_none=True, metadata={"example": 1})
