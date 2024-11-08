@@ -200,7 +200,7 @@ class Pilot:
                 )
                 pass  # FIXME implement
             except Exception as err:
-                pass  # FIXME save error
+                print(err)  # FIXME save error
 
     def determine_db_job_progress(self, db_job: JobDataclass) -> int:
         if db_job.state in (JobState.CANCELED, JobState.ERROR, JobState.FINISHED):

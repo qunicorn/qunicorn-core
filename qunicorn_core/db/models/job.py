@@ -50,7 +50,8 @@ class JobDataclass(DbModel):
         shots (int): The number of shots for the job
         type (JobType): The type of the job.
         error_mitigation (str): The type of error mitigation to apply to the circuits.
-        cut_to_width (int | None, Optional): If a number is given, every circuit with more than that number of qubits will be cut into smaller circuits.
+        cut_to_width (int | None, Optional): If a number is given, every circuit with more than that number of qubits \
+            will be cut into smaller circuits.
         started_at (datetime, optional): The moment the job was scheduled. (default: datetime.utcnow)
         provider_specific_id (str, optional): The provider specific id for the job. (Used for canceling)
         celery_id (str, optional): The celery id for the job. (Used for canceling)
