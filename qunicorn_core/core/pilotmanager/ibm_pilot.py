@@ -17,7 +17,7 @@ from http import HTTPStatus
 from os import environ
 from itertools import groupby
 from pathlib import Path
-from typing import List, Optional, Sequence, Tuple, Union, Dict
+from typing import List, Optional, Sequence, Union, Dict
 
 import numpy as np
 from flask.globals import current_app
@@ -45,7 +45,6 @@ from qunicorn_core.db.db import DB
 from qunicorn_core.db.models.device import DeviceDataclass
 from qunicorn_core.db.models.job import JobDataclass
 from qunicorn_core.db.models.provider import ProviderDataclass
-from qunicorn_core.db.models.result import ResultDataclass
 from qunicorn_core.db.models.job_state import TransientJobStateDataclass
 from qunicorn_core.static.enums.assembler_languages import AssemblerLanguage
 from qunicorn_core.static.enums.error_mitigation import ErrorMitigationMethod

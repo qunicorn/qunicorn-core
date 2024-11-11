@@ -26,7 +26,6 @@ def get_default_qasm2_string(hadamard_amount: int = 1) -> str:
     return dumps2(qc)
 
 
-
 def calculate_probabilities(counts: dict) -> dict:
     """Calculates the probabilities from the counts, probability = counts / total_counts"""
 

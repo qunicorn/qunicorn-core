@@ -229,7 +229,7 @@ class Pilot:
                     job.job._transient.remove(s)
 
             except Exception as err:
-                raise err  # FIXME save error
+                job.job.save_error(err, job.program)
 
     def determine_db_job_progress(self, db_job: JobDataclass) -> int:
         if db_job.state in (JobState.CANCELED, JobState.ERROR, JobState.FINISHED):
