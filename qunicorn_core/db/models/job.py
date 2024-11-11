@@ -93,7 +93,7 @@ class JobDataclass(DbModel):
         TransientJobStateDataclass,
         back_populates="job",
         lazy="selectin",
-        cascade="all, delete-orphan",  # TODO: test if it fixes "NOT NULL constraint failed: TransientJobState.job_id"
+        cascade="all, delete-orphan",
         default_factory=list,
     )
 

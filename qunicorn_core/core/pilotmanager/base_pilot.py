@@ -225,11 +225,8 @@ class Pilot:
 
                 DB.session.delete(program_state)
 
-                # DB.session.flush()  # TODO: test if "is not persisted" is fixed
-
                 for s in all_results:
-                    # DB.session.delete(s)
-                    job.job._transient.remove(s)  # TODO: test if "has been deleted" is fixed
+                    job.job._transient.remove(s)
 
             except Exception as err:
                 raise err  # FIXME save error
