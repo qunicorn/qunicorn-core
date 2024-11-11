@@ -177,7 +177,7 @@ class Pilot:
         )
         transient_state.save()
 
-    def _check_if_all_results_available(self, job: PilotJob):
+    def _check_if_all_results_available(self, job: PilotJob):  # noqa: C901
         program_state = job.job.get_transient_state(
             program=job.program.id, filter_=lambda s: isinstance(s.data, dict) and "circuit_fragment_ids" in s.data
         )

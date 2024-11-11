@@ -138,9 +138,9 @@ def _persist_translation(
         translated.save(commit=True)
 
 
-def _get_circuit_cutting_params(
+def _get_circuit_cutting_params(  # noqa: C901
     program: QuantumProgramDataclass, max_qubits: int
-) -> Tuple[Dict, Any] | None:  # noqa: C901
+) -> Tuple[Dict, Any] | None:
     if max_qubits < 1:
         raise QunicornError(f"The maximum width of a cut circuit must allow for at least one Qubit! (got {max_qubits})")
 
