@@ -134,7 +134,7 @@ class IBMPilot(Pilot):
         job.save(commit=True)
         current_app.logger.info(f"Cancel job with id {job.id} on {job.executed_on.provider.name} successful.")
 
-    def __sample(self, jobs: Sequence[PilotJob], token: Optional[str] = None) -> Tuple[List[ResultDataclass], JobState]:
+    def __sample(self, jobs: Sequence[PilotJob], token: Optional[str] = None):
         """Uses the Sampler to execute a job on an IBM backend using the IBM Pilot"""
         batched_jobs = [(db_job, list(pilot_jobs)) for db_job, pilot_jobs in groupby(jobs, lambda j: j.job)]
         db_job: JobDataclass
@@ -378,7 +378,7 @@ class IBMPilot(Pilot):
                 )
             )
 
-            probabilities: dict = Pilot.calculate_probabilities(hex_counts) if hex_counts else {"": 0}
+            probabilities: dict = utils.calculate_probabilities(hex_counts) if hex_counts else {"": 0}
 
             pilot_results.append(
                 PilotJobResult(

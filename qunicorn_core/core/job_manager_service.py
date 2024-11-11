@@ -14,7 +14,7 @@
 
 from functools import partial
 from math import ceil
-from typing import Any, List, Optional, Sequence, Tuple
+from typing import Any, List, Optional, Sequence, Tuple, Dict
 
 from flask import current_app
 
@@ -86,14 +86,18 @@ def _prepare_pilot_jobs(job: JobDataclass, dest_languages: Sequence[str]) -> Seq
         if program.quantum_circuit is None:
             continue  # skip empty programs
 
-        cutting_params: Optional[dict] = None
+        cutting_params: Optional[Tuple[dict, str]] = None
 
         if try_circuit_cutting:
             cutting_params = _get_circuit_cutting_params(program, max_qubits)
 
         if cutting_params is not None:
             assert isinstance(circuit_cutting_service, str)
-            pilot_jobs.extend(_cut_circuit(job, program, circuit_cutting_service, cutting_params, dest_languages))
+            pilot_jobs.extend(
+                _cut_circuit(
+                    job, program, circuit_cutting_service, cutting_params[0], cutting_params[1], dest_languages
+                )
+            )
         else:
             circuit = program.quantum_circuit
             source_format = program.assembler_language
@@ -134,7 +138,9 @@ def _persist_translation(
         translated.save(commit=True)
 
 
-def _get_circuit_cutting_params(program: QuantumProgramDataclass, max_qubits: int):  # noqa: C901
+def _get_circuit_cutting_params(
+    program: QuantumProgramDataclass, max_qubits: int
+) -> Tuple[Dict, Any] | None:  # noqa: C901
     if max_qubits < 1:
         raise QunicornError(f"The maximum width of a cut circuit must allow for at least one Qubit! (got {max_qubits})")
 
@@ -169,7 +175,7 @@ def _get_circuit_cutting_params(program: QuantumProgramDataclass, max_qubits: in
     if num_qubits <= max_qubits:
         return
 
-    max_circuits: int = ceil(num_qubits / (max_qubits + 1))
+    max_circuits: int = ceil(num_qubits / (max_qubits - 1))
     max_allowed_cuts: int = {2: 3, 3: 6, 4: 10}.get(max_circuits, 10)
 
     if max_circuits > 4:
@@ -201,7 +207,7 @@ def _get_circuit_cutting_params(program: QuantumProgramDataclass, max_qubits: in
                 "max_num_subcircuits": max_circuits,
                 "max_cuts": max_allowed_cuts,
                 "circuit_format": "openqasm2" if target == "QASM2" else "openqasm3",
-            }
+            }, transpiled_qiskit
         except KeyError:
             pass  # did not find a valid transpiler chain
         except TranspilationError as err:
@@ -217,6 +223,7 @@ def _cut_circuit(
     program: QuantumProgramDataclass,
     circuit_cutting_service: str,
     cutting_params: dict,
+    circuit: Any,
     dest_languages: Sequence[str],
 ) -> Sequence[PilotJob]:
     pilot_jobs: List[PilotJob] = []
@@ -233,6 +240,7 @@ def _cut_circuit(
             "type": "CUT_CIRCUIT",
             "origninal_circuit": cutting_params["circuit"],
             "circuit_format": cutting_params["circuit_format"],
+            "registers": [{"name": "output", "size": circuit.num_qubits}],  # FIXME: read registers from circuit
             "cut_data": cut_data,
             "circuit_fragment_ids": [i for i in range(len(cut_data["individual_subcircuits"]))],
         },

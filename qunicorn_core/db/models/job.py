@@ -90,7 +90,11 @@ class JobDataclass(DbModel):
     )
 
     _transient: Mapped[List[TransientJobStateDataclass]] = relationship(
-        TransientJobStateDataclass, back_populates="job", lazy="selectin", default_factory=list
+        TransientJobStateDataclass,
+        back_populates="job",
+        lazy="selectin",
+        cascade="all, delete-orphan",  # TODO: test if it fixes "NOT NULL constraint failed: TransientJobState.job_id"
+        default_factory=list,
     )
 
     @classmethod

@@ -11,13 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-
+from collections import Counter
+from random import choices
 from urllib.parse import urljoin
-from typing import Optional, List, Dict, Sequence
+from typing import Optional, List, Dict, Sequence, Tuple
 
 from flask.globals import current_app
 from requests import post
+
+from qunicorn_core.static.enums.result_type import ResultType
+from qunicorn_core.static.qunicorn_exception import QunicornError
+from qunicorn_core.util import utils
 
 
 def cut_circuit(cutting_params: dict, circuit_cutting_service: Optional[str] = None) -> dict:
@@ -31,7 +35,9 @@ def cut_circuit(cutting_params: dict, circuit_cutting_service: Optional[str] = N
     return cut_result.json()
 
 
-def prepare_results(fragment_results: Dict[int, List[dict]], circuit_fragment_ids: Sequence[int]) -> List[List[float]]:
+def prepare_results_for_combination(
+    fragment_results: Dict[int, List[dict]], circuit_fragment_ids: Sequence[int]
+) -> List[List[float]]:
     """Prepares qunicorn style subcircuit results in the format required for combining results with the cutting service.
 
     The results for the cutting service are a probability distribution over all possible measurements.
@@ -39,7 +45,49 @@ def prepare_results(fragment_results: Dict[int, List[dict]], circuit_fragment_id
     (i.e. ``0b00`` = ``l[0]`` and ``0b10`` = ``l[2]``).
     """
     subcircuit_results: List[List[float]] = []
-    # FIXME implement this
+
+    for fragment_id in circuit_fragment_ids:
+        fragment_sub_results = fragment_results[fragment_id]
+
+        for job_result in fragment_sub_results:  # PilotJobResult as dictionary
+            result_type: ResultType = ResultType(job_result["result_type"])
+
+            if result_type == ResultType.COUNTS:
+                probabilities = utils.calculate_probabilities(job_result["data"])
+            elif result_type == ResultType.PROBABILITIES:
+                probabilities = job_result["data"]
+            else:
+                continue
+
+            measurement_format = job_result["meta"]["format"]
+
+            if measurement_format == "bin":
+                base = 2
+                arbitrary_measurement_key: str = next(iter(probabilities.keys()))
+
+                if arbitrary_measurement_key.startswith("0b"):
+                    qubit_count = len(arbitrary_measurement_key) - 2
+                else:
+                    qubit_count = len(arbitrary_measurement_key)
+            elif measurement_format == "hex":
+                base = 16
+                qubit_count = 0
+
+                for register in job_result["meta"]["registers"]:
+                    qubit_count += register["size"]
+            else:
+                raise QunicornError(f"unknown measurement format {measurement_format}")
+
+            cutting_format = [0.0 for _ in range(2**qubit_count)]
+
+            for measurement, count in probabilities.items():
+                cutting_format[int(measurement, base)] = count
+
+            subcircuit_results.append(cutting_format)
+            break
+
+        # TODO: if no supported result type...
+
     return subcircuit_results
 
 
@@ -73,4 +121,21 @@ def combine_results(
     }
     combined_result = post(urljoin(circuit_cutting_service, "/combineResults"), json=data)
     combined_result.raise_for_status()
-    return combined_result.json()
+    return combined_result.json()["result"]
+
+
+def prepare_combined_results(
+    results: List[float], shots: int, registers: List[Dict]
+) -> List[Tuple[Dict, Dict, ResultType]]:
+    print(results)
+    counts: Dict[int, int] = dict(Counter(choices(list(range(len(results))), results, k=shots)))
+    counts_hex = {hex(k): v for k, v in counts.items()}
+    counts_metadata = {"format": "hex", "shots": shots, "registers": registers}
+
+    probabilities = {hex(k): v for k, v in enumerate(results)}
+    probability_metadata = {"format": "hex", "shots": shots, "registers": registers}
+
+    return [
+        (counts_hex, counts_metadata, ResultType.COUNTS),
+        (probabilities, probability_metadata, ResultType.PROBABILITIES),
+    ]

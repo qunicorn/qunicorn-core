@@ -68,7 +68,7 @@ class RigettiPilot(Pilot):
             result_dict = RigettiPilot.qubit_binary_string_to_hex(
                 result_dict, reverse_qubit_order=True
             )  # FIXME: test qubit order with qasm testsuite!
-            probabilities_dict = RigettiPilot.calculate_probabilities(result_dict)
+            probabilities_dict = utils.calculate_probabilities(result_dict)
 
             pilot_results = [
                 PilotJobResult(
