@@ -96,6 +96,7 @@ def load_db_function(app: Flask, if_not_exists=True):
     # Create default deployments for languages that do not have their own primary pilot.
     DB.session.add(create_default_qasm2_deployment())
     DB.session.add(create_default_qasm3_deployment())
+    DB.session.add(create_circuit_cutting_deployment())
     DB.session.commit()
 
     # Save all default data from the pilots
@@ -124,6 +125,18 @@ def create_default_qasm3_deployment() -> DeploymentDataclass:
     DB.session.add(program)
     return DeploymentDataclass(
         deployed_by=None, programs=[program], deployed_at=datetime.datetime.now(), name="QASM3Deployment"
+    )
+
+
+def create_circuit_cutting_deployment() -> DeploymentDataclass:
+    language = AssemblerLanguage.QASM3
+    qasm3_str: str = (
+        'OPENQASM 3;\ninclude "stdgates.inc";\nbit[4] meas;\nqubit[4] q;\nh q[0];\ncx q[0], q[1];\ncx q[1], q[2];\ncx q[2], q[3];\nmeas[0] = measure q[0];\nmeas[1] = measure q[1];\nmeas[2] = measure q[2];\nmeas[3] = measure q[3];\n'
+    )
+    program = QuantumProgramDataclass(quantum_circuit=qasm3_str, assembler_language=language)
+    DB.session.add(program)
+    return DeploymentDataclass(
+        deployed_by=None, programs=[program], deployed_at=datetime.datetime.now(), name="Circuit Cutting"
     )
 
 
