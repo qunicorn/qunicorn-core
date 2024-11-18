@@ -66,6 +66,7 @@ class JobDataclass(DbModel):
     progress: Mapped[int] = mapped_column(sql.INTEGER())
     state: Mapped[str] = mapped_column(sql.String(50))
     shots: Mapped[int] = mapped_column(sql.INTEGER())
+    error_mitigation: Mapped[str] = mapped_column(sql.String(50))
     type: Mapped[str] = mapped_column(sql.String(50))
     # default arguments
     started_at: Mapped[datetime] = mapped_column(

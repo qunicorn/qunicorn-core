@@ -28,6 +28,7 @@ from qunicorn_core.db.models.job import JobDataclass
 from qunicorn_core.db.models.provider import ProviderDataclass
 from qunicorn_core.db.models.quantum_program import QuantumProgramDataclass
 from qunicorn_core.db.models.result import ResultDataclass
+from qunicorn_core.static.enums.error_mitigation import ErrorMitigationMethod
 from qunicorn_core.static.enums.job_state import JobState
 from qunicorn_core.static.enums.job_type import JobType
 from qunicorn_core.static.qunicorn_exception import QunicornError
@@ -261,6 +262,7 @@ class Pilot:
             progress=0,
             state=JobState.READY.value,
             shots=4000,
+            error_mitigation=ErrorMitigationMethod.none,
             type=JobType.RUNNER.value,
             started_at=datetime.now(),
             name=job_name,
