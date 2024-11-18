@@ -131,7 +131,9 @@ def create_default_qasm3_deployment() -> DeploymentDataclass:
 def create_circuit_cutting_deployment() -> DeploymentDataclass:
     language = AssemblerLanguage.QASM3
     qasm3_str: str = (
-        'OPENQASM 3;\ninclude "stdgates.inc";\nbit[4] meas;\nqubit[4] q;\nh q[0];\ncx q[0], q[1];\ncx q[1], q[2];\ncx q[2], q[3];\nmeas[0] = measure q[0];\nmeas[1] = measure q[1];\nmeas[2] = measure q[2];\nmeas[3] = measure q[3];\n'
+        'OPENQASM 3;\ninclude "stdgates.inc";\nbit[4] meas;\nqubit[4] q;\nh q[0];\ncx q[0], q[1];\ncx q[1], q[2];\n'
+        "cx q[2], q[3];\nmeas[0] = measure q[0];\nmeas[1] = measure q[1];\nmeas[2] = measure q[2];\n"
+        "meas[3] = measure q[3];\n"
     )
     program = QuantumProgramDataclass(quantum_circuit=qasm3_str, assembler_language=language)
     DB.session.add(program)
