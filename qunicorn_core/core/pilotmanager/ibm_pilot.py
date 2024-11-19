@@ -17,7 +17,7 @@ from http import HTTPStatus
 from os import environ
 from itertools import groupby
 from pathlib import Path
-from typing import List, Optional, Sequence, Tuple, Union, Dict
+from typing import List, Optional, Sequence, Union, Dict
 
 import numpy as np
 from flask.globals import current_app
@@ -45,7 +45,6 @@ from qunicorn_core.db.db import DB
 from qunicorn_core.db.models.device import DeviceDataclass
 from qunicorn_core.db.models.job import JobDataclass
 from qunicorn_core.db.models.provider import ProviderDataclass
-from qunicorn_core.db.models.result import ResultDataclass
 from qunicorn_core.db.models.job_state import TransientJobStateDataclass
 from qunicorn_core.static.enums.assembler_languages import AssemblerLanguage
 from qunicorn_core.static.enums.error_mitigation import ErrorMitigationMethod
@@ -134,7 +133,7 @@ class IBMPilot(Pilot):
         job.save(commit=True)
         current_app.logger.info(f"Cancel job with id {job.id} on {job.executed_on.provider.name} successful.")
 
-    def __sample(self, jobs: Sequence[PilotJob], token: Optional[str] = None) -> Tuple[List[ResultDataclass], JobState]:
+    def __sample(self, jobs: Sequence[PilotJob], token: Optional[str] = None):
         """Uses the Sampler to execute a job on an IBM backend using the IBM Pilot"""
         batched_jobs = [(db_job, list(pilot_jobs)) for db_job, pilot_jobs in groupby(jobs, lambda j: j.job)]
         db_job: JobDataclass
@@ -378,7 +377,7 @@ class IBMPilot(Pilot):
                 )
             )
 
-            probabilities: dict = Pilot.calculate_probabilities(hex_counts) if hex_counts else {"": 0}
+            probabilities: dict = utils.calculate_probabilities(hex_counts) if hex_counts else {"": 0}
 
             pilot_results.append(
                 PilotJobResult(
