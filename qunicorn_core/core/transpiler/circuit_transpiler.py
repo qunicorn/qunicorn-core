@@ -119,8 +119,12 @@ class CircuitTranspiler:
             # Start search from multiple starting points at the same time
             # e.g., when multiple source formats are available
             for s in source:
+                if isinstance(s, tuple):
+                    s, start_cost = s
+                else:
+                    start_cost = 0
                 if not exclude_formats or s not in exclude_formats:
-                    heappush(frontier, (0, s, tuple()))
+                    heappush(frontier, (start_cost, s, tuple()))
 
         if not frontier:
             # frontier is empty because all source formats are excluded formats
@@ -229,7 +233,7 @@ def transpile_circuit(
     elif len(circuit) == 1:
         source_format = circuit[0][0]
     else:
-        source_format = [c[0] for c in circuit]
+        source_format = [(c[0], c[2]) for c in circuit]
 
     for source, c, _ in circuit:
         if source == target:

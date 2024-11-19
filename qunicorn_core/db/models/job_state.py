@@ -48,4 +48,5 @@ class TransientJobStateDataclass(DbModel):
     program: Mapped[Optional["quantum_program.QuantumProgramDataclass"]] = relationship(
         lambda: quantum_program.QuantumProgramDataclass, lazy="selectin", default=None
     )
+    circuit_fragment_id: Mapped[Optional[int]] = mapped_column(sql.INTEGER(), nullable=True, default=None)
     data: Mapped[Any] = mapped_column(sql.JSON, default=None, nullable=True)

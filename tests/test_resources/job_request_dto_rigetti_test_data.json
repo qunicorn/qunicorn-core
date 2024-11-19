@@ -1,9 +1,10 @@
 {
   "name": "JobName",
-  "provider_name": "RIGETTI",
+  "providerName": "RIGETTI",
   "type": "RUNNER",
   "token": "",
-  "device_name": "2q-qvm",
+  "deviceName": "2q-qvm",
   "shots": 4000,
-  "deployment_id": 6
+  "deploymentId": 6,
+  "errorMitigation": "none"
 }

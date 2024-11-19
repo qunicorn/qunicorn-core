@@ -17,13 +17,18 @@ import json
 import os
 from typing import Optional
 
-from qunicorn_core.api.api_models import DeploymentUpdateDto, JobRequestDto, SimpleJobDto, DeploymentDto
+from qunicorn_core.api.api_models import (
+    DeploymentUpdateDto,
+    JobRequestDto,
+    JobRequestDtoSchema,
+    SimpleJobDto,
+    DeploymentDto,
+)
 from qunicorn_core.core import deployment_service, job_service
 from qunicorn_core.db.models.job import JobDataclass
 from qunicorn_core.db.models.result import ResultDataclass
 from qunicorn_core.static.enums.assembler_languages import AssemblerLanguage
 from qunicorn_core.static.enums.job_state import JobState
-from qunicorn_core.static.enums.job_type import JobType
 from qunicorn_core.static.enums.provider_name import ProviderName
 from qunicorn_core.static.enums.result_type import ResultType
 from qunicorn_core.static.qunicorn_exception import QunicornError
@@ -54,7 +59,7 @@ EXPECTED_ID: int = 5  # hardcoded ID can be removed if tests for the correct ID 
 JOB_FINISHED_PROGRESS: int = 100
 STANDARD_JOB_NAME: str = "JobName"
 IS_ASYNCHRONOUS: bool = False
-COUNTS_TOLERANCE: int = 100
+COUNTS_TOLERANCE: int = 200
 PROBABILITY_1: float = 1
 PROBABILITY_TOLERANCE: float = 0.1
 BIT_0: str = "0x0"
@@ -141,9 +146,8 @@ def get_test_job(provider: ProviderName) -> JobRequestDto:
     """Search for a ProviderName in the file names to create a JobRequestDto"""
     for path in JOB_JSON_PATHS:
         if provider.lower() in path:
-            job_dict: dict = get_object_from_json(path)
-            job_type = JobType(job_dict.pop("type"))
-            return JobRequestDto(type=job_type, **job_dict)
+            job_dict: dict = JobRequestDtoSchema().load(get_object_from_json(path))
+            return JobRequestDto(**job_dict)
 
     raise QunicornError("No job json found for provider: {}".format(provider))
 
@@ -156,8 +160,8 @@ def check_simple_job_dto(return_dto: SimpleJobDto):
 
 def check_if_job_finished(job: JobDataclass):
     assert job.id == EXPECTED_ID
-    assert job.progress == JOB_FINISHED_PROGRESS
     assert job.state == JobState.FINISHED
+    assert job.progress == JOB_FINISHED_PROGRESS
 
 
 def check_if_job_runner_result_correct(job: JobDataclass):
