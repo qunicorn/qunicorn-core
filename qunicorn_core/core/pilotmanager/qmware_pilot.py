@@ -79,11 +79,19 @@ class QMwarePilot(Pilot):
             job_name = f"{job_name}_{job.job.id}_{job.program.id}"
             if job.circuit_fragment_id:
                 job_name = f"{job_name}-{job.circuit_fragment_id}"
+
+            if job.job.executed_on.name == "dev":
+                code_type = "qasm2"
+            elif job.job.executed_on.name == "dev-gpu":
+                code_type = "qasm2-gpu"
+            else:
+                raise QunicornError(f"Unknown QMware device {job.job.executed_on.name}")
+
             data = {
                 "name": job_name,
                 "maxExecutionTimeInMs": 60_000,
                 "ttlAfterFinishedInMs": 1_200_000,
-                "code": {"type": "qasm2", "code": job.circuit},
+                "code": {"type": code_type, "code": job.circuit},
                 "selectionParameters": [],
                 "programParameters": [{"name": "shots", "value": str(job.job.shots)}],
             }
