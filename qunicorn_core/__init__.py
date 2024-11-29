@@ -99,6 +99,9 @@ def create_app(test_config: Optional[Dict[str, Any]] = None):
 
         if "QPROV_URL" in environ:
             config["QPROV_URL"] = environ["QPROV_URL"]
+
+        if "CIRCUIT_CUTTING_URL" in environ:
+            config["CIRCUIT_CUTTING_URL"] = environ["CIRCUIT_CUTTING_URL"]
     else:
         # load the test config if passed in
         config.from_mapping(test_config)

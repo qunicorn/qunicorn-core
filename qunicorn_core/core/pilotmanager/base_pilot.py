@@ -22,10 +22,16 @@ from celery.states import PENDING
 
 from qunicorn_core.api.api_models.device_dtos import DeviceDto
 from qunicorn_core.celery import CELERY
+from qunicorn_core.core.circuit_cutting_service import (
+    prepare_results_for_combination,
+    combine_results,
+    prepare_combined_results,
+)
 from qunicorn_core.db.db import DB
 from qunicorn_core.db.models.deployment import DeploymentDataclass
 from qunicorn_core.db.models.device import DeviceDataclass
 from qunicorn_core.db.models.job import JobDataclass
+from qunicorn_core.db.models.job_state import TransientJobStateDataclass
 from qunicorn_core.db.models.provider import ProviderDataclass
 from qunicorn_core.db.models.quantum_program import QuantumProgramDataclass
 from qunicorn_core.db.models.result import ResultDataclass
@@ -121,13 +127,15 @@ class Pilot:
 
     def save_results(self, job: PilotJob, results: Sequence[PilotJobResult], commit: bool = False):
         contains_error = False
+        contains_fragments = False
 
         for result in results:
             if result.result_type == ResultType.ERROR:
                 contains_error = True
 
             if job.circuit_fragment_id is not None:
-                pass  # FIXME handle fragmented jobs (i.e. split circuit results)
+                self._save_fragment_results(job, results)
+                contains_fragments = True
 
             else:
                 res = ResultDataclass(
@@ -138,6 +146,9 @@ class Pilot:
                     result_type=result.result_type,
                 )
                 res.save()
+
+        if contains_fragments:
+            self._check_if_all_results_available(job)
 
         if contains_error:
             job.job.state = JobState.ERROR
@@ -156,6 +167,69 @@ class Pilot:
 
         if commit:
             DB.session.commit()
+
+    def _save_fragment_results(self, job: PilotJob, results: Sequence[PilotJobResult]):
+        transient_state = TransientJobStateDataclass(
+            job.job,
+            job.program,
+            job.circuit_fragment_id,
+            {"type": "FRAGMENT_RESULT", "results": [r._asdict() for r in results]},
+        )
+        transient_state.save()
+
+    def _check_if_all_results_available(self, job: PilotJob):  # noqa: C901
+        program_state = job.job.get_transient_state(
+            program=job.program.id, filter_=lambda s: isinstance(s.data, dict) and "circuit_fragment_ids" in s.data
+        )
+        circuit_fragments = program_state.data.get("circuit_fragment_ids", None) if program_state else None
+        if not circuit_fragments or not program_state:
+            return  # no transient state present to tell how to handle fragment results!
+
+        def is_related_result(s: TransientJobStateDataclass):
+            if s.program != job.program or s.circuit_fragment_id is None:
+                return False
+            if not isinstance(s.data, dict):
+                return False
+            return s.data.get("type") == "FRAGMENT_RESULT"
+
+        all_results = [s for s in job.job._transient if is_related_result(s)]
+        all_results_data = {s.circuit_fragment_id: s.data["results"] for s in all_results}
+
+        if set(circuit_fragments) > all_results_data.keys():
+            # not all required results present
+            return
+
+        if program_state.data.get("type") == "CUT_CIRCUIT":
+            try:
+                prepared_results = prepare_results_for_combination(all_results_data, circuit_fragments)
+                combined_results: List[float] = combine_results(
+                    prepared_results,
+                    program_state.data["cut_data"],
+                    program_state.data["origninal_circuit"],
+                    program_state.data["circuit_format"],
+                )
+
+                qunicorn_results = prepare_combined_results(
+                    combined_results, job.job.shots, program_state.data["registers"]
+                )
+
+                for result in qunicorn_results:
+                    res = ResultDataclass(
+                        job=job.job,
+                        program=job.program,
+                        data=result[0],
+                        meta=result[1],
+                        result_type=result[2],
+                    )
+                    res.save()
+
+                DB.session.delete(program_state)
+
+                for s in all_results:
+                    job.job._transient.remove(s)
+
+            except Exception as err:
+                job.job.save_error(err, job.program)
 
     def determine_db_job_progress(self, db_job: JobDataclass) -> int:
         if db_job.state in (JobState.CANCELED, JobState.ERROR, JobState.FINISHED):
@@ -303,16 +377,6 @@ class Pilot:
 
         except Exception:
             raise QunicornError("Could not convert binary-results to hex")
-
-    @staticmethod
-    def calculate_probabilities(counts: dict) -> dict:
-        """Calculates the probabilities from the counts, probability = counts / total_counts"""
-
-        total_counts = sum(counts.values())
-        probabilities = {}
-        for key, value in counts.items():
-            probabilities[key] = value / total_counts
-        return probabilities
 
     def create_default_job_with_circuit_and_device(
         self, device: DeviceDataclass, circuit: str, assembler_language: Optional[str] = None

@@ -1,10 +1,10 @@
 {
   "name": "JobName",
-  "provider_name": "AWS",
+  "providerName": "AWS",
   "type": "RUNNER",
   "token": "",
-  "device_name": "local_simulator",
+  "deviceName": "local_simulator",
   "shots": 4000,
-  "deployment_id": 3,
-  "error_mitigation": "none"
+  "deploymentId": 3,
+  "errorMitigation": "none"
 }

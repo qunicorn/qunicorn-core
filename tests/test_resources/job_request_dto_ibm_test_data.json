@@ -1,10 +1,10 @@
 {
   "name": "JobName",
-  "provider_name": "IBM",
+  "providerName": "IBM",
   "type": "RUNNER",
   "token": "",
-  "device_name": "aer_simulator",
+  "deviceName": "aer_simulator",
   "shots": 4000,
-  "deployment_id": 1,
-  "error_mitigation": "none"
+  "deploymentId": 1,
+  "errorMitigation": "none"
 }
