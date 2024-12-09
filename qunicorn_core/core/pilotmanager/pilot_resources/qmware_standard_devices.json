@@ -7,10 +7,10 @@
       "is_local": false
     },
     {
-      "name": "fake_qiskit",
+      "name": "dev-gpu",
       "num_qubits": -1,
       "is_simulator": true,
-      "is_local": true
+      "is_local": false
     }
   ]
 }
