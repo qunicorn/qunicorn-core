@@ -16,22 +16,44 @@ import os
 from datetime import datetime
 from http import HTTPStatus
 from pathlib import Path
-from typing import Any, List, Optional, Sequence, Tuple, Union, Generator
+from typing import Any, List, Optional, Sequence, Tuple, Union, Generator, NamedTuple, Dict
 
 from celery.states import PENDING
 
 from qunicorn_core.api.api_models.device_dtos import DeviceDto
 from qunicorn_core.celery import CELERY
+from qunicorn_core.core.circuit_cutting_service import (
+    prepare_results_for_combination,
+    combine_results,
+    prepare_combined_results,
+)
+from qunicorn_core.db.db import DB
 from qunicorn_core.db.models.deployment import DeploymentDataclass
 from qunicorn_core.db.models.device import DeviceDataclass
 from qunicorn_core.db.models.job import JobDataclass
+from qunicorn_core.db.models.job_state import TransientJobStateDataclass
 from qunicorn_core.db.models.provider import ProviderDataclass
 from qunicorn_core.db.models.quantum_program import QuantumProgramDataclass
 from qunicorn_core.db.models.result import ResultDataclass
+from qunicorn_core.static.enums.error_mitigation import ErrorMitigationMethod
 from qunicorn_core.static.enums.job_state import JobState
 from qunicorn_core.static.enums.job_type import JobType
+from qunicorn_core.static.enums.result_type import ResultType
 from qunicorn_core.static.qunicorn_exception import QunicornError
 from qunicorn_core.util.utils import is_running_asynchronously
+
+
+class PilotJob(NamedTuple):
+    circuit: Any
+    job: JobDataclass
+    program: QuantumProgramDataclass
+    circuit_fragment_id: Optional[int]
+
+
+class PilotJobResult(NamedTuple):
+    data: Any
+    meta: Dict[str, Any]
+    result_type: ResultType
 
 
 class Pilot:
@@ -40,15 +62,11 @@ class Pilot:
     provider_name: str
     supported_languages: Sequence[str]
 
-    def run(
-        self, job: JobDataclass, circuits: Sequence[Tuple[QuantumProgramDataclass, Any]], token: Optional[str] = None
-    ) -> JobState:
+    def run(self, jobs: Sequence[PilotJob], token: Optional[str] = None):
         """Run a job of type RUNNER on a backend using a Pilot"""
         raise NotImplementedError()
 
-    def execute_provider_specific(
-        self, job: JobDataclass, circuits: Sequence[Tuple[QuantumProgramDataclass, Any]], token: Optional[str] = None
-    ) -> JobState:
+    def execute_provider_specific(self, jobs: Sequence[PilotJob], job_type: str, token: Optional[str] = None):
         """Execute a job of a provider specific type on a backend using a Pilot"""
         raise NotImplementedError()
 
@@ -72,15 +90,18 @@ class Pilot:
         """Get device data for a specific device from the provider"""
         raise NotImplementedError()
 
-    def execute(
-        self, job: JobDataclass, circuits: Sequence[Tuple[QuantumProgramDataclass, Any]], token: Optional[str] = None
-    ) -> JobState:
+    def execute(self, jobs: Sequence[PilotJob], token: Optional[str] = None):
         """Execute a job on a backend using a Pilot"""
 
-        if job.type == JobType.RUNNER.value:
-            return self.run(job, circuits, token=token)
+        job_types = set(j.job.type for j in jobs)
+        assert len(job_types) == 1, "All jobs must have the same type!"
+
+        job_type = job_types.pop()
+
+        if job_type == JobType.RUNNER.value:
+            self.run(jobs, token=token)
         else:
-            return self.execute_provider_specific(job, circuits, token=token)
+            self.execute_provider_specific(jobs, job_type=job_type, token=token)
 
     def cancel(self, job_id: Optional[int], user_id: Optional[str], token: Optional[str] = None):
         """Cancel the execution of a job, locally or if that is not possible at the backend"""
@@ -103,6 +124,136 @@ class Pilot:
     def cancel_provider_specific(self, job: JobDataclass, token: Optional[str] = None):
         """Cancel execution of a job at the corresponding backend"""
         raise NotImplementedError()
+
+    def save_results(self, job: PilotJob, results: Sequence[PilotJobResult], commit: bool = False):
+        contains_error = False
+        contains_fragments = False
+
+        for result in results:
+            if result.result_type == ResultType.ERROR:
+                contains_error = True
+
+            if job.circuit_fragment_id is not None:
+                self._save_fragment_results(job, results)
+                contains_fragments = True
+
+            else:
+                res = ResultDataclass(
+                    job=job.job,
+                    program=job.program,
+                    data=result.data,
+                    meta=result.meta,
+                    result_type=result.result_type,
+                )
+                res.save()
+
+        if contains_fragments:
+            self._check_if_all_results_available(job)
+
+        if contains_error:
+            job.job.state = JobState.ERROR
+            job.job.save(commit=commit)
+            return
+
+        new_state = self.determine_db_job_state(db_job=job.job)
+        if job.job.state != new_state:
+            job.job.state = new_state.value
+            job.job.save()
+
+        new_progress = self.determine_db_job_progress(db_job=job.job)
+        if job.job.progress != new_progress:
+            job.job.progress = new_progress
+            job.job.save()
+
+        if commit:
+            DB.session.commit()
+
+    def _save_fragment_results(self, job: PilotJob, results: Sequence[PilotJobResult]):
+        transient_state = TransientJobStateDataclass(
+            job.job,
+            job.program,
+            job.circuit_fragment_id,
+            {"type": "FRAGMENT_RESULT", "results": [r._asdict() for r in results]},
+        )
+        transient_state.save()
+
+    def _check_if_all_results_available(self, job: PilotJob):  # noqa: C901
+        program_state = job.job.get_transient_state(
+            program=job.program.id, filter_=lambda s: isinstance(s.data, dict) and "circuit_fragment_ids" in s.data
+        )
+        circuit_fragments = program_state.data.get("circuit_fragment_ids", None) if program_state else None
+        if not circuit_fragments or not program_state:
+            return  # no transient state present to tell how to handle fragment results!
+
+        def is_related_result(s: TransientJobStateDataclass):
+            if s.program != job.program or s.circuit_fragment_id is None:
+                return False
+            if not isinstance(s.data, dict):
+                return False
+            return s.data.get("type") == "FRAGMENT_RESULT"
+
+        all_results = [s for s in job.job._transient if is_related_result(s)]
+        all_results_data = {s.circuit_fragment_id: s.data["results"] for s in all_results}
+
+        if set(circuit_fragments) > all_results_data.keys():
+            # not all required results present
+            return
+
+        if program_state.data.get("type") == "CUT_CIRCUIT":
+            try:
+                prepared_results = prepare_results_for_combination(all_results_data, circuit_fragments)
+                combined_results: List[float] = combine_results(
+                    prepared_results,
+                    program_state.data["cut_data"],
+                    program_state.data["origninal_circuit"],
+                    program_state.data["circuit_format"],
+                )
+
+                qunicorn_results = prepare_combined_results(
+                    combined_results, job.job.shots, program_state.data["registers"]
+                )
+
+                for result in qunicorn_results:
+                    res = ResultDataclass(
+                        job=job.job,
+                        program=job.program,
+                        data=result[0],
+                        meta=result[1],
+                        result_type=result[2],
+                    )
+                    res.save()
+
+                DB.session.delete(program_state)
+
+                for s in all_results:
+                    job.job._transient.remove(s)
+
+            except Exception as err:
+                job.job.save_error(err, job.program)
+
+    def determine_db_job_progress(self, db_job: JobDataclass) -> int:
+        if db_job.state in (JobState.CANCELED, JobState.ERROR, JobState.FINISHED):
+            return 100
+
+        if db_job.deployment:
+            all_programs = set(p.id for p in db_job.deployment.programs)
+            programs_with_results = set(r.program.id for r in db_job.results if r.program)
+            ratio = int((len(programs_with_results) / len(all_programs)) * 100)
+            return min(100, max(0, ratio))
+
+        return 0
+
+    def determine_db_job_state(self, db_job: JobDataclass) -> JobState:
+        if db_job.state in (JobState.CANCELED, JobState.ERROR, JobState.FINISHED):
+            return db_job.state
+
+        if db_job.deployment:
+            all_programs = set(p.id for p in db_job.deployment.programs)
+            programs_with_results = set(r.program.id for r in db_job.results if r.program)
+            if programs_with_results >= all_programs:
+                return JobState.FINISHED
+
+        return JobState(db_job.state)
 
     def has_same_provider(self, provider_name: str) -> bool:
         """Check if the provider name is the same as the pilot provider name"""
@@ -227,16 +378,6 @@ class Pilot:
         except Exception:
             raise QunicornError("Could not convert binary-results to hex")
 
-    @staticmethod
-    def calculate_probabilities(counts: dict) -> dict:
-        """Calculates the probabilities from the counts, probability = counts / total_counts"""
-
-        total_counts = sum(counts.values())
-        probabilities = {}
-        for key, value in counts.items():
-            probabilities[key] = value / total_counts
-        return probabilities
-
     def create_default_job_with_circuit_and_device(
         self, device: DeviceDataclass, circuit: str, assembler_language: Optional[str] = None
     ) -> JobDataclass:
@@ -261,6 +402,7 @@ class Pilot:
             progress=0,
             state=JobState.READY.value,
             shots=4000,
+            error_mitigation=ErrorMitigationMethod.none,
             type=JobType.RUNNER.value,
             started_at=datetime.now(),
             name=job_name,

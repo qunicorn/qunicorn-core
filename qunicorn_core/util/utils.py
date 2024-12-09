@@ -26,6 +26,16 @@ def get_default_qasm2_string(hadamard_amount: int = 1) -> str:
     return dumps2(qc)
 
 
+def calculate_probabilities(counts: dict) -> dict:
+    """Calculates the probabilities from the counts, probability = counts / total_counts"""
+
+    total_counts = sum(counts.values())
+    probabilities = {}
+    for key, value in counts.items():
+        probabilities[key] = value / total_counts
+    return probabilities
+
+
 def is_experimental_feature_enabled() -> bool:
     return os.environ.get("ENABLE_EXPERIMENTAL_FEATURES") == "True"
 

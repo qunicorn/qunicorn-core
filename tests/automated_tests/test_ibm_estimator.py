@@ -1,4 +1,4 @@
-# Copyright 2023 University of Stuttgart
+# Copyright 2024 University of Stuttgart
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,24 +26,20 @@ from tests import test_utils
 from tests.conftest import set_up_env
 from tests.test_utils import (
     IS_ASYNCHRONOUS,
-    PROBABILITY_1,
-    PROBABILITY_TOLERANCE,
-    BIT_3,
-    BIT_0,
     IBM_LOCAL_SIMULATOR,
 )
 
 
-def test_create_and_run_sampler():
-    create_and_run_sampler_with_device(IBM_LOCAL_SIMULATOR)
+def test_create_and_run_estimator():
+    create_and_run_estimator_with_device(IBM_LOCAL_SIMULATOR)
 
 
-def create_and_run_sampler_with_device(device_name: str):
+def create_and_run_estimator_with_device(device_name: str):
     """Tests the create and run job method for synchronous execution of a sampler"""
 
     app = set_up_env()
     job_request_dto: JobRequestDto = test_utils.get_test_job(ProviderName.IBM)
-    job_request_dto.type = JobType.SAMPLER
+    job_request_dto.type = JobType.ESTIMATOR
     job_request_dto.device_name = device_name
 
     # WHEN: create_and_run executed synchronous
@@ -56,35 +52,21 @@ def create_and_run_sampler_with_device(device_name: str):
         test_utils.check_simple_job_dto(return_dto)
         job: JobDataclass = JobDataclass.get_by_id_or_404(return_dto.id)
         test_utils.check_if_job_finished(job)
-        check_if_job_sample_result_correct(job)
+        check_if_job_estimate_result_correct(job)
 
 
-def check_if_job_sample_result_correct(job: JobDataclass):
+def check_if_job_estimate_result_correct(job: JobDataclass):
     test_utils.check_job_data(job)
-    count_results = []
 
-    for result in job.results:
-        if result.result_type == ResultType.COUNTS:
-            count_results.append(result)
+    assert len(job.results) == 2
 
-    assert len(count_results) == 2
+    for i in range(len(job.results)):
+        result: ResultDataclass = job.results[i]
+        assert "observer" in result.meta
+        assert result.result_type == ResultType.VALUE_AND_VARIANCE
+        value: float = float(result.data["value"])
+        variance: float = float(result.data["variance"])
 
-    for i in range(len(count_results)):
-        result: ResultDataclass = count_results[i]
-        assert len(result.meta) == 0
-        counts: dict = result.data
-        shots = 0
-
-        for count in counts.values():
-            shots += count
-
-        if i == 0:
-            assert test_utils.compare_values_with_tolerance(
-                PROBABILITY_1 / 2, counts[BIT_0] / shots, PROBABILITY_TOLERANCE
-            )
-            assert test_utils.compare_values_with_tolerance(
-                PROBABILITY_1 / 2, counts[BIT_3] / shots, PROBABILITY_TOLERANCE
-            )
-            assert counts[BIT_3] + counts[BIT_0] > PROBABILITY_1 - PROBABILITY_TOLERANCE
-        else:
-            assert (counts[BIT_0] / shots) > PROBABILITY_1 - PROBABILITY_TOLERANCE
+        # TODO: improve asserts
+        assert -1.0 < value < 1.0
+        assert -1.0 < variance < 1.0

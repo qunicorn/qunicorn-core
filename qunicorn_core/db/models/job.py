@@ -14,7 +14,7 @@
 
 import traceback
 from datetime import datetime, timezone
-from typing import List, Optional, Union, Any
+from typing import List, Optional, Union, Any, Callable
 
 from flask import current_app
 
@@ -49,6 +49,9 @@ class JobDataclass(DbModel):
         state (str): The state of a job, enum JobState.
         shots (int): The number of shots for the job
         type (JobType): The type of the job.
+        error_mitigation (str): The type of error mitigation to apply to the circuits.
+        cut_to_width (int | None, Optional): If a number is given, every circuit with more than that number of qubits \
+            will be cut into smaller circuits.
         started_at (datetime, optional): The moment the job was scheduled. (default: datetime.utcnow)
         provider_specific_id (str, optional): The provider specific id for the job. (Used for canceling)
         celery_id (str, optional): The celery id for the job. (Used for canceling)
@@ -66,8 +69,10 @@ class JobDataclass(DbModel):
     progress: Mapped[int] = mapped_column(sql.INTEGER())
     state: Mapped[str] = mapped_column(sql.String(50))
     shots: Mapped[int] = mapped_column(sql.INTEGER())
+    error_mitigation: Mapped[str] = mapped_column(sql.String(50))
     type: Mapped[str] = mapped_column(sql.String(50))
     # default arguments
+    cut_to_width: Mapped[Optional[int]] = mapped_column(sql.INTEGER(), nullable=True, default=None)
     started_at: Mapped[datetime] = mapped_column(
         sql.TIMESTAMP(timezone=True), default_factory=lambda: datetime.now(timezone.utc)
     )
@@ -85,7 +90,11 @@ class JobDataclass(DbModel):
     )
 
     _transient: Mapped[List[TransientJobStateDataclass]] = relationship(
-        TransientJobStateDataclass, back_populates="job", lazy="selectin", default_factory=list
+        TransientJobStateDataclass,
+        back_populates="job",
+        lazy="selectin",
+        cascade="all, delete-orphan",
+        default_factory=list,
     )
 
     @classmethod
@@ -114,11 +123,30 @@ class JobDataclass(DbModel):
             q = q.where(cls.deployment == deployment)
         return DB.session.execute(q).scalars().all()
 
-    def get_transient_state(self, key: str, default: Optional[Any] = ..., *, program: Optional[int] = None):
+    def get_transient_state(
+        self,
+        *,
+        program: Optional[int] = None,
+        circuit_fragment_id: Optional[int] = None,
+        filter_: Optional[Callable[[TransientJobStateDataclass], bool]] = None,
+    ):
         for state in self._transient:
-            if state.program_id == program:
-                if isinstance(state.data, dict) and key in state.data:
-                    return state.data[key]
+            if state.program_id == program and state.circuit_fragment_id == circuit_fragment_id:
+                if filter_ is None or filter_(state):
+                    return state
+
+    def get_transient_state_key(
+        self,
+        key: str,
+        default: Optional[Any] = ...,
+        *,
+        program: Optional[int] = None,
+        circuit_fragment_id: Optional[int] = None,
+        filter_: Optional[Callable[[TransientJobStateDataclass], bool]] = None,
+    ):
+        state = self.get_transient_state(program=program, circuit_fragment_id=circuit_fragment_id)
+        if state is not None and isinstance(state.data, dict) and key in state.data:
+            return state.data[key]
         if default == ...:
             raise KeyError(f"Key '{key}' not found in transient job state!")
         return default
