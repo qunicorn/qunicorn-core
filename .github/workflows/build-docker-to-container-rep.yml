@@ -3,6 +3,8 @@ name: Create and publish the qunicorn Docker image on main branch
 on:
   push:
     branches: [ 'main' ]
+    tags:
+      - v*
 
 env:
   REGISTRY: ghcr.io
