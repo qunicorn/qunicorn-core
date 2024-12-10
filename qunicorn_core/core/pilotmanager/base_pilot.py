@@ -19,7 +19,6 @@ from pathlib import Path
 from typing import Any, List, Optional, Sequence, Tuple, Union, Generator, NamedTuple, Dict
 
 from celery.states import PENDING
-from flask import current_app
 
 from qunicorn_core.api.api_models.device_dtos import DeviceDto
 from qunicorn_core.celery import CELERY
@@ -146,7 +145,6 @@ class Pilot:
                     meta=result.meta,
                     result_type=result.result_type,
                 )
-                current_app.logger.info(f"saving new ResultDataclass")
                 res.save()
 
         if contains_fragments:
@@ -158,11 +156,8 @@ class Pilot:
             return
 
         new_state = self.determine_db_job_state(db_job=job.job)
-        current_app.logger.info(f"new job state: {new_state}")
-
         if job.job.state != new_state:
             job.job.state = new_state.value
-            current_app.logger.info(f"saving new job state")
             job.job.save()
 
         new_progress = self.determine_db_job_progress(db_job=job.job)
@@ -255,8 +250,6 @@ class Pilot:
         if db_job.deployment:
             all_programs = set(p.id for p in db_job.deployment.programs)
             programs_with_results = set(r.program.id for r in db_job.results if r.program)
-            current_app.logger.info(f"all_programs: {all_programs}")
-            current_app.logger.info(f"programs_with_results: {programs_with_results}")
             if programs_with_results >= all_programs:
                 return JobState.FINISHED
 

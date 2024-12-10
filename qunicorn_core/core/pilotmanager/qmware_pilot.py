@@ -267,22 +267,18 @@ class QMwarePilot(Pilot):
             )
             program_state.delete()
 
-        current_app.logger.info(f"commiting deleted transient states")
         DB.session.commit()
 
         # this saves the results after all transient states with type QMWARE are deleted so that determine_db_job_state
         # can determine the correct state
         for job, result in zip(jobs_to_save, results_to_save):
-            current_app.logger.info(f"calling save_results")
             self.save_results(job, result)
 
-        current_app.logger.info(f"commiting saved results")
         DB.session.commit()
 
     def determine_db_job_state(self, db_job: JobDataclass) -> JobState:
         if db_job.state == JobState.RUNNING.value:
             if any(t.data.get("type") == "QMWARE" for t in db_job._transient if isinstance(t.data, dict)):
-                current_app.logger.info(f"QMWARE transient state still exists")
                 return JobState.RUNNING
             return JobState.FINISHED
         return super().determine_db_job_state(db_job)
