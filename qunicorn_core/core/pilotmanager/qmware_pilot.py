@@ -258,8 +258,8 @@ class QMwarePilot(Pilot):
                     },
                 ),
             ]
-            self.save_results(pilot_job, pilot_results)
             program_state.delete(commit=True)
+            self.save_results(pilot_job, pilot_results)
 
     def determine_db_job_state(self, db_job: JobDataclass) -> JobState:
         if db_job.state == JobState.RUNNING.value:
