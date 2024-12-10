@@ -146,6 +146,7 @@ class Pilot:
                     meta=result.meta,
                     result_type=result.result_type,
                 )
+                current_app.logger.info(f"saving new ResultDataclass")
                 res.save()
 
         if contains_fragments:
@@ -161,6 +162,7 @@ class Pilot:
 
         if job.job.state != new_state:
             job.job.state = new_state.value
+            current_app.logger.info(f"saving new job state")
             job.job.save()
 
         new_progress = self.determine_db_job_progress(db_job=job.job)
