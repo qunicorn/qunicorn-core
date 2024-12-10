@@ -270,7 +270,7 @@ class QMwarePilot(Pilot):
         # this saves the results after all transient states with type QMWARE are deleted so that determine_db_job_state
         # can determine the correct state
         for job, result in zip(jobs_to_save, results_to_save):
-            self.save_results(job, result)
+            self.save_results(job, result, commit=True)
 
     def determine_db_job_state(self, db_job: JobDataclass) -> JobState:
         if db_job.state == JobState.RUNNING.value:
