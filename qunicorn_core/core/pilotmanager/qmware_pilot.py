@@ -275,6 +275,7 @@ class QMwarePilot(Pilot):
     def determine_db_job_state(self, db_job: JobDataclass) -> JobState:
         if db_job.state == JobState.RUNNING.value:
             if any(t.data.get("type") == "QMWARE" for t in db_job._transient if isinstance(t.data, dict)):
+                current_app.logger.info(f"QMWARE transient state still exists")
                 return JobState.RUNNING
             return JobState.FINISHED
         return super().determine_db_job_state(db_job)
