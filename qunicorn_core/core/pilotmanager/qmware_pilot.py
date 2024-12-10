@@ -140,6 +140,9 @@ class QMwarePilot(Pilot):
         if qunicorn_job is None:
             raise ValueError("Unknown Qunicorn job id {qunicorn_job_id}!")
 
+        jobs_to_save = []
+        results_to_save = []
+
         for program_state in tuple(qunicorn_job._transient):
             if program_state.program is None:
                 continue  # only process program related transient state
@@ -231,35 +234,43 @@ class QMwarePilot(Pilot):
                 qunicorn_job.save_error(err, program=program, extra_data={"qmware_result": result})
                 continue
 
-            pilot_job = PilotJob(
-                circuit=program_state.data["circuit"],
-                job=program_state.job,
-                program=program_state.program,
-                circuit_fragment_id=program_state.circuit_fragment_id,
+            jobs_to_save.append(
+                PilotJob(
+                    circuit=program_state.data["circuit"],
+                    job=program_state.job,
+                    program=program_state.program,
+                    circuit_fragment_id=program_state.circuit_fragment_id,
+                )
             )
 
-            pilot_results = [
-                PilotJobResult(
-                    data=hex_counts,
-                    result_type=ResultType.COUNTS,
-                    meta={
-                        "format": "hex",
-                        "shots": qunicorn_job.shots,
-                        "registers": register_metadata,
-                    },
-                ),
-                PilotJobResult(
-                    data=hex_probabilities,
-                    result_type=ResultType.PROBABILITIES,
-                    meta={
-                        "format": "hex",
-                        "shots": qunicorn_job.shots,
-                        "registers": register_metadata,
-                    },
-                ),
-            ]
+            results_to_save.append(
+                [
+                    PilotJobResult(
+                        data=hex_counts,
+                        result_type=ResultType.COUNTS,
+                        meta={
+                            "format": "hex",
+                            "shots": qunicorn_job.shots,
+                            "registers": register_metadata,
+                        },
+                    ),
+                    PilotJobResult(
+                        data=hex_probabilities,
+                        result_type=ResultType.PROBABILITIES,
+                        meta={
+                            "format": "hex",
+                            "shots": qunicorn_job.shots,
+                            "registers": register_metadata,
+                        },
+                    ),
+                ]
+            )
             program_state.delete(commit=True)
-            self.save_results(pilot_job, pilot_results)
+
+        # this saves the results after all transient states with type QMWARE are deleted so that determine_db_job_state
+        # can determine the correct state
+        for job, result in zip(jobs_to_save, results_to_save):
+            self.save_results(job, result)
 
     def determine_db_job_state(self, db_job: JobDataclass) -> JobState:
         if db_job.state == JobState.RUNNING.value:
