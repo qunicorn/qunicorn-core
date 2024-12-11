@@ -291,6 +291,8 @@ class QMwarePilot(Pilot):
                     # discard already processed bits
                     measured_bits >>= size
 
+                hex_measurements.reverse()
+
                 if hits is None:
                     hits = register["hits"]
                 else:
