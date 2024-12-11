@@ -197,7 +197,7 @@ class QMwarePilot(Pilot):
 
                 register_metadata = []
 
-                for classical_register in circuit.cregs:
+                for classical_register in reversed(circuit.cregs):
                     register_metadata.append(
                         {
                             "name": classical_register.name,
@@ -282,7 +282,7 @@ class QMwarePilot(Pilot):
                 register = single_result[0]
                 measured_bits = register["number"]
 
-                for single_register_meta in register_metadata:
+                for single_register_meta in reversed(register_metadata):
                     size: int = single_register_meta["size"]
                     mask = (0b1 << size) - 1
 
