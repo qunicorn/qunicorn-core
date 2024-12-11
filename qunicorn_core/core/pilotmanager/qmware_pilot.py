@@ -14,7 +14,7 @@
 import json
 import os
 from time import time
-from typing import List, Optional, Sequence, Union, Dict
+from typing import List, Optional, Sequence, Union, Dict, Tuple
 from urllib.parse import urljoin
 
 import requests
@@ -135,7 +135,7 @@ class QMwarePilot(Pilot):
             qunicorn_job.save(commit=True)  # commit new celery id
 
     def _get_job_results(self, qunicorn_job_id: int) -> None:  # noqa: C901
-        qunicorn_job = JobDataclass.get_by_id(qunicorn_job_id)
+        qunicorn_job: JobDataclass = JobDataclass.get_by_id(qunicorn_job_id)
 
         if qunicorn_job is None:
             raise ValueError("Unknown Qunicorn job id {qunicorn_job_id}!")
@@ -188,31 +188,6 @@ class QMwarePilot(Pilot):
                 continue
 
             try:
-                measurements: List[Dict] = json.loads(result["out"]["value"])
-                results: List[List[Dict[str, int]]] = [measurement["result"] for measurement in measurements]
-                hex_counts = {}
-                hex_probabilities = {}
-
-                for single_result in zip(*results):
-                    hex_measurements = []
-                    hits = None
-                    register: Dict[str, int]
-
-                    for register in single_result:
-                        hex_measurements.append(hex(register["number"]))
-
-                        if hits is None:
-                            hits = register["hits"]
-                        else:
-                            assert hits == register["hits"], "results have different number of hits"
-
-                    if hits is None:
-                        hits = 0
-
-                    hex_measurement = " ".join(hex_measurements)
-                    hex_counts[hex_measurement] = hits
-                    hex_probabilities[hex_measurement] = hits / qunicorn_job.shots
-
                 try:
                     circuit = qasm2.loads(program_state.data["circuit"])
                 except qasm2.exceptions.QASM2ParseError:
@@ -229,6 +204,13 @@ class QMwarePilot(Pilot):
                             "size": classical_register.size,
                         }
                     )
+
+                measurements: List[Dict] = json.loads(result["out"]["value"])
+                results: List[List[Dict[str, int]]] = [measurement["result"] for measurement in measurements]
+
+                hex_counts, hex_probabilities = self._convert_qmware_measurements_to_qunicorn_measurements(
+                    qunicorn_job, results, register_metadata
+                )
             except Exception as err:
                 program_state.delete()
                 qunicorn_job.save_error(err, program=program, extra_data={"qmware_result": result})
@@ -275,6 +257,53 @@ class QMwarePilot(Pilot):
             self.save_results(job, result)
 
         DB.session.commit()
+
+    def _convert_qmware_measurements_to_qunicorn_measurements(
+        self, job: JobDataclass, results: List[List[dict[str, int]]], register_metadata: list[dict[str, any]]
+    ) -> Tuple[dict[str, int], dict[str, float]]:
+        hex_counts = {}
+        hex_probabilities = {}
+
+        for single_result in zip(*results):
+            hex_measurements = []
+            hits = None
+            register: Dict[str, int]
+
+            if job.executed_on.name == "dev":
+                for register in single_result:
+                    hex_measurements.append(hex(register["number"]))
+
+                    if hits is None:
+                        hits = register["hits"]
+                    else:
+                        assert hits == register["hits"], "results have different number of hits"
+            elif job.executed_on.name == "dev-gpu":
+                # measurements are combined into one register on this device, therefore we have to split them again
+                register = single_result[0]
+                measured_bits = register["number"]
+
+                for single_register_meta in register_metadata:
+                    size: int = single_register_meta["size"]
+                    mask = (0b1 << size) - 1
+
+                    hex_measurements.append(hex(measured_bits & mask))
+
+                    # discard already processed bits
+                    measured_bits >>= size
+
+                if hits is None:
+                    hits = register["hits"]
+                else:
+                    assert hits == register["hits"], "results have different number of hits"
+
+            if hits is None:
+                hits = 0
+
+            hex_measurement = " ".join(hex_measurements)
+            hex_counts[hex_measurement] = hits
+            hex_probabilities[hex_measurement] = hits / job.shots
+
+        return hex_counts, hex_probabilities
 
     def determine_db_job_state(self, db_job: JobDataclass) -> JobState:
         if db_job.state == JobState.RUNNING.value:
