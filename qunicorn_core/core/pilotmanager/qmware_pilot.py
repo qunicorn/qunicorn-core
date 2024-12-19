@@ -249,6 +249,7 @@ class QMwarePilot(Pilot):
             )
             program_state.delete()
 
+        # ensure that the relevant transient states are removed
         DB.session.commit()
 
         # this saves the results after all transient states with type QMWARE are deleted so that determine_db_job_state
