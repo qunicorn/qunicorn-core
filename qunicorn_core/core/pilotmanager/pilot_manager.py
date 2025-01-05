@@ -30,7 +30,7 @@ from qunicorn_core.db.models.job import JobDataclass
 from qunicorn_core.db.models.provider import ProviderDataclass
 from qunicorn_core.static.qunicorn_exception import QunicornError
 
-PILOTS: list[Pilot] = [IBMPilot(), AWSPilot(), RigettiPilot(), QMwarePilot()]
+PILOTS: list[Pilot] = [IBMPilot(), AWSPilot(), RigettiPilot(), QMwarePilot(), IONQPilot()]
 provider_name_map = {"IBM": "ibmq"}  # "<Qunicorn Provider Name>: <QPROV Provider Name>"
 
 """"This Class is responsible for managing the pilots and their data, all pilots are saved in the PILOTS list"""
