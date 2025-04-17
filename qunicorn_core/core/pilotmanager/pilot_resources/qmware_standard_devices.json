@@ -17,6 +17,19 @@
       "num_qubits": -1,
       "is_simulator": true,
       "is_local": true
+    },
+    {
+      "name": "dev-ionq",
+      "num_qubits": -1,
+      "is_simulator": true,
+      "is_local": false
+    },
+    {
+      "name": "dev-iqm",
+      "num_qubits": -1,
+      "is_simulator": true,
+      "is_local": false
     }
+
   ]
 }

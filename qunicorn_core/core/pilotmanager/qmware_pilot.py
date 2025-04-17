@@ -84,11 +84,18 @@ class QMwarePilot(Pilot):
 
             if db_job.executed_on.name == "dev":
                 code_type = "qasm2"
+                batched = True
             elif db_job.executed_on.name == "dev-gpu":
                 code_type = "qasm2-gpu"
+                batched = True
             elif db_job.executed_on.name == "dev-batch":
                 code_type = "qasm2-batch"
                 batched = True
+            elif db_job.executed_on.name == "dev-ionq":
+                code_type = "qasm2-ionq"
+            elif db_job.executed_on.name == "dev-iqm":
+                code_type = "qasm2-iqm"
+
             else:
                 raise QunicornError(f"Unknown QMware device {db_job.executed_on.name}")
 
