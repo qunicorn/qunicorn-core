@@ -70,6 +70,15 @@ class QMwarePilot(Pilot):
     provider_name = ProviderName.QMWARE
     supported_languages = tuple([AssemblerLanguage.QASM2])
 
+    # Map backend names to (code_type, batched)
+    backend_map = {
+        "dev": ("qasm2", True),
+        "dev-gpu": ("qasm2-gpu", True),
+        "dev-batch": ("qasm2-batch", True),
+        "dev-ionq": ("qasm2-ionq", False),
+        "dev-iqm": ("qasm2-iqm", False),
+    }
+
     def run(self, jobs: Sequence[PilotJob], token: Optional[str] = None):
         """Run a job of type RUNNER on a backend using a Pilot"""
         job_name = "Qunicorn request"
@@ -93,6 +102,7 @@ class QMwarePilot(Pilot):
                 batched = True
             elif db_job.executed_on.name == "dev-ionq":
                 code_type = "qasm2-ionq"
+                batched = True
             elif db_job.executed_on.name == "dev-iqm":
                 code_type = "qasm2-iqm"
 
@@ -337,7 +347,7 @@ class QMwarePilot(Pilot):
                         hits = register["hits"]
                     else:
                         assert hits == register["hits"], "results have different number of hits"
-            elif job.executed_on.name in ("dev-gpu", "dev-batch"):
+            elif job.executed_on.name in ("dev-gpu", "dev-batch", "dev-ionq"):
                 # measurements are combined into one register on this device, therefore we have to split them again
                 register = single_result[0]
                 measured_bits = register["number"]
