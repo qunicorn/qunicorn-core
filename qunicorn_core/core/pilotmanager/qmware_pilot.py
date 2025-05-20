@@ -347,7 +347,7 @@ class QMwarePilot(Pilot):
                         hits = register["hits"]
                     else:
                         assert hits == register["hits"], "results have different number of hits"
-            elif job.executed_on.name in ("dev-gpu", "dev-batch", "dev-ionq"):
+            elif job.executed_on.name in ("dev-gpu", "dev-batch", "dev-ionq", "dev-iqm"):
                 # measurements are combined into one register on this device, therefore we have to split them again
                 register = single_result[0]
                 measured_bits = register["number"]
