@@ -105,6 +105,7 @@ class QMwarePilot(Pilot):
                 batched = True
             elif db_job.executed_on.name == "dev-iqm":
                 code_type = "qasm2-iqm"
+                batched = True
 
             else:
                 raise QunicornError(f"Unknown QMware device {db_job.executed_on.name}")
