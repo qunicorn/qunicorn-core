@@ -110,11 +110,11 @@ class QMwarePilot(Pilot):
             else:
                 raise QunicornError(f"Unknown QMware device {db_job.executed_on.name}")
 
-            # if batched:
-            #     self._send_circuit_request(pilot_jobs, batched, job_name, code_type)
-            # else:
-            #     for pilot_job in pilot_jobs:
-            #         self._send_circuit_request([pilot_job], batched, job_name, code_type)
+            if batched:
+                self._send_circuit_request(pilot_jobs, batched, job_name, code_type)
+            else:
+                for pilot_job in pilot_jobs:
+                    self._send_circuit_request([pilot_job], batched, job_name, code_type)
 
             jobs_to_watch.append(db_job)
 
