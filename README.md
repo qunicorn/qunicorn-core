@@ -198,6 +198,22 @@ poetry run flask db --help
 
 The migrations are handled by [flask-migrate](https://flask-migrate.readthedocs.io/en/latest/index.html) which is based on [alembic](https://alembic.sqlalchemy.org/en/latest/index.html)
 
+## Celery CLI
+
+To see the currently executing Celery tasks you can use the predefined task with
+
+```bash
+invoke celery-monitor
+```
+
+or if you want to customize the command use
+
+```bash
+celery --app qunicorn_core.celery_worker:CELERY event
+```
+
+and add your flags.
+
 ## Disclaimer of Warranty
 
 Unless required by applicable law or agreed to in writing, Licensor provides the Work (and each Contributor provides its

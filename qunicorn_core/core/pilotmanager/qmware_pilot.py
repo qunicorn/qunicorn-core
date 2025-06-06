@@ -110,11 +110,11 @@ class QMwarePilot(Pilot):
             else:
                 raise QunicornError(f"Unknown QMware device {db_job.executed_on.name}")
 
-            if batched:
-                self._send_circuit_request(pilot_jobs, batched, job_name, code_type)
-            else:
-                for pilot_job in pilot_jobs:
-                    self._send_circuit_request([pilot_job], batched, job_name, code_type)
+            # if batched:
+            #     self._send_circuit_request(pilot_jobs, batched, job_name, code_type)
+            # else:
+            #     for pilot_job in pilot_jobs:
+            #         self._send_circuit_request([pilot_job], batched, job_name, code_type)
 
             jobs_to_watch.append(db_job)
 
@@ -436,12 +436,12 @@ class QMwarePilot(Pilot):
         raise QunicornError("Canceling not supported on QMware devices")
 
 
-@CELERY.task(
-    ignore_result=True,
-    autoretry_for=(QMWAREResultsPending, ConnectionError),
-    retry_backoff=1.2,
-    retry_backoff_max=60,
-    max_retries=None,
-)
-def watch_qmware_results(job_id: int):
-    QMwarePilot()._get_job_results(job_id)
+@CELERY.task(ignore_result=True, bind=True, max_retries=1440)
+def watch_qmware_results(self, job_id: int):
+    try:
+        QMwarePilot()._get_job_results(job_id)
+    except (QMWAREResultsPending, ConnectionError):
+        retries: int = self.request.retries
+        delay = min(1.2**retries, 60)
+
+        self.retry(countdown=delay)
