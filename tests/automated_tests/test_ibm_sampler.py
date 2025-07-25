@@ -71,12 +71,14 @@ def check_if_job_sample_result_correct(job: JobDataclass):
 
     for i in range(len(count_results)):
         result: ResultDataclass = count_results[i]
-        assert len(result.meta) == 0
+        assert len(result.meta) == 4
         counts: dict = result.data
         shots = 0
 
         for count in counts.values():
             shots += count
+
+        assert shots == result.meta["shots"]
 
         if i == 0:
             assert test_utils.compare_values_with_tolerance(
