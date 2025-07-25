@@ -105,7 +105,11 @@ class IBMPilot(Pilot):
             sampler = Sampler(backend, options=options)
 
             job_from_ibm: RuntimeJobV2 = sampler.run(
-                backend_specific_circuits if isinstance(backend_specific_circuits, Sequence) else [backend_specific_circuits],
+                (
+                    backend_specific_circuits
+                    if isinstance(backend_specific_circuits, Sequence)
+                    else [backend_specific_circuits]
+                ),
                 shots=db_job.shots,
             )
 
@@ -262,10 +266,12 @@ class IBMPilot(Pilot):
         file_path /= "ibm_account.json"
 
         QiskitRuntimeService.save_account(
-            channel="ibm_quantum", token=token, overwrite=True, name="TODO", filename=str(file_path)
+            channel="ibm_quantum_platform", token=token, overwrite=True, name="TODO", filename=str(file_path)
         )
 
-        return QiskitRuntimeService(channel="ibm_quantum", name="TODO", filename=str(file_path))  # FIXME change name
+        return QiskitRuntimeService(
+            channel="ibm_quantum_platform", name="TODO", filename=str(file_path)
+        )  # FIXME change name
 
     @staticmethod
     def __get_provider_login_and_update_job(token: str, job: JobDataclass) -> QiskitRuntimeService:
@@ -351,7 +357,7 @@ class IBMPilot(Pilot):
             token = t
 
         service = QiskitRuntimeService(token=None, channel=None, filename=None, name=None)
-        service.save_account(token=token, channel="ibm_quantum", overwrite=True)
+        service.save_account(token=token, channel="ibm_quantum_platform", overwrite=True)
         return service
 
     @staticmethod
