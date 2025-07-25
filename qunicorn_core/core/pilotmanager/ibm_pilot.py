@@ -452,11 +452,14 @@ class IBMPilot(Pilot):
         for i in range(len(ibm_result)):
             pilot_results: list[PilotJobResult] = []
             try:
-                registers = np.column_stack([r.array for r in ibm_result[i].data.values()][::-1])
-                result_counts = Counter(
-                    " ".join(f"{int.from_bytes(reg, 'big'):x}" for reg in measurement)
-                    for measurement in registers
-                )
+                if len(ibm_result[i].data.values()) > 0:
+                    registers = np.column_stack([r.array for r in ibm_result[i].data.values()][::-1])
+                    result_counts = Counter(
+                        " ".join(f"{int.from_bytes(reg, 'big'):x}" for reg in measurement)
+                        for measurement in registers
+                    )
+                else:
+                    result_counts = {"": ibm_result[i].metadata["shots"]}
 
                 metadata = dict(ibm_result[i].metadata)
                 metadata["format"] = "hex"
