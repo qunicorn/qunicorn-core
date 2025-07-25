@@ -352,9 +352,7 @@ class IBMPilot(Pilot):
         return service
 
     @staticmethod
-    def __map_runner_results(
-        ibm_result: Result, circuits: List[QuantumCircuit]
-    ) -> list[Sequence[PilotJobResult]]:
+    def __map_runner_results(ibm_result: Result, circuits: List[QuantumCircuit]) -> list[Sequence[PilotJobResult]]:
         results: list[Sequence[PilotJobResult]] = []
 
         try:
@@ -455,8 +453,7 @@ class IBMPilot(Pilot):
                 if len(ibm_result[i].data.values()) > 0:
                     registers = np.column_stack([r.array for r in ibm_result[i].data.values()][::-1])
                     result_counts = Counter(
-                        " ".join(f"{int.from_bytes(reg, 'big'):x}" for reg in measurement)
-                        for measurement in registers
+                        " ".join(f"{int.from_bytes(reg, 'big'):x}" for reg in measurement) for measurement in registers
                     )
                 else:
                     result_counts = {"": ibm_result[i].metadata["shots"]}
