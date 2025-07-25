@@ -325,7 +325,7 @@ class Pilot:
                     if reverse_qubit_order:
                         reg = reg[::-1]
 
-                    hex_registers.append(f"0x{int(reg, 2):x}")
+                    hex_registers.append(f"0x{int(reg, 2):#x}")
 
                 hex_string = " ".join(hex_registers)
                 hex_result[hex_string] = v

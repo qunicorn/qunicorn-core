@@ -414,7 +414,7 @@ class IBMPilot(Pilot):
             hex_registers = []
 
             for binary_register in k.split():
-                hex_registers.append(f"0x{int(binary_register, 2):x}")
+                hex_registers.append(f"0x{int(binary_register, 2):#x}")
 
             hex_sample = " ".join(hex_registers)
 
@@ -456,7 +456,7 @@ class IBMPilot(Pilot):
                 if len(ibm_result[i].data.values()) > 0:
                     registers = np.column_stack([r.array for r in ibm_result[i].data.values()][::-1])
                     result_counts = Counter(
-                        " ".join(f"{int.from_bytes(reg, 'big'):x}" for reg in measurement) for measurement in registers
+                        " ".join(f"{int.from_bytes(reg, 'big'):#x}" for reg in measurement) for measurement in registers
                     )
                 else:
                     result_counts = {"": ibm_result[i].metadata["shots"]}
