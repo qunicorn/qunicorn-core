@@ -104,7 +104,10 @@ class IBMPilot(Pilot):
             options = SamplerOptions()
             sampler = Sampler(backend, options=options)
 
-            job_from_ibm: RuntimeJobV2 = sampler.run([backend_specific_circuits])
+            job_from_ibm: RuntimeJobV2 = sampler.run(
+                backend_specific_circuits if isinstance(backend_specific_circuits, Sequence) else [backend_specific_circuits],
+                shots=db_job.shots,
+            )
 
             job_state: Optional[TransientJobStateDataclass] = None
 
