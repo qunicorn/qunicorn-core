@@ -60,7 +60,12 @@ def update_devices_from_provider(provider_id: int, token: Optional[str]):
         current_app.logger.info("QPROV_URL not set, skipping QPROV update")
         return
 
-    response = requests.get(f"{qprov_root_url}/providers")
+    try:
+        response = requests.get(f"{qprov_root_url}/providers")
+    except requests.exceptions.ConnectionError:
+        current_app.logger.info("QPROV connection failed, skipping QPROV update")
+        return
+
     response.raise_for_status()
     qprov_providers = response.json()["_embedded"]["providerDtoes"]
 
