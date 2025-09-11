@@ -17,12 +17,12 @@ from http import HTTPStatus
 from os import environ
 from itertools import groupby
 from pathlib import Path
+from collections import Counter
 from typing import List, Optional, Sequence, Union, Dict
 
 import numpy as np
 from flask.globals import current_app
-import qiskit_aer
-from qiskit import transpile, QuantumCircuit, QiskitError
+from qiskit import QuantumCircuit, QiskitError
 from qiskit.primitives import PrimitiveResult, PubResult
 from qiskit.providers import BackendV2, QiskitBackendNotFoundError
 from qiskit.quantum_info import SparsePauliOp
@@ -38,6 +38,7 @@ from qiskit_ibm_runtime import (
     RuntimeJobV2,
     EstimatorOptions,
 )
+from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
 
 from qunicorn_core.api.api_models import DeviceDto
 from qunicorn_core.core.pilotmanager.base_pilot import Pilot, PilotJob, PilotJobResult
@@ -62,13 +63,20 @@ class IBMPilot(Pilot):
     provider_name = ProviderName.IBM.value
     supported_languages = tuple([AssemblerLanguage.QISKIT.value])
 
-    def execute_provider_specific(self, jobs: Sequence[PilotJob], job_type: str, token: Optional[str] = None):
+    def execute_provider_specific(
+        self,
+        jobs: Sequence[PilotJob],
+        job_type: str,
+        token: Optional[str] = None,
+        instance: Optional[str] = None,
+        **kwargs,
+    ):
         """Execute a job of a provider specific type on a backend using a Pilot"""
 
         if job_type == JobType.ESTIMATOR.value:
-            self.__estimate(jobs, token=token)
+            self.__estimate(jobs, token=token, instance=instance)
         elif job_type == JobType.SAMPLER.value:
-            self.__sample(jobs, token=token)
+            self.__sample(jobs, token=token, instance=instance)
         elif job_type == JobType.IBM_RUNNER.value:
             self.__run_ibm_program(jobs, token=token)
         elif job_type == JobType.IBM_UPLOAD.value:
@@ -76,7 +84,7 @@ class IBMPilot(Pilot):
         else:
             raise QunicornError("No valid Job Type specified")
 
-    def run(self, jobs: Sequence[PilotJob], token: Optional[str] = None):
+    def run(self, jobs: Sequence[PilotJob], token: Optional[str] = None, **kwargs):
         """Execute a job local using aer simulator or a real backend"""
         batched_jobs = [(db_job, list(pilot_jobs)) for db_job, pilot_jobs in groupby(jobs, lambda j: j.job)]
 
@@ -88,15 +96,29 @@ class IBMPilot(Pilot):
 
             backend: BackendV2
             if device.is_local:
-                backend = qiskit_aer.Aer.get_backend("aer_simulator")
+                backend = AerSimulator()
             else:
+                if not token:
+                    db_job.save_error(QunicornError("Non local job execution requires an API token!"))
+                    continue  # one job failing should not affect other jobs
                 provider = self.__get_provider_login_and_update_job(token, db_job)
                 backend = provider.backend(device.name)
 
             pilot_jobs = list(pilot_jobs)
 
-            backend_specific_circuits = transpile([j.circuit for j in pilot_jobs], backend)
-            qiskit_job = backend.run(backend_specific_circuits, shots=db_job.shots)
+            pm = generate_preset_pass_manager(backend=backend, optimization_level=1)
+            backend_specific_circuits = pm.run([j.circuit for j in pilot_jobs], backend)
+            options = SamplerOptions()
+            sampler = Sampler(backend, options=options)
+
+            job_from_ibm: RuntimeJobV2 = sampler.run(
+                (
+                    backend_specific_circuits
+                    if isinstance(backend_specific_circuits, Sequence)
+                    else [backend_specific_circuits]
+                ),
+                shots=db_job.shots,
+            )
 
             job_state: Optional[TransientJobStateDataclass] = None
 
@@ -109,36 +131,40 @@ class IBMPilot(Pilot):
                 job_state = TransientJobStateDataclass(db_job, data={"type": "IBM"})
 
             provider_specific_ids = job_state.data.get("provider_ids", [])
-            provider_specific_ids.append(qiskit_job.job_id())
+            provider_specific_ids.append(job_from_ibm.job_id())
             job_state.data = dict(job_state.data) | {"provider_ids": provider_specific_ids}
             job_state.save()
 
             db_job.state = JobState.RUNNING.value
             db_job.save(commit=True)
 
-            result = qiskit_job.result()
-            mapped_results: list[Sequence[PilotJobResult]] = IBMPilot.__map_runner_results(
-                result, backend_specific_circuits
-            )
+            ibm_result: PrimitiveResult = job_from_ibm.result()
+            mapped_results: list[Sequence[PilotJobResult]] = IBMPilot._map_sampler_results(ibm_result)
 
             for pilot_results, pilot_job in zip(mapped_results, pilot_jobs):
                 self.save_results(pilot_job, pilot_results)
             DB.session.commit()
 
-    def cancel_provider_specific(self, job: JobDataclass, token: Optional[str] = None):
+    def cancel_provider_specific(
+        self, job: JobDataclass, token: Optional[str] = None, instance: Optional[str] = None, **kwargs
+    ):
         """Cancel a job on an IBM backend using the IBM Pilot"""
-        qiskit_job = self.__get_qiskit_job_from_qiskit_runtime(job, token=token)
+        qiskit_job = self.__get_qiskit_job_from_qiskit_runtime(job, token=token, instance=instance)
         qiskit_job.cancel()
         job.state = JobState.CANCELED.value
         job.save(commit=True)
         current_app.logger.info(f"Cancel job with id {job.id} on {job.executed_on.provider.name} successful.")
 
-    def __sample(self, jobs: Sequence[PilotJob], token: Optional[str] = None):
+    def __sample(self, jobs: Sequence[PilotJob], token: Optional[str] = None, instance: Optional[str] = None):
         """Uses the Sampler to execute a job on an IBM backend using the IBM Pilot"""
         batched_jobs = [(db_job, list(pilot_jobs)) for db_job, pilot_jobs in groupby(jobs, lambda j: j.job)]
         db_job: JobDataclass
 
         for db_job, pilot_jobs in batched_jobs:
+            if db_job.executed_on is None:
+                db_job.save_error(QunicornError("Cannot execute circuits without specifying a device!"))
+                continue  # one job failing should not affect other jobs
+
             options = SamplerOptions()
 
             if db_job.error_mitigation == ErrorMitigationMethod.none.value:
@@ -153,7 +179,7 @@ class IBMPilot(Pilot):
             if db_job.executed_on.is_local:
                 backend = AerSimulator()
             else:
-                backend = self.__get_qiskit_runtime_backend(db_job, token=token)
+                backend = self.__get_qiskit_runtime_backend(db_job, token=token, instance=instance)
 
             sampler = Sampler(backend, options=options)
 
@@ -165,11 +191,17 @@ class IBMPilot(Pilot):
                 self.save_results(pilot_job, pilot_results)
             DB.session.commit()
 
-    def __estimate(self, jobs: Sequence[PilotJob], token: Optional[str] = None):  # noqa: C901
+    def __estimate(
+        self, jobs: Sequence[PilotJob], token: Optional[str] = None, instance: Optional[str] = None
+    ):  # noqa: C901
         """Uses the Estimator to execute a job on an IBM backend using the IBM Pilot"""
         batched_jobs = [(db_job, list(pilot_jobs)) for db_job, pilot_jobs in groupby(jobs, lambda j: j.job)]
 
         for db_job, pilot_jobs in batched_jobs:
+            if db_job.executed_on is None:
+                db_job.save_error(QunicornError("Cannot execute circuits without specifying a device!"))
+                continue  # one job failing should not affect other jobs
+
             observables = [SparsePauliOp("Y" * job.circuit.num_qubits) for job in pilot_jobs]
             options = EstimatorOptions()
 
@@ -196,7 +228,7 @@ class IBMPilot(Pilot):
             if db_job.executed_on.is_local:
                 backend = AerSimulator()
             else:
-                backend = self.__get_qiskit_runtime_backend(db_job, token=token)
+                backend = self.__get_qiskit_runtime_backend(db_job, token=token, instance=instance)
 
             estimator = EstimatorV2(backend, options=options)
             circuits = [j.circuit for j in pilot_jobs]
@@ -209,30 +241,37 @@ class IBMPilot(Pilot):
                 self.save_results(pilot_job, pilot_results)
             DB.session.commit()
 
-    def __get_qiskit_runtime_backend(self, job: JobDataclass, token: Optional[str]) -> BackendV2:
+    def __get_qiskit_runtime_backend(
+        self, job: JobDataclass, token: Optional[str], instance: Optional[str] = None
+    ) -> BackendV2:
         """Instantiate all important configurations and updates the job_state"""
 
         # If the token is empty the token is taken from the environment variables.
         if not token and (t := environ.get("IBM_TOKEN")):
             token = t
 
-        self.__get_provider_login_and_update_job(token, job)
+        self.__get_provider_login_and_update_job(token, job, instance)
         return QiskitRuntimeService().backend(job.executed_on.name)
 
-    def __get_qiskit_job_from_qiskit_runtime(self, job: JobDataclass, token: Optional[str]) -> RuntimeJob:
+    def __get_qiskit_job_from_qiskit_runtime(
+        self, job: JobDataclass, token: Optional[str], instance: Optional[str] = None
+    ) -> RuntimeJob:
         """Returns the job of the provider specific ID created on the given account"""
 
         # If the token is empty the token is taken from the environment variables.
         if not token and (t := environ.get("IBM_TOKEN")):
             token = t
 
-        self.__get_provider_login_and_update_job(token, job.id)
+        self.__get_provider_login_and_update_job(token, job.id, instance)
         service: QiskitRuntimeService = QiskitRuntimeService()
         return service.job(job.provider_specific_id)  # FIXME use ids from transient state!
 
     @staticmethod
-    def get_ibm_provider_and_login(token: Optional[str]) -> QiskitRuntimeService:
-        """Save account credentials and get provider"""
+    def get_ibm_provider_and_login(token: Optional[str], instance: Optional[str] = None) -> QiskitRuntimeService:
+        """Save account credentials and get provider
+        :param token: IBM cloud token
+        :param instance: the CRN of the instance on the IBM Quantum Platform that will be used, if None then an instance will be automatically chosen
+        """
 
         # If the token is empty the token is taken from the environment variables.
         if not token and (t := environ.get("IBM_TOKEN")):
@@ -245,17 +284,26 @@ class IBMPilot(Pilot):
         file_path /= "ibm_account.json"
 
         QiskitRuntimeService.save_account(
-            channel="ibm_quantum", token=token, overwrite=True, name="TODO", filename=str(file_path)
+            channel="ibm_quantum_platform",
+            token=token,
+            instance=instance,
+            overwrite=True,
+            name="TODO",
+            filename=str(file_path),
         )
 
-        return QiskitRuntimeService(channel="ibm_quantum", name="TODO", filename=str(file_path))  # FIXME change name
+        return QiskitRuntimeService(
+            channel="ibm_quantum_platform", name="TODO", filename=str(file_path)
+        )  # FIXME change name
 
     @staticmethod
-    def __get_provider_login_and_update_job(token: str, job: JobDataclass) -> QiskitRuntimeService:
+    def __get_provider_login_and_update_job(
+        token: str, job: JobDataclass, instance: Optional[str] = None
+    ) -> QiskitRuntimeService:
         """Save account credentials, get provider and update job_dto to job_state = Error, if it is not possible"""
 
         try:
-            return IBMPilot.get_ibm_provider_and_login(token)
+            return IBMPilot.get_ibm_provider_and_login(token, instance)
         except Exception as exception:
             job.save_error(exception)
             raise QunicornError(type(exception).__name__ + ": " + str(exception.args), HTTPStatus.UNAUTHORIZED)
@@ -334,13 +382,11 @@ class IBMPilot(Pilot):
             token = t
 
         service = QiskitRuntimeService(token=None, channel=None, filename=None, name=None)
-        service.save_account(token=token, channel="ibm_quantum", overwrite=True)
+        service.save_account(token=token, channel="ibm_quantum_platform", overwrite=True)
         return service
 
     @staticmethod
-    def __map_runner_results(
-        ibm_result: Result, circuits: List[QuantumCircuit] = None
-    ) -> list[Sequence[PilotJobResult]]:
+    def __map_runner_results(ibm_result: Result, circuits: List[QuantumCircuit]) -> list[Sequence[PilotJobResult]]:
         results: list[Sequence[PilotJobResult]] = []
 
         try:
@@ -399,7 +445,7 @@ class IBMPilot(Pilot):
             hex_registers = []
 
             for binary_register in k.split():
-                hex_registers.append(f"0x{int(binary_register, 2):x}")
+                hex_registers.append(f"0x{int(binary_register, 2):#x}")
 
             hex_sample = " ".join(hex_registers)
 
@@ -438,10 +484,27 @@ class IBMPilot(Pilot):
         for i in range(len(ibm_result)):
             pilot_results: list[PilotJobResult] = []
             try:
+                if len(ibm_result[i].data.values()) > 0:
+                    registers = np.column_stack([r.array for r in ibm_result[i].data.values()][::-1])
+                    result_counts = Counter(
+                        " ".join(f"{int.from_bytes(reg, 'big'):#x}" for reg in measurement) for measurement in registers
+                    )
+                else:
+                    result_counts = {"": ibm_result[i].metadata["shots"]}
+
+                metadata = dict(ibm_result[i].metadata)
+                metadata["format"] = "hex"
+                classical_registers_metadata = []
+
+                for reg_name, reg_data in reversed(ibm_result[i].data.items()):
+                    classical_registers_metadata.append({"name": reg_name, "size": reg_data.num_bits})
+
+                metadata["registers"] = classical_registers_metadata
+
                 pilot_results.append(
                     PilotJobResult(
-                        data=Pilot.qubit_binary_string_to_hex(ibm_result[i].data["c"].get_counts()),
-                        meta={},
+                        data=result_counts,
+                        meta=metadata,
                         result_type=ResultType.COUNTS,
                     )
                 )
@@ -513,24 +576,30 @@ class IBMPilot(Pilot):
             found_aer_device.is_local = True
         found_aer_device.save(commit=True)
 
-    def is_device_available(self, device: Union[DeviceDataclass, DeviceDto], token: Optional[str]) -> bool:
-        ibm_provider: QiskitRuntimeService = IBMPilot.get_ibm_provider_and_login(token)
+    def is_device_available(
+        self, device: Union[DeviceDataclass, DeviceDto], token: Optional[str], instance: Optional[str] = None, **kwargs
+    ) -> bool:
+        ibm_provider: QiskitRuntimeService = IBMPilot.get_ibm_provider_and_login(token, instance)
         if device.is_simulator:
             return True
         try:
-            ibm_provider.get_backend(device.name)
+            ibm_provider.backend(device.name)
             return True
         except QiskitBackendNotFoundError:
             return False
 
     def get_device_data_from_provider(self, device: Union[DeviceDataclass, DeviceDto], token: Optional[str]) -> dict:
         ibm_provider: QiskitRuntimeService = IBMPilot.get_ibm_provider_and_login(token)
-        backend = ibm_provider.get_backend(device.name)
-        config_dict: dict = vars(backend.configuration())
-        # Remove some not serializable fields
-        config_dict["u_channel_lo"] = None
-        config_dict["_qubit_channel_map"] = None
-        config_dict["_channel_qubit_map"] = None
-        config_dict["_control_channels"] = None
-        config_dict["gates"] = None
+        backend = ibm_provider.backend(device.name)
+        config_dict: dict = {
+            "backend_name": backend.name,
+            "description": backend.description,
+            "backend_version": backend.backend_version,
+            "n_qubits": backend.num_qubits,
+            "supported_operations": backend.operation_names,
+            "online_date": backend.online_date,
+            "max_circuits": backend.max_circuits,
+            "dt": backend.dt,
+            "dtm": backend.dtm,
+        }
         return config_dict

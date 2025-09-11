@@ -59,7 +59,7 @@ def run_job(job_id: int):
         pilot_jobs = _prepare_pilot_jobs(job, pilot.supported_languages)
 
         current_app.logger.info(f"Run job with id {job_id} on {pilot.__class__}")
-        pilot.execute(pilot_jobs, token=token)
+        pilot.execute(pilot_jobs, token=token)  # TODO: specify the instance (CRN) when using IBM Cloud
 
     except Exception as err:
         if isinstance(err, QunicornError) and err.data.get("message", "").startswith("Transpilation Error"):

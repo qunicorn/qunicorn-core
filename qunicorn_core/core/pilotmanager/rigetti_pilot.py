@@ -50,7 +50,7 @@ class RigettiPilot(Pilot):
 
     supported_languages: list[str] = [AssemblerLanguage.QUIL.value]
 
-    def run(self, jobs: Sequence[PilotJob], token: Optional[str] = None):
+    def run(self, jobs: Sequence[PilotJob], token: Optional[str] = None, **kwargs):
         """Execute the job on a local simulator and saves results in the database"""
         if utils.is_running_in_docker():
             raise QunicornError(
@@ -107,11 +107,11 @@ class RigettiPilot(Pilot):
         result_counter = Counter(results_as_strings)
         return dict(result_counter)
 
-    def execute_provider_specific(self, jobs: Sequence[PilotJob], job_type: str, token: Optional[str] = None):
+    def execute_provider_specific(self, jobs: Sequence[PilotJob], job_type: str, token: Optional[str] = None, **kwargs):
         """Execute a job of a provider specific type on a backend using a Pilot"""
         raise QunicornError("No valid Job Type specified")
 
-    def cancel_provider_specific(self, job: JobDataclass, token: Optional[str] = None):
+    def cancel_provider_specific(self, job: JobDataclass, token: Optional[str] = None, **kwargs):
         raise QunicornError("Canceling not implemented for rigetti pilot yet")
 
     def get_standard_job_with_deployment(self, device: DeviceDataclass) -> JobDataclass:
@@ -135,6 +135,6 @@ class RigettiPilot(Pilot):
             found_provider.save()
         return found_provider
 
-    def is_device_available(self, device: Union[DeviceDataclass, DeviceDto], token: Optional[str]) -> bool:
+    def is_device_available(self, device: Union[DeviceDataclass, DeviceDto], token: Optional[str], **kwargs) -> bool:
         current_app.logger.info("Rigetti local simulator is always available")
         return True
