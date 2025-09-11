@@ -70,7 +70,7 @@ class QMwarePilot(Pilot):
     provider_name = ProviderName.QMWARE
     supported_languages = tuple([AssemblerLanguage.QASM2])
 
-    def run(self, jobs: Sequence[PilotJob], token: Optional[str] = None):
+    def run(self, jobs: Sequence[PilotJob], token: Optional[str] = None, **kwargs):
         """Run a job of type RUNNER on a backend using a Pilot"""
         job_name = "Qunicorn request"
 
@@ -367,7 +367,7 @@ class QMwarePilot(Pilot):
             return JobState.FINISHED
         return super().determine_db_job_state(db_job)
 
-    def execute_provider_specific(self, jobs: Sequence[PilotJob], job_type: str, token: Optional[str] = None):
+    def execute_provider_specific(self, jobs: Sequence[PilotJob], job_type: str, token: Optional[str] = None, **kwargs):
         """Execute a job of a provider specific type on a backend using a Pilot"""
         raise QunicornError("No valid Job Type specified. QMware Pilot does not support provider specific job types.")
 
@@ -392,7 +392,7 @@ class QMwarePilot(Pilot):
             "The QMware pilot cannot fetch devices because the QMware API doesn't have the concept of devices."
         )
 
-    def is_device_available(self, device: Union[DeviceDataclass, DeviceDto], token: Optional[str]) -> bool:
+    def is_device_available(self, device: Union[DeviceDataclass, DeviceDto], token: Optional[str], **kwargs) -> bool:
         """Check if a device is available for a user"""
         response = requests.get(urljoin(QMWARE_URL, "/health"))
 
@@ -409,7 +409,7 @@ class QMwarePilot(Pilot):
             "The QMware pilot cannot fetch devices because the QMware API doesn't have the concept of devices."
         )
 
-    def cancel_provider_specific(self, job: JobDataclass, token: Optional[str] = None):
+    def cancel_provider_specific(self, job: JobDataclass, token: Optional[str] = None, **kwargs):
         """Cancel execution of a job at the corresponding backend"""
         current_app.logger.warning(
             f"Cancel job with id {job.id} on {job.executed_on.provider.name} failed."

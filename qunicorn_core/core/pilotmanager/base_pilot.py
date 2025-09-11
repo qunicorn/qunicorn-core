@@ -62,11 +62,11 @@ class Pilot:
     provider_name: str
     supported_languages: Sequence[str]
 
-    def run(self, jobs: Sequence[PilotJob], token: Optional[str] = None):
+    def run(self, jobs: Sequence[PilotJob], token: Optional[str] = None, **kwargs):
         """Run a job of type RUNNER on a backend using a Pilot"""
         raise NotImplementedError()
 
-    def execute_provider_specific(self, jobs: Sequence[PilotJob], job_type: str, token: Optional[str] = None):
+    def execute_provider_specific(self, jobs: Sequence[PilotJob], job_type: str, token: Optional[str] = None, **kwargs):
         """Execute a job of a provider specific type on a backend using a Pilot"""
         raise NotImplementedError()
 
@@ -82,7 +82,7 @@ class Pilot:
         """Access the devices from the cloud service of the provider, to update the current device list of qunicorn"""
         raise NotImplementedError()
 
-    def is_device_available(self, device: Union[DeviceDataclass, DeviceDto], token: Optional[str]) -> bool:
+    def is_device_available(self, device: Union[DeviceDataclass, DeviceDto], token: Optional[str], **kwargs) -> bool:
         """Check if a device is available for a user"""
         raise NotImplementedError()
 
@@ -90,7 +90,7 @@ class Pilot:
         """Get device data for a specific device from the provider"""
         raise NotImplementedError()
 
-    def execute(self, jobs: Sequence[PilotJob], token: Optional[str] = None):
+    def execute(self, jobs: Sequence[PilotJob], token: Optional[str] = None, **kwargs):
         """Execute a job on a backend using a Pilot"""
 
         job_types = set(j.job.type for j in jobs)
@@ -99,9 +99,9 @@ class Pilot:
         job_type = job_types.pop()
 
         if job_type == JobType.RUNNER.value:
-            self.run(jobs, token=token)
+            self.run(jobs, token=token, **kwargs)
         else:
-            self.execute_provider_specific(jobs, job_type=job_type, token=token)
+            self.execute_provider_specific(jobs, job_type=job_type, token=token, **kwargs)
 
     def cancel(self, job_id: Optional[int], user_id: Optional[str], token: Optional[str] = None):
         """Cancel the execution of a job, locally or if that is not possible at the backend"""
@@ -121,7 +121,7 @@ class Pilot:
         else:
             raise QunicornError(f"Job is in invalid state for canceling: {job.state}", HTTPStatus.INTERNAL_SERVER_ERROR)
 
-    def cancel_provider_specific(self, job: JobDataclass, token: Optional[str] = None):
+    def cancel_provider_specific(self, job: JobDataclass, token: Optional[str] = None, **kwargs):
         """Cancel execution of a job at the corresponding backend"""
         raise NotImplementedError()
 

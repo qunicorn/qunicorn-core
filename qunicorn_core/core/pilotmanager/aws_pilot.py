@@ -40,7 +40,7 @@ class AWSPilot(Pilot):
     provider_name = ProviderName.AWS.value
     supported_languages = tuple([AssemblerLanguage.BRAKET.value])
 
-    def run(self, jobs: Sequence[PilotJob], token: Optional[str] = None):
+    def run(self, jobs: Sequence[PilotJob], token: Optional[str] = None, **kwargs):
         """Execute the job on a local simulator and saves results in the database"""
         if any(not j.job.executed_on or not j.job.executed_on.is_local for j in jobs):
             raise QunicornError("Device not found, device needs to be local for AWS")
@@ -61,11 +61,11 @@ class AWSPilot(Pilot):
                 self.save_results(job, result, commit=False)
         DB.session.commit()
 
-    def execute_provider_specific(self, jobs: Sequence[PilotJob], job_type: str, token: Optional[str] = None):
+    def execute_provider_specific(self, jobs: Sequence[PilotJob], job_type: str, token: Optional[str] = None, **kwargs):
         """Execute a job of a provider specific type on a backend using a pilot"""
         raise QunicornError("No valid Job Type specified")
 
-    def cancel_provider_specific(self, job_dto):
+    def cancel_provider_specific(self, job_dto, **kwargs):
         current_app.logger.warning(
             f"Cancel job with id {job_dto.id} on {job_dto.executed_on.provider.name} failed."
             f"Canceling while in execution not supported for AWS Jobs"
@@ -136,6 +136,6 @@ class AWSPilot(Pilot):
             found_provider.save()
         return found_provider
 
-    def is_device_available(self, device: Union[DeviceDataclass, DeviceDto], token: Optional[str]) -> bool:
+    def is_device_available(self, device: Union[DeviceDataclass, DeviceDto], token: Optional[str], **kwargs) -> bool:
         current_app.logger.info("AWS local simulator is always available")
         return True
